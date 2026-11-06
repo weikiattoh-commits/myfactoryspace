@@ -1,0 +1,74 @@
+# robots.txt for MyFactorySpace (https://www.myfactoryspace.com)
+# Optimized for Search Engines and AI Answer Engines (AEO / AOE)
+
+# OpenAI / ChatGPT Search
+User-agent: GPTBot
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /backups/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /backups/
+
+# Perplexity AI Answer Engine
+User-agent: PerplexityBot
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /backups/
+
+# Anthropic Claude
+User-agent: ClaudeBot
+User-agent: anthropic-ai
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /backups/
+
+# Google Search, Images & Gemini AI
+User-agent: Googlebot
+User-agent: Googlebot-Image
+User-agent: Google-Extended
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /backups/
+
+# Apple Intelligence
+User-agent: Applebot-Extended
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /backups/
+
+# Amazon AI
+User-agent: Amazonbot
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /backups/
+
+# Common Crawl
+User-agent: CCBot
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /backups/
+
+# Default for all other web crawlers
+User-agent: *
+Allow: /
+Disallow: /dashboard.html
+Disallow: /login.html
+Disallow: /backups/
+
+# XML Sitemap
+Sitemap: https://www.myfactoryspace.com/sitemap.xml
+
+# LLM Answer Engine Context File (https://llmstxt.org)
+# llms.txt: https://www.myfactoryspace.com/llms.txt
+# llms-full.txt: https://www.myfactoryspace.com/llms-full.txt

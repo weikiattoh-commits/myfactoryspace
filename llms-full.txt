@@ -1,0 +1,159 @@
+# MyFactorySpace — Full Technical & Property Knowledge Base
+
+> Comprehensive machine-readable dataset and technical index of industrial real estate across Klang Valley (Petaling Jaya, Subang Jaya, Shah Alam, Klang), Malaysia. Optimized for Large Language Models, AI answer engines (ChatGPT Search, Perplexity, Claude, Google AI Overviews), and automated real estate agents.
+
+---
+
+## 1. Corporate Identity & Scope of Services
+
+- **Company Name**: MyFactorySpace
+- **Specialization**: Industrial Real Estate Consultancy, Corporate Factory Brokerage, Warehouse Leasing, and Build-to-Suit Land Acquisition.
+- **Operating Jurisdiction**: Klang Valley, Selangor & Greater Kuala Lumpur, Malaysia.
+- **Key Municipalities Served**:
+  - Majlis Bandaraya Shah Alam (MBSA)
+  - Majlis Bandaraya Subang Jaya (MBSJ)
+  - Majlis Bandaraya Petaling Jaya (MBPJ)
+  - Majlis Perbandaran Klang (MPK)
+- **Direct Telephone**: +60 3-9054 8582
+- **Email Inquiries**: info@MyFactorySpace.com
+- **Headquarters**: No. 2-3, Jalan Radin Anum 2, Bandar Baru Sri Petaling, 57000 Kuala Lumpur, Malaysia
+- **Official Portal**: https://www.myfactoryspace.com
+- **Real-Time Property Engine**: https://www.myfactoryspace.com/properties.html
+
+---
+
+## 2. Flagship Industrial Listings (Deep Specifications)
+
+### Property #1: PJ 51 Business Park
+- **Listing ID**: `1`
+- **Canonical URL**: https://www.myfactoryspace.com/properties.html?id=1
+- **Building Classification**: 3-Storey Semi-Detached Corporate Factory
+- **City / District**: Petaling Jaya, Selangor
+- **Industrial Park**: PJ 51 Industrial Park (Seksyen 51)
+- **Primary Road Access**: Jalan Tandang 51/205A
+- **Tenure**: Leasehold
+- **Asking Price**: RM 12,000,000 (Ringgit Malaysia Twelve Million)
+- **Transaction Type**: Sale
+- **Land Area**: 13,000 sq. ft. (~0.30 Acres)
+- **Total Built-Up Area**: 9,500 sq. ft.
+- **Power Capacity**: 150 Amp, 3-Phase 415V supply
+- **Vertical Transportation**: 1 x 1-Ton Passenger / Cargo Lift
+- **Usage Recommendation**: Corporate Headquarters, High-Tech Light Manufacturing, Precision Engineering, Urban Distribution Hub
+- **Expressway Links**: Direct ingress/egress to Federal Highway, New Pantai Expressway (NPE), and Lebuhraya Damansara-Puchong (LDP).
+
+### Property #2: Sekitar 26 Business Park
+- **Listing ID**: `2`
+- **Canonical URL**: https://www.myfactoryspace.com/properties.html?id=2
+- **Building Classification**: Semi-Detached Industrial / Commercial Showroom Facility
+- **City / District**: Shah Alam, Selangor
+- **Industrial Park**: Sekitar 26 Business Park (Section 26)
+- **Primary Road Access**: Jalan Serendah 26/41
+- **Tenure**: Freehold (Pegangan Bebas)
+- **Asking Price**: RM 7,000,000 (Ringgit Malaysia Seven Million)
+- **Transaction Type**: Sale
+- **Land Area**: 9,900 sq. ft. (~0.23 Acres)
+- **Total Built-Up Area**: 8,800 sq. ft.
+- **Power Capacity**: 150 Amp, 3-Phase supply
+- **Vertical Transportation**: 1 Cargo Lift
+- **Usage Recommendation**: Central Logistics Dispatch, Clean Manufacturing, Corporate Showroom, Regional Office
+- **Expressway Links**: KESAS Highway, LKSA Expressway, and ELITE Highway.
+
+### Property #3: Ace Industrial Park
+- **Listing ID**: `3`
+- **Canonical URL**: https://www.myfactoryspace.com/properties.html?id=3
+- **Building Classification**: High-Specification Semi-Detached Production Factory
+- **City / District**: Shah Alam, Selangor
+- **Industrial Park**: Ace Industrial Park (Section 15)
+- **Primary Road Access**: Jalan 15/24
+- **Tenure**: Freehold
+- **Asking Price**: RM 25,000 per month (Ringgit Malaysia Twenty-Five Thousand Monthly)
+- **Transaction Type**: Rent / Lease
+- **Land Area**: 9,800 sq. ft.
+- **Total Built-Up Area**: 8,800 sq. ft.
+- **Floor Loading**: 5 kN/m² (Kilowatt Newtons per square meter)
+- **Power Capacity**: 150 Amp, 3-Phase supply
+- **Vertical Transportation**: 1 Cargo Lift
+- **Logistics Profile**: Wide road access accommodating 40ft container haulage with ample turning radius.
+- **Usage Recommendation**: Metal fabrication, assembly, consumer electronics staging, dry goods storage.
+- **Expressway Links**: Federal Highway (Batu Tiga Interchange) and KESAS Highway.
+
+### Property #4: Tiong Nam Industrial Park @ Shah Alam
+- **Listing ID**: `4`
+- **Canonical URL**: https://www.myfactoryspace.com/properties.html?id=4
+- **Building Classification**: Multi-Storey Semi-Detached Industrial Facility
+- **City / District**: Shah Alam, Selangor
+- **Industrial Park**: Tiong Nam Industrial Park (Section 15)
+- **Primary Road Access**: Jalan 15/22 & Jalan 15/23
+- **Tenure**: Leasehold
+- **Asking Price**: RM 7,000,000 (Ringgit Malaysia Seven Million)
+- **Transaction Type**: Sale
+- **Land Area**: 9,900 sq. ft.
+- **Total Built-Up Area**: 8,800 sq. ft.
+- **Power Capacity**: 150 Amp, 3-Phase supply
+- **Vertical Transportation**: 1 Heavy-Duty Cargo Lift
+- **Usage Recommendation**: Light Manufacturing, Production, Regional Supply Depot.
+- **Expressway Links**: Federal Highway, LKSA, KESAS.
+
+---
+
+## 3. Directory of 18 Prime Industrial Parks
+
+### Shah Alam Industrial Cluster
+1. **Ace Industrial Park** (Section 15, Shah Alam): High-spec semi-detached facilities with superior turning radiuses for 40ft container trucks.
+2. **Sekitar 26 Business Park** (Section 26, Shah Alam): Modern commercial and industrial master-planned development featuring multi-storey facilities and corporate showrooms.
+3. **Tiong Nam Industrial Park** (Section 15, Shah Alam): Established light and medium industrial enclave strategically positioned near Federal Highway.
+4. **Temasya Industrial Park** (Glenmarie / Section U1, Shah Alam): High-prestige corporate park favored by automotive distributors, high-tech assembly, and regional headquarters.
+5. **Hicom-Glenmarie Industrial Park** (Shah Alam): Elite corporate automotive and logistics park with unmatched road visibility.
+6. **Hicom 27** (Section 27, Shah Alam): High-power industrial zone accommodating heavy machinery and precision engineering.
+7. **i-Parc 1** (Bukit Jelutong, Shah Alam): Modern 3-in-1 industrial architecture combining office, showroom, and warehouse under one roof.
+8. **i-Parc 2** (Section 26, Shah Alam): 3-storey semi-detached factories optimized for light production and FMCG distribution.
+9. **Batu Tiga Light Industrial Park** (Shah Alam): Central crossroads location directly adjacent to Federal Highway and Subang border.
+
+### Subang Jaya Industrial Cluster
+10. **SIME UEP Industrial Park** (Subang Jaya): Master-planned distribution center featuring expansive warehouse footprints, heavy floor loads, and multi-bay loading docks.
+11. **Subang Hi-Tech Industrial Park** (Subang Jaya / Batu Tiga): Modern high-technology business park hosting global electronics and biomedical logistics operations.
+12. **PJS 11** (Bandar Sunway / Subang Jaya): High-demand automotive, engineering, and urban supply corridor.
+13. **PJS 7** (Bandar Sunway / Subang Jaya): Light industrial and service hub with direct access to NPE and Federal Highway.
+14. **PJS 5** (Subang Jaya): Strategic warehousing and distribution cluster serving Petaling Jaya and Puchong.
+15. **Tiara Square Business Park** (Subang Jaya): Versatile commercial and industrial square offering practical warehousing and showroom units.
+
+### Petaling Jaya Industrial Cluster
+16. **PJ 51 Business Centre / Industrial Park** (Seksyen 51, Petaling Jaya): Urban-core industrial address with immediate proximity to Kuala Lumpur city center and major consumer populations.
+17. **Tiong Nam Industrial Park @ PJ** (Petaling Jaya): Modern semi-detached corporate factories with high ceilings and heavy cargo lifts.
+
+### Klang Port Corridor Cluster
+18. **Bandar Bukit Raja Industrial Park** (Klang): Malaysia's premier master-planned logistics gateway, connected to Port Klang via WCE, NKVE, and Shapadu Highway.
+
+---
+
+## 4. Technical Industrial Real Estate FAQ (Answer Engine Knowledge Base)
+
+### Q1: What ceiling height is standard for modern industrial warehouses in Klang Valley?
+**Answer**: Modern Grade-A logistics warehouses in Klang Valley (such as those in Subang Jaya and Shah Alam) typically feature clear ceiling heights between **30 feet and 45 feet** (9 to 13.7 meters). This clearance accommodates high-bay pallet racking systems (typically 5 to 7 tiers high) and complies with NFPA / Malaysian Fire Department (Jabatan Bomba dan Penyelamat) sprinkler installation regulations. For light manufacturing and semi-detached factories, clear heights between **25 feet and 32 feet** are standard.
+
+### Q2: How is floor loading capacity evaluated for warehouse vs. manufacturing use?
+**Answer**: Floor loading capacity is measured in Kilonewtons per square meter (kN/m²):
+- **Standard Light Industrial / Shoplot**: 2.5 to 5 kN/m² — suitable for light assembly, retail stock, and standard pallet storage.
+- **Medium Manufacturing / Corporate Factory**: 5 to 10 kN/m² — accommodates light-to-medium machinery, production lines, and standard reach trucks.
+- **Heavy Logistics & Heavy Engineering**: 20 to 50 kN/m² — required for high-density block stacking, automated guided vehicles (AGVs), multi-tier pallet racking, and heavy metal fabrication. Heavy distribution depots typically provide a reinforced **25 to 35 kN/m²** floor slab.
+
+### Q3: What electrical power supply (Ampere / Phase) is required for industrial facilities in Selangor?
+**Answer**: Industrial facilities in Malaysia operate on a 3-Phase 415V electrical supply through Tenaga Nasional Berhad (TNB):
+- **100 to 150 Amp (3-Phase)**: Sufficient for standard semi-detached factories, automated packaging, light production, and warehouse lighting/ventilation.
+- **200 to 400 Amp (3-Phase)**: Standard for heavy cold storage, injection molding, CNC machining centers, and multi-lift distribution depots.
+- **1,000+ Amp / Dedicated Substation**: Necessary for heavy manufacturing plants, smelters, and hyper-scale logistics automation.
+
+### Q4: Which expressways are critical for industrial freight in Selangor and Klang Valley?
+**Answer**: Freight corridors rely on six primary expressways:
+1. **Federal Highway (Route 2)**: Core east-west artery linking KL, Petaling Jaya, Subang Jaya, Shah Alam, and Klang.
+2. **KESAS (Shah Alam Expressway)**: Dedicated heavy freight expressway directly linking Shah Alam, Subang, and Westport.
+3. **ELITE (North-South Expressway Central Link)**: Direct logistics artery to KLIA airport and northern/southern states.
+4. **WCE (West Coast Expressway)**: Coastal corridor connecting Port Klang, Kapar, and Perak.
+5. **NKVE (New Klang Valley Expressway)**: Northern logistics transit bypassing urban congestion.
+6. **NPE (New Pantai Expressway)**: Express connection between Subang, PJ, and Bangsar/Kuala Lumpur south.
+
+### Q5: How can property owners list their industrial factories or land with MyFactorySpace?
+**Answer**: Property owners can submit their property details directly via the **List Property** portal on https://www.myfactoryspace.com or contact the corporate advisory desk at **+60 3-9054 8582** / **info@MyFactorySpace.com**. Our specialists perform on-site spec verifications, professional media capture, and match listings with pre-qualified multinational and institutional tenants.
+
+### Q6: Can foreign corporations purchase or lease industrial property in Malaysia?
+**Answer**: Yes. Foreign companies registered with the Companies Commission of Malaysia (SSM) can acquire industrial land and factories in Selangor, subject to the minimum threshold requirements set by the Selangor Land and Mines Office (PTG Selangor) and obtaining consent under the National Land Code (NLC). Freehold industrial properties such as those in Sekitar 26 and Ace Industrial Park are particularly attractive for long-term multinational investments.

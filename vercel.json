@@ -1,0 +1,52 @@
+{
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/favicon.ico", "destination": "/assets/icons/favicon.ico" },
+    { "source": "/favicon-48x48.png", "destination": "/assets/icons/favicon-48x48.png" },
+    { "source": "/favicon-96x96.png", "destination": "/assets/icons/favicon-96x96.png" },
+    { "source": "/favicon.svg", "destination": "/assets/icons/favicon.svg" },
+    { "source": "/apple-touch-icon.png", "destination": "/assets/icons/apple-touch-icon.png" },
+    { "source": "/android-chrome-192x192.png", "destination": "/assets/icons/android-chrome-192x192.png" },
+    { "source": "/android-chrome-512x512.png", "destination": "/assets/icons/android-chrome-512x512.png" },
+    { "source": "/site.webmanifest", "destination": "/assets/icons/site.webmanifest" },
+    { "source": "/images/assets/:path*", "destination": "/assets/images/:path*" },
+    { "source": "/images/:path*", "destination": "/assets/images/:path*" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [{ "key": "Access-Control-Allow-Origin", "value": "*" }]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/images/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
+    },
+    {
+      "source": "/js/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
+    },
+    {
+      "source": "/css/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
+    },
+    {
+      "source": "/assets/icons/(.*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
+    },
+    {
+      "source": "/(favicon.*|apple-touch-icon.*|android-chrome.*|site.webmanifest)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }]
+    },
+    {
+      "source": "/llms(.*).txt",
+      "headers": [
+        { "key": "Content-Type", "value": "text/markdown; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=86400" }
+      ]
+    }
+  ]
+}

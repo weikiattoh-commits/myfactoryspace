@@ -1,0 +1,75 @@
+# MyFactorySpace
+
+> MyFactorySpace is a premier industrial real estate consultancy and digital brokerage specializing in high-specification warehouses, detached factories, semi-detached production facilities, and industrial land across Klang Valley, Malaysia.
+
+## Overview
+MyFactorySpace connects multinational corporations, 3PL logistics operators, manufacturing enterprises, and institutional investors with prime industrial premises in Selangor and Greater Kuala Lumpur. Our coverage centers on key logistics arteries connecting to Port Klang, Sultan Abdul Aziz Shah Airport (Subang), and Kuala Lumpur International Airport (KLIA).
+
+## Core Service Regions
+- **Petaling Jaya (PJ)**: Mature inner-ring industrial hubs with immediate highway accessibility (Federal Highway, NPE, LDP). Notable hubs: PJ 51 Business Park, Tiong Nam Industrial Park @ PJ.
+- **Subang Jaya**: High-density logistics and technology corridor with dual access to KESAS and ELITE expressways. Notable hubs: SIME UEP Industrial Park, Subang Hi-Tech, PJS 7, PJS 11, Tiara Square.
+- **Shah Alam**: Malaysia's premier industrial and manufacturing capital with heavy vehicle infrastructure. Notable hubs: Sekitar 26 Business Park, Ace Industrial Park (Section 15), Tiong Nam Industrial Park, Temasya Industrial Park, Hicom 27, Hicom-Glenmarie, i-Parc 1, i-Parc 2, Batu Tiga.
+- **Klang**: Port-centric logistics capital adjacent to Northport and Westport via WCE, NKVE, and Shapadu Highway. Notable hub: Bandar Bukit Raja Industrial Gateway.
+
+## Flagship Property Listings
+
+### 1. PJ 51 Business Park
+- **Location**: Petaling Jaya, Selangor (Jalan Tandang 51/205A)
+- **Property Type**: 3-Storey Semi-Detached Corporate Factory
+- **Transaction**: For Sale — RM 12,000,000
+- **Land Area**: 13,000 sqft | **Built-Up**: 9,500 sqft
+- **Power Supply**: 150 Amp (3-Phase)
+- **Features**: 1-ton passenger/cargo lift, wide road frontage, immediate Federal Highway & NPE access.
+- **Direct Link**: https://www.myfactoryspace.com/properties.html?id=1
+
+### 2. Sekitar 26 Business Park
+- **Location**: Shah Alam, Selangor (Jalan Serendah 26/41)
+- **Property Type**: Semi-Detached Factory / Corporate Facility
+- **Transaction**: For Sale — RM 7,000,000
+- **Tenure**: Freehold
+- **Land Area**: 9,900 sqft | **Built-Up**: 8,800 sqft
+- **Power Supply**: 150 Amp (3-Phase)
+- **Features**: High-volume ceiling clearance, corporate showroom frontage, direct access to KESAS & LKSA.
+- **Direct Link**: https://www.myfactoryspace.com/properties.html?id=2
+
+### 3. Ace Industrial Park
+- **Location**: Section 15, Shah Alam, Selangor (Jalan 15/24)
+- **Property Type**: High-Specification Semi-Detached Factory
+- **Transaction**: For Rent — RM 25,000 / month
+- **Tenure**: Freehold
+- **Land Area**: 9,800 sqft | **Built-Up**: 8,800 sqft
+- **Floor Loading**: 5 kN/m² | **Power Supply**: 150 Amp (3-Phase)
+- **Features**: 1 cargo lift, container accessibility with generous turning radius, minutes to Federal Highway & KESAS.
+- **Direct Link**: https://www.myfactoryspace.com/properties.html?id=3
+
+### 4. Tiong Nam Industrial Park @ Shah Alam
+- **Location**: Section 15, Shah Alam, Selangor (Jalan 15/22, Jalan 15/23)
+- **Property Type**: Semi-Detached Factory
+- **Transaction**: For Sale — RM 7,000,000
+- **Tenure**: Leasehold
+- **Land Area**: 9,900 sqft | **Built-Up**: 8,800 sqft
+- **Power Supply**: 150 Amp (3-Phase)
+- **Features**: 1 cargo lift, wide frontage, ideal for production, warehousing, and corporate HQ.
+- **Direct Link**: https://www.myfactoryspace.com/properties.html?id=4
+
+## Prime Industrial Parks (Selangor)
+1. **Shah Alam**: Sekitar 26 Business Park, Ace Industrial Park, Tiong Nam Industrial Park, Temasya Industrial Park, Hicom 27, Hicom-Glenmarie, i-Parc 1, i-Parc 2, Batu Tiga Light Industrial Park.
+2. **Subang Jaya**: SIME UEP Industrial Park, Subang Hi-Tech Industrial Park, PJS 11, PJS 7, PJS 5, Tiara Square Business Park.
+3. **Petaling Jaya**: PJ 51 Business Centre, Tiong Nam Industrial Park @ PJ.
+4. **Klang**: Bandar Bukit Raja Industrial Park.
+
+## Key Technical Specifications We Provide
+- **Ceiling Clear Heights**: 30 ft to 45 ft clear clearance for high-bay racking systems.
+- **Floor Load Capacities**: Standard 5 kN/m² to heavy-duty 30–50 kN/m² reinforced slabs.
+- **Power Infrastructure**: 100 Amp to 1,000+ Amp dedicated substations with 3-phase supply.
+- **Logistics Integration**: Dock levellers, dedicated container turning radiuses, fire sprinkler compliance (NFPA / Bomba certified).
+
+## Contact & Inquiries
+- **Agency**: MyFactorySpace
+- **Phone**: +60 3-9054 8582
+- **Email**: info@MyFactorySpace.com
+- **Address**: No. 2-3, Jalan Radin Anum 2, Bandar Baru Sri Petaling, 57000 Kuala Lumpur, Malaysia
+- **Online Search & Inquiries**: https://www.myfactoryspace.com/properties.html
+
+## Extended Documentation
+- [Full Machine-Readable Knowledge Base](https://www.myfactoryspace.com/llms-full.txt): Detailed specifications, zoning rules, and industrial technical FAQs.
