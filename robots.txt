@@ -34,6 +34,9 @@ User-agent: Googlebot
 User-agent: Googlebot-Image
 User-agent: Google-Extended
 Allow: /
+Allow: /favicon.png
+Allow: /favicon.ico
+Allow: /apple-touch-icon.png
 Disallow: /dashboard.html
 Disallow: /login.html
 Disallow: /backups/
@@ -62,6 +65,9 @@ Disallow: /backups/
 # Default for all other web crawlers
 User-agent: *
 Allow: /
+Allow: /favicon.png
+Allow: /favicon.ico
+Allow: /apple-touch-icon.png
 Disallow: /dashboard.html
 Disallow: /login.html
 Disallow: /backups/

@@ -1,11 +1,12 @@
 {
   "cleanUrls": false,
   "rewrites": [
-    { "source": "/favicon.ico", "destination": "/assets/icons/favicon.ico" },
+    { "source": "/favicon.ico", "destination": "/favicon.ico" },
+    { "source": "/favicon.png", "destination": "/favicon.png" },
     { "source": "/favicon-48x48.png", "destination": "/assets/icons/favicon-48x48.png" },
-    { "source": "/favicon-96x96.png", "destination": "/assets/icons/favicon-96x96.png" },
+    { "source": "/favicon-96x96.png", "destination": "/favicon.png" },
     { "source": "/favicon.svg", "destination": "/assets/icons/favicon.svg" },
-    { "source": "/apple-touch-icon.png", "destination": "/assets/icons/apple-touch-icon.png" },
+    { "source": "/apple-touch-icon.png", "destination": "/apple-touch-icon.png" },
     { "source": "/android-chrome-192x192.png", "destination": "/assets/icons/android-chrome-192x192.png" },
     { "source": "/android-chrome-512x512.png", "destination": "/assets/icons/android-chrome-512x512.png" },
     { "source": "/site.webmanifest", "destination": "/assets/icons/site.webmanifest" },

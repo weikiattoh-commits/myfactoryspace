@@ -987,10 +987,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Synchronize Dynamic Favicon if custom faviconUrl is configured
-        if (b && b.faviconUrl) {
+        if (b && b.faviconUrl && !b.faviconUrl.includes('favicon-48x48.png')) {
             const favIcons = document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]');
             favIcons.forEach(fav => {
-                if (fav.getAttribute('sizes') === '48x48' || !fav.getAttribute('sizes')) {
+                if (fav.getAttribute('sizes') === '96x96' || fav.getAttribute('sizes') === '48x48' || !fav.getAttribute('sizes')) {
                     fav.href = b.faviconUrl;
                 }
             });

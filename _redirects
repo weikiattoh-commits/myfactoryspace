@@ -1,9 +1,10 @@
 # Netlify redirects and image path aliases
 /favicon.ico                  /assets/icons/favicon.ico               200
+/favicon.png                  /favicon.png                            200
 /favicon-48x48.png            /assets/icons/favicon-48x48.png         200
-/favicon-96x96.png            /assets/icons/favicon-96x96.png         200
+/favicon-96x96.png            /favicon.png                            200
 /favicon.svg                  /assets/icons/favicon.svg               200
-/apple-touch-icon.png         /assets/icons/apple-touch-icon.png      200
+/apple-touch-icon.png         /apple-touch-icon.png                   200
 /android-chrome-192x192.png   /assets/icons/android-chrome-192x192.png 200
 /android-chrome-512x512.png   /assets/icons/android-chrome-512x512.png 200
 /site.webmanifest             /assets/icons/site.webmanifest          200
