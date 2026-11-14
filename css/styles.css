@@ -8009,10 +8009,14 @@ textarea:focus-visible {
   flex-shrink: 0;
 }
 
-.brochure-mfs-icon-wrap .brochure-svg,
+.brochure-mfs-icon-wrap .brochure-svg {
+  width: 1.65rem;
+  height: 1.65rem;
+}
+
 .brochure-brand-slot-icon .brochure-svg {
-  width: 1.35rem;
-  height: 1.35rem;
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .brochure-sheet {
@@ -8039,7 +8043,7 @@ textarea:focus-visible {
 
 /* Header */
 .brochure-header {
-  padding: 14px 26px 8px;
+  padding: 10px 26px 8px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -8050,33 +8054,36 @@ textarea:focus-visible {
 .brochure-logo-block {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .brochure-logo-img {
-  max-height: 48px;
-  max-width: 170px;
+  height: 70px;
+  max-height: 74px;
+  max-width: 260px;
+  width: auto;
   object-fit: contain;
+  display: block;
 }
 
 /* MyFactorySpace Logo Badge in Brochure Header */
 .brochure-mfs-logo-box {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   background: #ffffff;
   padding: 2px 4px;
 }
 
 .brochure-mfs-icon-wrap {
-  width: 42px;
-  height: 42px;
-  border-radius: 9px;
+  width: 50px;
+  height: 50px;
+  border-radius: 11px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  font-size: 1.3rem;
+  font-size: 1.55rem;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
   flex-shrink: 0;
 }
@@ -8089,14 +8096,14 @@ textarea:focus-visible {
 
 .brochure-mfs-title {
   font-family: 'Outfit', sans-serif;
-  font-size: 1.55rem;
+  font-size: 1.8rem;
   font-weight: 900;
   letter-spacing: -0.4px;
   line-height: 1.05;
 }
 
 .brochure-mfs-subtitle {
-  font-size: 0.62rem;
+  font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 1.6px;
   color: #64748b;
@@ -8449,28 +8456,30 @@ textarea:focus-visible {
 }
 
 .brochure-brand-slot-logo {
-  max-width: 135px;
-  max-height: 32px;
+  height: 56px;
+  max-width: 204px;
+  max-height: 58px;
+  width: auto;
   object-fit: contain;
   margin-bottom: 2px;
   display: block;
 }
 
 .brochure-brand-slot-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: #ffffff;
-  font-size: 1.15rem;
+  font-size: 1.35rem;
   margin-bottom: 2px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
 }
 
 .brochure-brand-slot-title {
-  font-size: 0.88rem;
+  font-size: 1.02rem;
   font-weight: 800;
   color: #0f172a;
   line-height: 1.15;

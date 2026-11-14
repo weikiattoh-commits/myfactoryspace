@@ -1294,8 +1294,137 @@
         'chart-line': '<svg class="brochure-svg" viewBox="0 0 512 512" fill="currentColor"><path d="M64 64c0-17.7-14.3-32-32-32S0 46.3 0 64V448c0 17.7 14.3 32 32 32H480c17.7 0 32-14.3 32-32s-14.3-32-32-32H64V64zm406.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L320 210.7l-57.4-57.4c-12.5-12.5-32.8-12.5-45.3 0l-112 112c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L240 221.3l57.4 57.4c12.5 12.5 32.8 12.5 45.3 0l128-128z"/></svg>',
         'whatsapp': '<svg class="brochure-svg" viewBox="0 0 448 512" fill="currentColor"><path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157zm-157 341.6c-33.2 0-65.7-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/></svg>',
         'globe': '<svg class="brochure-svg" viewBox="0 0 512 512" fill="currentColor"><path d="M352 256c0 22.2-1.2 43.6-3.3 64H163.3c-2.2-20.4-3.3-41.8-3.3-64s1.2-43.6 3.3-64H348.7c2.2 20.4 3.3 41.8 3.3 64zm28.8-64H503.9c5.3 20.5 8.1 41.9 8.1 64s-2.8 43.5-8.1 64H380.8c2.1-20.6 3.2-42 3.2-64s-1.1-43.4-3.2-64zm112.6-32H376.7c-10-63.7-29.8-117.4-55.3-151.6c78.3 20.7 142 75.8 172 151.6zm-149.1 0H167.7c11.6-73.4 38.3-128 88.3-128s76.7 54.6 88.3 128zM135.3 160H16.7c30-75.8 93.7-130.9 172-151.6c-25.5 34.2-45.3 87.9-55.4 151.6zM131.2 256c0 22 1.1 43.4 3.2 64H8.1C2.8 299.5 0 278.1 0 256s2.8-43.5 8.1-64h126.3c-2.1 20.6-3.2 42-3.2 64zm4.1 96H16.7c30 75.8 93.7 130.9 172 151.6c-25.5-34.2-45.3-87.9-55.4-151.6zm35.4 0h170.6c-11.6 73.4-38.3 128-88.3 128s-76.7-54.6-88.3-128zm190.6 0H495.3c-30 75.8-93.7 130.9-172 151.6c25.5-34.2 45.3-87.9 55.4-151.6z"/></svg>',
-        'shield-halved': '<svg class="brochure-svg" viewBox="0 0 512 512" fill="currentColor"><path d="M256 0c4.6 0 9.2 1 13.4 2.9L457.7 82.8c22 9.3 38.4 31 38.3 57.2c-.5 99.2-41.3 280.7-213.6 363.2c-16.7 8-36.1 8-52.8 0C57.3 420.7 16.5 239.2 16 140c-.1-26.2 16.3-47.9 38.3-57.2L242.7 2.9C246.8 1 251.4 0 256 0zM256 66.8v381.1c121.7-58.4 157.9-189.6 159.9-270.8L256 94.7V66.8z"/></svg>'
+        'shield-halved': '<svg class="brochure-svg" viewBox="0 0 512 512" fill="currentColor"><path d="M256 0c4.6 0 9.2 1 13.4 2.9L457.7 82.8c22 9.3 38.4 31 38.3 57.2c-.5 99.2-41.3 280.7-213.6 363.2c-16.7 8-36.1 8-52.8 0C57.3 420.7 16.5 239.2 16 140c-.1-26.2 16.3-47.9 38.3-57.2L242.7 2.9C246.8 1 251.4 0 256 0zM256 66.8v381.1c121.7-58.4 157.9-189.6 159.9-270.8L256 94.7V66.8z"/></svg>',
+        'bolt': '<svg class="brochure-svg" viewBox="0 0 448 512" fill="currentColor"><path d="M349.4 44.6c5.9-13.7 1.5-29.7-10.6-38.5s-28.6-8-39.9 1.8l-256 224c-10 8.8-13.6 22.9-8.9 35.3S50.7 288 64 288h111.5L98.6 467.4c-5.9 13.7-1.5 29.7 10.6 38.5s28.6 8 39.9-1.8l256-224c10-8.8 13.6-22.9 8.9-35.3s-16.6-20.7-30-20.7H272.5L349.4 44.6z"/></svg>',
+        'arrows-up-to-line': '<svg class="brochure-svg" viewBox="0 0 448 512" fill="currentColor"><path d="M32 32C14.3 32 0 46.3 0 64S14.3 96 32 96H416c17.7 0 32-14.3 32-32s-14.3-32-32-32H32zM246.6 153.4c-12.5-12.5-32.8-12.5-45.3 0l-96 96c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 253.3V448c0 17.7 14.3 32 32 32s32-14.3 32-32V253.3l41.4 41.4c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3l-96-96z"/></svg>',
+        'weight-hanging': '<svg class="brochure-svg" viewBox="0 0 512 512" fill="currentColor"><path d="M224 96a32 32 0 1 1 64 0 32 32 0 1 1 -64 0zm122.5 32c3.5-10 5.5-20.8 5.5-32c0-53-43-96-96-96s-96 43-96 96c0 11.2 1.9 22 5.5 32H120c-22 0-41.2 15-46.6 36.4l-72 288c-3.6 14.3-.4 29.5 8.7 41.2S33.2 512 48 512H464c14.8 0 28.7-6.8 37.8-18.5s12.3-26.8 8.7-41.2l-72-288C433.2 143 414 128 392 128H346.5z"/></svg>',
+        'elevator': '<svg class="brochure-svg" viewBox="0 0 512 512" fill="currentColor"><path d="M132.7 4.7c12.5-6.2 27.5-6.2 40 0l64 32c16.5 8.2 26.6 25.1 26.6 43.3V112H96V80c0-18.2 10.1-35.1 26.6-43.3l10.1-32zM352 48V160H464L352 48zM64 160C28.7 160 0 188.7 0 224V448c0 35.3 28.7 64 64 64H448c35.3 0 64-28.7 64-64V224c0-35.3-28.7-64-64-64H64zm160 96l56 72H168l56-72zm0 160l-56-72H280l-56 72z"/></svg>'
     };
+
+    function cleanBrochureField(val) {
+        if (val === undefined || val === null) return '';
+        const s = String(val).trim();
+        if (!s || s === '0' || /^n\/?a$/i.test(s) || /^none$/i.test(s) || s === '-') return '';
+        return s;
+    }
+
+    function formatBrochureHeight(val) {
+        const s = cleanBrochureField(val);
+        if (!s) return '';
+        return /\b(ft|feet|m)\b/i.test(s) ? s : `${s} ft`;
+    }
+
+    /**
+     * Derives the 6 brochure specification boxes and Key Features checklist
+     * directly from Dashboard > Properties > Manage Properties > Property Listing fields.
+     */
+    function deriveBrochureListingDetails(prop, rawIntent) {
+        const landAreaVal = cleanBrochureField(prop.landArea) || 'N/A';
+        const builtUpVal = cleanBrochureField(prop.builtUp) || cleanBrochureField(prop.size) || 'N/A';
+        const tenureVal = cleanBrochureField(prop.tenure) || 'Freehold';
+        const propertyTypeVal = cleanBrochureField(prop.type) || 'Detached Factory';
+
+        const rawPower = cleanBrochureField(prop.power);
+        let powerDisplay = '';
+        if (rawPower) {
+            const cleanedPower = rawPower.replace(/\s*amps?$/i, '').trim();
+            if (cleanedPower && cleanedPower !== '0') {
+                powerDisplay = `${cleanedPower} Amp`;
+            }
+        }
+
+        const clearH = cleanBrochureField(prop.ceilingClear) || cleanBrochureField(prop.ceilingHeight) || cleanBrochureField(prop.height);
+        const eaveH = cleanBrochureField(prop.ceilingEave);
+        const peakH = cleanBrochureField(prop.ceilingPeak);
+
+        let ceilingSpec = null;
+        if (clearH) {
+            ceilingSpec = { icon: 'arrows-up-to-line', label: 'Clear Height', value: formatBrochureHeight(clearH) };
+        } else if (eaveH) {
+            ceilingSpec = { icon: 'arrows-up-to-line', label: 'Eave Height', value: formatBrochureHeight(eaveH) };
+        } else if (peakH) {
+            ceilingSpec = { icon: 'arrows-up-to-line', label: 'Peak Height', value: formatBrochureHeight(peakH) };
+        }
+
+        const rawFloor = cleanBrochureField(prop.floorLoading) || cleanBrochureField(prop.floorLoad);
+        const floorDisplay = rawFloor
+            ? (/kn|ton|kg|psf/i.test(rawFloor) ? rawFloor : `${rawFloor} kN/m²`)
+            : '';
+
+        const rawBays = cleanBrochureField(prop.loadingBay);
+        const bayDisplay = rawBays
+            ? (/bay/i.test(rawBays) ? rawBays : `${rawBays} ${Number(rawBays) === 1 ? 'Bay' : 'Bays'}`)
+            : '';
+
+        const rawLift = cleanBrochureField(prop.lift);
+        const liftDisplay = rawLift
+            ? (/unit|lift/i.test(rawLift) ? rawLift : `${rawLift} ${Number(rawLift) === 1 ? 'Unit' : 'Units'}`)
+            : '';
+
+        const usageVal = cleanBrochureField(prop.usage);
+        const compriseVal = cleanBrochureField(prop.compriseUnits);
+        const locationVal = cleanBrochureField(prop.location) || 'Selangor';
+        const intentLabelVal = rawIntent === 'RENT' ? 'For Rent' : 'For Sale';
+
+        // Pick top 2 real technical / listing specs from Dashboard instead of estimating Warehouse/Office split
+        const extraSpecCandidates = [];
+        if (powerDisplay) extraSpecCandidates.push({ icon: 'bolt', label: 'Power Supply', value: powerDisplay });
+        if (ceilingSpec) extraSpecCandidates.push(ceilingSpec);
+        if (floorDisplay) extraSpecCandidates.push({ icon: 'weight-hanging', label: 'Floor Loading', value: floorDisplay });
+        if (bayDisplay) extraSpecCandidates.push({ icon: 'truck-fast', label: 'Loading Bays', value: bayDisplay });
+        if (liftDisplay) extraSpecCandidates.push({ icon: 'elevator', label: 'Cargo Lift', value: liftDisplay });
+        if (usageVal) extraSpecCandidates.push({ icon: 'gear', label: 'Usage', value: usageVal });
+        if (compriseVal) extraSpecCandidates.push({ icon: 'building-user', label: 'Comprises', value: compriseVal });
+
+        if (extraSpecCandidates.length < 2) {
+            extraSpecCandidates.push({ icon: 'location-dot', label: 'Location', value: locationVal });
+        }
+        if (extraSpecCandidates.length < 2) {
+            extraSpecCandidates.push({ icon: 'bullseye', label: 'Listing Intent', value: intentLabelVal });
+        }
+
+        const specBoxes = [
+            { icon: 'square-full', label: 'Land Area', value: landAreaVal },
+            { icon: 'city', label: 'Built-Up Area', value: builtUpVal },
+            extraSpecCandidates[0],
+            extraSpecCandidates[1],
+            { icon: 'file-contract', label: 'Tenure', value: tenureVal },
+            { icon: 'industry', label: 'Property Type', value: propertyTypeVal }
+        ];
+
+        // Key Features Checklist strictly reflecting structured Dashboard listing fields
+        const checklist = [];
+        if (landAreaVal !== 'N/A') checklist.push(`Land area: ${landAreaVal}`);
+        if (builtUpVal !== 'N/A') checklist.push(`Built-up area: ${builtUpVal}`);
+        checklist.push(`${propertyTypeVal}`);
+        checklist.push(`Tenure: ${tenureVal}`);
+        if (usageVal) checklist.push(`Usage: ${usageVal}`);
+        if (powerDisplay) checklist.push(`Power supply: ${powerDisplay}`);
+        if (clearH) checklist.push(`Clear ceiling height: ${formatBrochureHeight(clearH)}`);
+        if (eaveH && eaveH !== clearH) checklist.push(`Eave height: ${formatBrochureHeight(eaveH)}`);
+        if (peakH && peakH !== clearH && peakH !== eaveH) checklist.push(`Peak height: ${formatBrochureHeight(peakH)}`);
+        if (floorDisplay) checklist.push(`Floor loading: ${floorDisplay}`);
+        if (bayDisplay) checklist.push(`Loading bays: ${bayDisplay}`);
+        if (liftDisplay) checklist.push(`Cargo lift: ${liftDisplay}`);
+        if (compriseVal) checklist.push(`Comprises: ${compriseVal}`);
+
+        const parkVal = cleanBrochureField(prop.park);
+        checklist.push(parkVal ? `Park: ${parkVal}` : `Location: ${locationVal}`);
+
+        const statusVal = cleanBrochureField(prop.status);
+        if (checklist.length < 10 && statusVal) {
+            checklist.push(`Listing status: ${statusVal}`);
+        }
+
+        return {
+            specBoxes,
+            displayedChecks: checklist.slice(0, 10)
+        };
+    }
+
+    if (typeof window !== 'undefined') {
+        window._deriveBrochureListingDetails = deriveBrochureListingDetails;
+    }
 
     function bIcon(name, style = '') {
         const svg = BROCHURE_SVG_ICONS[name] || '';
@@ -1415,58 +1544,8 @@
             isThirdSlotBrandLogo = true;
         }
 
-        // Derived specs for 6 icon blocks
-        const landAreaVal = prop.landArea || 'N/A';
-        const builtUpVal = (prop.size && prop.size !== 'N/A') ? prop.size : 'N/A';
-
-        let warehouseVal = 'Spacious';
-        let officeVal = 'Modern';
-        if (prop.warehouseSize) {
-            warehouseVal = prop.warehouseSize;
-        } else if (builtUpVal !== 'N/A') {
-            const sqftNum = parseFloat(String(builtUpVal).replace(/,/g, '').replace(/[^\d.]/g, ''));
-            if (!isNaN(sqftNum) && sqftNum > 0) {
-                warehouseVal = `${Math.round(sqftNum * 0.81).toLocaleString()} sqft`;
-            }
-        } else if (prop.ceilingClear && prop.ceilingClear !== '0') {
-            warehouseVal = `Clear: ${prop.ceilingClear} ft`;
-        }
-
-        if (prop.officeSize) {
-            officeVal = prop.officeSize;
-        } else if (builtUpVal !== 'N/A') {
-            const sqftNum = parseFloat(String(builtUpVal).replace(/,/g, '').replace(/[^\d.]/g, ''));
-            if (!isNaN(sqftNum) && sqftNum > 0) {
-                officeVal = `${Math.round(sqftNum * 0.19).toLocaleString()} sqft`;
-            }
-        } else if (prop.power && prop.power !== '0') {
-            officeVal = `${prop.power} Amp`;
-        }
-
-        const tenureVal = prop.tenure || 'Freehold';
-        const propertyTypeVal = prop.type || 'Detached Factory';
-
-        // Key Features Checklist
-        const checklist = [];
-        if (landAreaVal !== 'N/A') checklist.push(`Land area: ${landAreaVal}`);
-        checklist.push(`${propertyTypeVal}`);
-        if (builtUpVal !== 'N/A') checklist.push(`Total built-up: ${builtUpVal}`);
-        checklist.push(`Tenure: ${tenureVal}`);
-        if (warehouseVal && warehouseVal !== 'Spacious') checklist.push(`Warehouse: ${warehouseVal}`);
-        if (officeVal && officeVal !== 'Modern') checklist.push(`Office: ${officeVal}`);
-        const cleanPower = String(prop.power || '').replace(/amp/gi, '').trim();
-        if (cleanPower && cleanPower !== '0') checklist.push(`Power: ${cleanPower} Amp`);
-        if (prop.ceilingClear && prop.ceilingClear !== '0') checklist.push(`Clear ceiling: ${prop.ceilingClear} ft`);
-        else if (prop.ceilingEave && prop.ceilingEave !== '0') checklist.push(`Eave height: ${prop.ceilingEave} ft`);
-        if (prop.floorLoading && prop.floorLoading !== '0') checklist.push(`Floor load: ${prop.floorLoading} kN/m²`);
-        if (prop.loadingBay && prop.loadingBay !== '0') checklist.push(`Loading bays: ${prop.loadingBay} bays`);
-        if (prop.lift && prop.lift !== '0') checklist.push(`Cargo lift: ${prop.lift} units`);
-        checklist.push(`Strategic location in ${prop.location || 'Selangor'}`);
-        checklist.push(`Wide container 40ft trailer accessibility`);
-        checklist.push(`Immediate move-in / Ready condition`);
-
-        // Top 10 checklist items
-        const displayedChecks = checklist.slice(0, 10);
+        // Derived specs and Key Features strictly following Dashboard > Properties > Property Listing fields
+        const { specBoxes, displayedChecks } = deriveBrochureListingDetails(prop, rawIntent);
 
         // Assigned Agent
         const agent = resolveAgentForProp(prop);
@@ -1629,47 +1708,12 @@
 
             <!-- 4. 6-Box Key Specifications Row -->
             <div class="brochure-specs-bar">
-                <!-- 1. Land Area -->
+                ${specBoxes.map(spec => `
                 <div class="brochure-spec-item">
-                    <div class="brochure-spec-icon">${bIcon('square-full')}</div>
-                    <span class="brochure-spec-label">Land Area</span>
-                    <strong class="brochure-spec-val" style="color: ${theme.primaryDark};">${escapeHtml(landAreaVal)}</strong>
-                </div>
-
-                <!-- 2. Total Built-Up -->
-                <div class="brochure-spec-item">
-                    <div class="brochure-spec-icon">${bIcon('city')}</div>
-                    <span class="brochure-spec-label">Total Built-Up</span>
-                    <strong class="brochure-spec-val" style="color: ${theme.primaryDark};">${escapeHtml(builtUpVal)}</strong>
-                </div>
-
-                <!-- 3. Warehouse -->
-                <div class="brochure-spec-item">
-                    <div class="brochure-spec-icon">${bIcon('warehouse')}</div>
-                    <span class="brochure-spec-label">Warehouse</span>
-                    <strong class="brochure-spec-val" style="color: ${theme.primaryDark};">${escapeHtml(warehouseVal)}</strong>
-                </div>
-
-                <!-- 4. Office -->
-                <div class="brochure-spec-item">
-                    <div class="brochure-spec-icon">${bIcon('building-user')}</div>
-                    <span class="brochure-spec-label">Office</span>
-                    <strong class="brochure-spec-val" style="color: ${theme.primaryDark};">${escapeHtml(officeVal)}</strong>
-                </div>
-
-                <!-- 5. Tenure -->
-                <div class="brochure-spec-item">
-                    <div class="brochure-spec-icon">${bIcon('file-contract')}</div>
-                    <span class="brochure-spec-label">Tenure</span>
-                    <strong class="brochure-spec-val" style="color: ${theme.primaryDark};">${escapeHtml(tenureVal)}</strong>
-                </div>
-
-                <!-- 6. Property Type -->
-                <div class="brochure-spec-item">
-                    <div class="brochure-spec-icon">${bIcon('industry')}</div>
-                    <span class="brochure-spec-label">Property Type</span>
-                    <strong class="brochure-spec-val" style="color: ${theme.primaryDark};">${escapeHtml(propertyTypeVal)}</strong>
-                </div>
+                    <div class="brochure-spec-icon">${bIcon(spec.icon)}</div>
+                    <span class="brochure-spec-label">${escapeHtml(spec.label)}</span>
+                    <strong class="brochure-spec-val" style="color: ${theme.primaryDark};">${escapeHtml(spec.value)}</strong>
+                </div>`).join('')}
             </div>
 
             <!-- 5. 3-Photo Showcase Gallery Strip -->
