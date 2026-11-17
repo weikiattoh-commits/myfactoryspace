@@ -1332,6 +1332,103 @@ function initDashboardApp() {
         return formatDateWithTimezone(propDate);
     }
 
+    function damerauLevenshtein(a, b) {
+        const m = a.length, n = b.length;
+        if (m === 0) return n;
+        if (n === 0) return m;
+        const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+        for (let i = 0; i <= m; i++) dp[i][0] = i;
+        for (let j = 0; j <= n; j++) dp[0][j] = j;
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+                if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+                    dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + cost);
+                }
+            }
+        }
+        return dp[m][n];
+    }
+
+    function normalizePhoneticWord(w) {
+        return String(w || '').toLowerCase()
+            .replace(/[cq]/g, 'k')
+            .replace(/ph/g, 'f')
+            .replace(/ie$/g, 'i')
+            .replace(/y/g, 'i')
+            .replace(/(.)\1+/g, '$1');
+    }
+
+    /**
+     * Flexible punctuation-, separator-, and typo-tolerant search matcher.
+     */
+    function matchesFlexibleSearch(haystackText, queryText) {
+        const rawQ = String(queryText || '').trim();
+        if (!rawQ) return true;
+        const rawH = String(haystackText || '');
+        if (!rawH) return false;
+
+        const normSpaced = (s) => s.toLowerCase()
+            .replace(/[^a-z0-9.]+/g, ' ')
+            .replace(/(^|[^0-9])\./g, '$1 ')
+            .replace(/\.($|[^0-9])/g, ' $1')
+            .replace(/\s+/g, ' ')
+            .trim();
+        const normCompact = (s) => s.toLowerCase()
+            .replace(/[^a-z0-9.]+/g, '')
+            .replace(/(^|[^0-9])\./g, '$1')
+            .replace(/\.($|[^0-9])/g, '$1');
+
+        const spacedH = normSpaced(rawH);
+        const spacedQ = normSpaced(rawQ);
+        if (spacedQ && spacedH.includes(spacedQ)) return true;
+
+        const compactH = normCompact(rawH);
+        const compactQ = normCompact(rawQ);
+        if (compactQ && compactH.includes(compactQ)) return true;
+
+        if (!spacedQ) return false;
+        const tokens = spacedQ.split(' ').filter(Boolean);
+        const hWords = spacedH.split(' ').filter(Boolean);
+        const candidateWords = [];
+        for (let i = 0; i < hWords.length; i++) {
+            candidateWords.push(hWords[i]);
+            if (i + 1 < hWords.length) {
+                candidateWords.push(hWords[i] + hWords[i + 1]);
+            }
+        }
+
+        const isFuzzyWordMatch = (cleanTok) => {
+            if (!/^[a-z]+$/.test(cleanTok) || cleanTok.length < 4) return false;
+            const maxDist = cleanTok.length >= 7 ? 2 : (cleanTok.length >= 5 ? 1 : 0);
+            const phonTok = normalizePhoneticWord(cleanTok);
+
+            return candidateWords.some(cand => {
+                const cleanCand = cand.replace(/[^a-z0-9]/g, '');
+                if (!cleanCand || cleanCand.length < 4) return false;
+                const phonCand = normalizePhoneticWord(cleanCand);
+                if (phonTok === phonCand) return true;
+                if (maxDist === 0) return false;
+                if (Math.abs(cleanTok.length - cleanCand.length) <= maxDist && damerauLevenshtein(cleanTok, cleanCand) <= maxDist) {
+                    return true;
+                }
+                if (Math.abs(phonTok.length - phonCand.length) <= maxDist && damerauLevenshtein(phonTok, phonCand) <= maxDist) {
+                    return true;
+                }
+                return false;
+            });
+        };
+
+        if (isFuzzyWordMatch(compactQ)) return true;
+
+        return tokens.every(tok => {
+            const cleanTok = normCompact(tok);
+            if (spacedH.includes(tok) || (cleanTok && compactH.includes(cleanTok))) return true;
+            return isFuzzyWordMatch(cleanTok);
+        });
+    }
+
     let currentAssignedPropSort = { column: null, direction: 'asc' };
 
     function renderTable() {
@@ -1443,10 +1540,10 @@ function initDashboardApp() {
             const matchesIntent = (intentValFilter === 'All') || (propIntent.toLowerCase() === intentValFilter.toLowerCase());
 
             const searchHaystack = [
-                prop.title, prop.location, prop.section, prop.park, prop.type, prop.price, prop.tenure, prop.landArea, prop.builtUp, prop.power, prop.ceilingHeight, prop.floorLoading, prop.specs, prop.road
-            ].filter(Boolean).join(' ').toLowerCase();
+                prop.title, prop.location, prop.section, prop.park, prop.type, prop.price, prop.tenure, prop.landArea, prop.builtUp, prop.size, prop.power, prop.ceilingHeight, prop.floorLoading, prop.specs, prop.road
+            ].filter(Boolean).join(' ');
 
-            const matchesSearch = !searchVal || searchHaystack.includes(searchVal);
+            const matchesSearch = matchesFlexibleSearch(searchHaystack, searchVal);
             return matchesCity && matchesType && matchesIntent && matchesSearch;
         });
 
@@ -1747,10 +1844,10 @@ function initDashboardApp() {
             const matchesIntent = (intentVal === 'All') || (propIntent.toLowerCase() === intentVal.toLowerCase());
 
             const searchHaystack = [
-                prop.title, prop.location, prop.section, prop.park, prop.type, prop.price, prop.tenure, prop.specs, prop.road
-            ].filter(Boolean).join(' ').toLowerCase();
+                prop.title, prop.location, prop.section, prop.park, prop.type, prop.price, prop.tenure, prop.landArea, prop.builtUp, prop.size, prop.specs, prop.road
+            ].filter(Boolean).join(' ');
 
-            const matchesSearch = !searchVal || searchHaystack.includes(searchVal);
+            const matchesSearch = matchesFlexibleSearch(searchHaystack, searchVal);
             return matchesCity && matchesType && matchesIntent && matchesSearch;
         });
 
@@ -4148,17 +4245,10 @@ function initDashboardApp() {
             const matchesAgent = (agentFilterVal === 'All') || (assignedAgent && String(assignedAgent.id) === String(agentFilterVal));
 
             const matchesStatus = (statusFilterVal === 'All') || (item.status === statusFilterVal);
-            const matchesSearch = !searchVal || 
-                (item.name && item.name.toLowerCase().includes(searchVal)) ||
-                (item.phone && item.phone.toLowerCase().includes(searchVal)) ||
-                (item.email && item.email.toLowerCase().includes(searchVal)) ||
-                (item.interest && item.interest.toLowerCase().includes(searchVal)) ||
-                (item.title && item.title.toLowerCase().includes(searchVal)) ||
-                (item.location && item.location.toLowerCase().includes(searchVal)) ||
-                (item.type && item.type.toLowerCase().includes(searchVal)) ||
-                (item.message && item.message.toLowerCase().includes(searchVal)) ||
-                (itemPark && itemPark.toLowerCase().includes(searchVal)) ||
-                (assignedAgent && assignedAgent.name.toLowerCase().includes(searchVal));
+            const leadHaystack = [
+                item.name, item.phone, item.email, item.interest, item.title, item.location, item.type, item.message, itemPark, (assignedAgent ? assignedAgent.name : '')
+            ].filter(Boolean).join(' ');
+            const matchesSearch = matchesFlexibleSearch(leadHaystack, searchVal);
 
             return matchesPark && matchesAgent && matchesStatus && matchesSearch;
         });
@@ -4845,14 +4935,10 @@ function initDashboardApp() {
             const matchesAgent = (agentFilterVal === 'All') || (assignedAgent && String(assignedAgent.id) === String(agentFilterVal));
 
             const matchesStatus = (statusFilterVal === 'All') || (item.status === statusFilterVal);
-            const matchesSearch = !searchVal || 
-                (item.name && item.name.toLowerCase().includes(searchVal)) ||
-                (item.phone && item.phone.toLowerCase().includes(searchVal)) ||
-                (item.email && item.email.toLowerCase().includes(searchVal)) ||
-                (item.location && item.location.toLowerCase().includes(searchVal)) ||
-                (item.type && item.type.toLowerCase().includes(searchVal)) ||
-                (itemPark && itemPark.toLowerCase().includes(searchVal)) ||
-                (assignedAgent && assignedAgent.name.toLowerCase().includes(searchVal));
+            const ownerHaystack = [
+                item.name, item.phone, item.email, item.location, item.type, itemPark, (assignedAgent ? assignedAgent.name : '')
+            ].filter(Boolean).join(' ');
+            const matchesSearch = matchesFlexibleSearch(ownerHaystack, searchVal);
 
             return matchesPark && matchesAgent && matchesStatus && matchesSearch;
         });
@@ -7152,8 +7238,8 @@ function initDashboardApp() {
 
         let filteredParks = assignedParksList.filter(p => {
             const matchesCity = (cityVal === 'All') || (p.city === cityVal);
-            const searchHaystack = [p.name, p.city, p.section, (p.handlingAgent ? p.handlingAgent.name : '')].filter(Boolean).join(' ').toLowerCase();
-            const matchesSearch = !searchVal || searchHaystack.includes(searchVal);
+            const searchHaystack = [p.name, p.city, p.section, (p.handlingAgent ? p.handlingAgent.name : '')].filter(Boolean).join(' ');
+            const matchesSearch = matchesFlexibleSearch(searchHaystack, searchVal);
             return matchesCity && matchesSearch;
         });
 
@@ -7264,8 +7350,8 @@ function initDashboardApp() {
 
         let filteredList = list.filter(p => {
             const matchesCity = (cityVal === 'All') || (p.city === cityVal);
-            const searchHaystack = [p.name, p.city, p.section].filter(Boolean).join(' ').toLowerCase();
-            const matchesSearch = !searchVal || searchHaystack.includes(searchVal);
+            const searchHaystack = [p.name, p.city, p.section].filter(Boolean).join(' ');
+            const matchesSearch = matchesFlexibleSearch(searchHaystack, searchVal);
             return matchesCity && matchesSearch;
         });
 

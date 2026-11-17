@@ -477,6 +477,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.properties = properties;
                 window._supabaseSyncComplete = true;
                 safeLocalStorageSet('industria_properties', properties);
+                if (typeof syncFilterUI === 'function') {
+                    syncFilterUI();
+                }
+                if (typeof populateCityParkDropdowns === 'function') {
+                    populateCityParkDropdowns();
+                }
                 if (typeof renderProperties === 'function') {
                     renderProperties();
                 }
@@ -511,6 +517,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 parks = parksObj;
                 safeLocalStorageSet('industria_industrial_parks', parks);
+                if (typeof syncFilterUI === 'function') {
+                    syncFilterUI();
+                }
                 if (typeof populateCityParkDropdowns === 'function') {
                     populateCityParkDropdowns();
                 }
@@ -1138,6 +1147,123 @@ document.addEventListener('DOMContentLoaded', () => {
     const sectionSelectFilter = document.getElementById('section-select-filter');
     const parkSelectFilter = document.getElementById('park-select-filter');
 
+    function damerauLevenshtein(a, b) {
+        const m = a.length, n = b.length;
+        if (m === 0) return n;
+        if (n === 0) return m;
+        const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+        for (let i = 0; i <= m; i++) dp[i][0] = i;
+        for (let j = 0; j <= n; j++) dp[0][j] = j;
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                dp[i][j] = Math.min(dp[i - 1][j] + 1, dp[i][j - 1] + 1, dp[i - 1][j - 1] + cost);
+                if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+                    dp[i][j] = Math.min(dp[i][j], dp[i - 2][j - 2] + cost);
+                }
+            }
+        }
+        return dp[m][n];
+    }
+
+    function normalizePhoneticWord(w) {
+        return String(w || '').toLowerCase()
+            .replace(/[cq]/g, 'k')
+            .replace(/ph/g, 'f')
+            .replace(/ie$/g, 'i')
+            .replace(/y/g, 'i')
+            .replace(/(.)\1+/g, '$1');
+    }
+
+    /**
+     * Flexible punctuation-, separator-, and typo-tolerant search matcher.
+     * Matches queries like "hicom glenmarie", "hicom glenmary", "hikom glenmarie", or "ipark 2".
+     */
+    function matchesFlexibleSearch(haystackText, queryText) {
+        const rawQ = String(queryText || '').trim();
+        if (!rawQ) return true;
+        const rawH = String(haystackText || '');
+        if (!rawH) return false;
+
+        const normSpaced = (s) => s.toLowerCase()
+            .replace(/[^a-z0-9.]+/g, ' ')
+            .replace(/(^|[^0-9])\./g, '$1 ')
+            .replace(/\.($|[^0-9])/g, ' $1')
+            .replace(/\s+/g, ' ')
+            .trim();
+        const normCompact = (s) => s.toLowerCase()
+            .replace(/[^a-z0-9.]+/g, '')
+            .replace(/(^|[^0-9])\./g, '$1')
+            .replace(/\.($|[^0-9])/g, '$1');
+
+        const spacedH = normSpaced(rawH);
+        const spacedQ = normSpaced(rawQ);
+        if (spacedQ && spacedH.includes(spacedQ)) return true;
+
+        const compactH = normCompact(rawH);
+        const compactQ = normCompact(rawQ);
+        if (compactQ && compactH.includes(compactQ)) return true;
+
+        if (!spacedQ) return false;
+        const tokens = spacedQ.split(' ').filter(Boolean);
+        const hWords = spacedH.split(' ').filter(Boolean);
+        const candidateWords = [];
+        for (let i = 0; i < hWords.length; i++) {
+            candidateWords.push(hWords[i]);
+            if (i + 1 < hWords.length) {
+                candidateWords.push(hWords[i] + hWords[i + 1]);
+            }
+        }
+
+        const isFuzzyWordMatch = (cleanTok) => {
+            if (!/^[a-z]+$/.test(cleanTok) || cleanTok.length < 4) return false;
+            const maxDist = cleanTok.length >= 7 ? 2 : (cleanTok.length >= 5 ? 1 : 0);
+            const phonTok = normalizePhoneticWord(cleanTok);
+
+            return candidateWords.some(cand => {
+                const cleanCand = cand.replace(/[^a-z0-9]/g, '');
+                if (!cleanCand || cleanCand.length < 4) return false;
+                const phonCand = normalizePhoneticWord(cleanCand);
+                if (phonTok === phonCand) return true;
+                if (maxDist === 0) return false;
+                if (Math.abs(cleanTok.length - cleanCand.length) <= maxDist && damerauLevenshtein(cleanTok, cleanCand) <= maxDist) {
+                    return true;
+                }
+                if (Math.abs(phonTok.length - phonCand.length) <= maxDist && damerauLevenshtein(phonTok, phonCand) <= maxDist) {
+                    return true;
+                }
+                return false;
+            });
+        };
+
+        if (isFuzzyWordMatch(compactQ)) return true;
+
+        return tokens.every(tok => {
+            const cleanTok = normCompact(tok);
+            if (spacedH.includes(tok) || (cleanTok && compactH.includes(cleanTok))) return true;
+            return isFuzzyWordMatch(cleanTok);
+        });
+    }
+
+    function getPublicActiveProperties() {
+        if (!Array.isArray(properties)) return [];
+        return properties.filter(p => p && typeof p === 'object' && p.status !== 'Pending' && p.status !== 'Inactive');
+    }
+
+    function isParkHidden(city, parkName) {
+        if (!parkName || !parks || typeof parks !== 'object') return false;
+        const normName = String(parkName).trim().toLowerCase();
+        const checkList = (city && Array.isArray(parks[city]))
+            ? parks[city]
+            : Object.values(parks).reduce((acc, list) => Array.isArray(list) ? acc.concat(list) : acc, []);
+        const found = checkList.find(p => {
+            if (!p) return false;
+            const pName = typeof p === 'object' ? p.name : p;
+            return pName && String(pName).trim().toLowerCase() === normName;
+        });
+        return !!(found && typeof found === 'object' && found.hidden);
+    }
+
     function populateSectionDropdown() {
         if (!sectionSelectFilter) return;
         
@@ -1148,33 +1274,14 @@ document.addEventListener('DOMContentLoaded', () => {
         defaultOpt.textContent = activeCity === 'All' ? 'All Sections' : `All Sections in ${activeCity}`;
         sectionSelectFilter.appendChild(defaultOpt);
         
-        let availableSections = new Set();
-        let parksList = [];
-        
-        if (activeCity !== 'All' && parks[activeCity]) {
-            parksList = parks[activeCity];
-        } else {
-            for (const c in parks) {
-                if (Array.isArray(parks[c])) {
-                    parksList = parksList.concat(parks[c]);
-                }
+        const availableSections = new Set();
+        getPublicActiveProperties().forEach(p => {
+            if (activeCity === 'All' || p.location === activeCity) {
+                if (p.park && isParkHidden(p.location, p.park)) return;
+                const sec = getSectionForProperty(p);
+                if (sec) availableSections.add(sec);
             }
-        }
-        
-        parksList.forEach(p => {
-            const pName = typeof p === 'object' ? p.name : p;
-            const pSec = typeof p === 'object' && p.section ? p.section : getDefaultSectionForPark(pName);
-            if (pSec) availableSections.add(pSec);
         });
-
-        if (Array.isArray(properties)) {
-            properties.forEach(p => {
-                if (activeCity === 'All' || p.location === activeCity) {
-                    const sec = getSectionForProperty(p);
-                    if (sec) availableSections.add(sec);
-                }
-            });
-        }
         
         Array.from(availableSections).sort().forEach(secName => {
             const opt = document.createElement('option');
@@ -1183,6 +1290,9 @@ document.addEventListener('DOMContentLoaded', () => {
             sectionSelectFilter.appendChild(opt);
         });
         
+        if (activeSection !== 'All' && !availableSections.has(activeSection)) {
+            activeSection = 'All';
+        }
         sectionSelectFilter.value = activeSection;
     }
 
@@ -1202,39 +1312,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         parkSelectFilter.appendChild(defaultOpt);
         
-        let availableParks = new Set();
-        let parksList = [];
-        
-        if (activeCity !== 'All' && parks[activeCity]) {
-            parksList = parks[activeCity];
-        } else {
-            for (const c in parks) {
-                if (Array.isArray(parks[c])) {
-                    parksList = parksList.concat(parks[c]);
-                }
-            }
-        }
-        
-        parksList.forEach(p => {
-            const pName = typeof p === 'object' ? p.name : p;
-            const pSec = typeof p === 'object' && p.section ? p.section : getDefaultSectionForPark(pName);
+        const availableParks = new Set();
+        getPublicActiveProperties().forEach(p => {
+            const matchesCity = activeCity === 'All' || p.location === activeCity;
+            const propSec = getSectionForProperty(p);
+            const matchesSection = activeSection === 'All' || (propSec && propSec.toLowerCase() === activeSection.toLowerCase());
             
-            if (activeSection === 'All' || (pSec && pSec.toLowerCase() === activeSection.toLowerCase())) {
-                if (pName) availableParks.add(pName);
+            if (matchesCity && matchesSection && p.park && !isParkHidden(p.location, p.park)) {
+                availableParks.add(p.park);
             }
         });
-
-        if (Array.isArray(properties)) {
-            properties.forEach(p => {
-                const matchesCity = activeCity === 'All' || p.location === activeCity;
-                const propSec = getSectionForProperty(p);
-                const matchesSection = activeSection === 'All' || (propSec && propSec.toLowerCase() === activeSection.toLowerCase());
-                
-                if (matchesCity && matchesSection && p.park) {
-                    availableParks.add(p.park);
-                }
-            });
-        }
         
         Array.from(availableParks).sort().forEach(parkName => {
             const opt = document.createElement('option');
@@ -2640,10 +2727,10 @@ Could you please share more information and arrange a viewing appointment? Thank
             const matchIntent = activeIntent === 'All' || propIntent.toLowerCase() === activeIntent.toLowerCase();
 
             const searchHaystack = [
-                prop.title, prop.location, prop.section, prop.park, prop.type, prop.price, prop.tenure, prop.landArea, prop.builtUp, prop.power, prop.ceilingHeight, prop.floorLoading, prop.specs, prop.road, prop.description
-            ].filter(Boolean).join(' ').toLowerCase();
+                prop.title, prop.location, prop.section, prop.park, prop.type, prop.price, prop.tenure, prop.landArea, prop.builtUp, prop.size, prop.power, prop.ceilingHeight, prop.floorLoading, prop.specs, prop.road, prop.description
+            ].filter(Boolean).join(' ');
 
-            const matchKw = !searchKw || searchHaystack.includes(searchKw);
+            const matchKw = matchesFlexibleSearch(searchHaystack, searchKw);
 
             let matchRange = true;
             if (hasRangeFilter) {
@@ -2762,7 +2849,7 @@ Could you please share more information and arrange a viewing appointment? Thank
                     }
                 }
 
-                resultsCountEl.textContent = `Showing ${filtered.length} property${filtered.length === 1 ? '' : 'ies'} (${filterLabels.join(', ')})`;
+                resultsCountEl.textContent = `Showing ${filtered.length} ${filtered.length === 1 ? 'property' : 'properties'} (${filterLabels.join(', ')})`;
             } else {
                 let sortName = 'Date Added';
                 if (activeSort === 'location-asc' || activeSort === 'location-desc') sortName = 'Location / City';
@@ -2949,29 +3036,56 @@ Could you please share more information and arrange a viewing appointment? Thank
 
     // --- 7. CITY & PARK DROPDOWNS ---
     function populateCityParkDropdowns() {
+        const activeProps = getPublicActiveProperties();
         document.querySelectorAll('.city-park-select').forEach(select => {
             const city = select.getAttribute('data-city');
             select.innerHTML = `
                 <option value="" disabled selected hidden style="display:none;"></option>
                 <option value="All">All Parks in ${city}</option>
             `;
-            if (city && parks && parks[city] && Array.isArray(parks[city])) {
+            if (!city) {
+                select.value = '';
+                return;
+            }
+
+            const cityActiveProps = activeProps.filter(p => p.location === city);
+            const activeParkNames = new Set();
+            cityActiveProps.forEach(p => {
+                if (p.park) activeParkNames.add(String(p.park).trim().toLowerCase());
+            });
+
+            const seenParks = new Set();
+            const parkEntries = [];
+
+            if (parks && Array.isArray(parks[city])) {
                 parks[city].forEach(park => {
                     if (!park) return;
                     const parkName = typeof park === 'string' ? park : (park.name || '');
                     const isHidden = park && typeof park === 'object' && !!park.hidden;
-                    if (!isHidden && parkName) {
-                        const option = document.createElement('option');
-                        option.value = parkName;
-                        let displayText = parkName;
-                        if (typeof park === 'object' && park.section) {
-                            displayText = `${parkName} (${park.section})`;
-                        }
-                        option.textContent = displayText;
-                        select.appendChild(option);
+                    const normName = parkName.trim().toLowerCase();
+                    if (!isHidden && parkName && activeParkNames.has(normName) && !seenParks.has(normName)) {
+                        seenParks.add(normName);
+                        const sec = (typeof park === 'object' && park.section) ? park.section : getDefaultSectionForPark(parkName);
+                        parkEntries.push({ name: parkName, section: sec });
                     }
                 });
             }
+
+            cityActiveProps.forEach(p => {
+                if (!p.park) return;
+                const normName = String(p.park).trim().toLowerCase();
+                if (!seenParks.has(normName) && !isParkHidden(city, p.park)) {
+                    seenParks.add(normName);
+                    parkEntries.push({ name: p.park, section: getSectionForProperty(p) });
+                }
+            });
+
+            parkEntries.sort((a, b) => a.name.localeCompare(b.name)).forEach(entry => {
+                const option = document.createElement('option');
+                option.value = entry.name;
+                option.textContent = entry.section ? `${entry.name} (${entry.section})` : entry.name;
+                select.appendChild(option);
+            });
             select.value = '';
         });
     }
@@ -3617,10 +3731,34 @@ Could you please share more information and arrange a viewing appointment? Thank
     const closeOwnerModalBtn = document.getElementById('close-owner-modal');
     const openOwnerModalBtns = document.querySelectorAll('.open-owner-modal-btn');
 
+    const modalNotesEl = document.getElementById('modalOwnerNotes');
+    if (modalNotesEl) {
+        modalNotesEl.addEventListener('input', () => {
+            modalNotesEl.dataset.isPreset = 'false';
+        });
+    }
+
     openOwnerModalBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
+            const presetNote = btn.getAttribute('data-owner-note');
+            const notesInput = document.getElementById('modalOwnerNotes');
+            if (notesInput) {
+                const canOverwrite = !notesInput.value.trim() || notesInput.dataset.isPreset === 'true';
+                if (canOverwrite) {
+                    notesInput.value = presetNote || '';
+                    notesInput.dataset.isPreset = presetNote ? 'true' : 'false';
+                }
+            }
             if (ownerModal) ownerModal.style.display = 'block';
+        });
+    });
+
+    document.querySelectorAll('.owner-feature-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            if (e.target && e.target.closest('a, button')) return;
+            const link = card.querySelector('a.owner-feature-link');
+            if (link) link.click();
         });
     });
 
@@ -4317,7 +4455,7 @@ Could you please share more information and arrange a viewing appointment? Thank
             });
         }
 
-        const sectionIds = ['home', 'about', 'services', 'who-we-are', 'properties', 'owner-section', 'contact'];
+        const sectionIds = ['home', 'properties', 'services', 'about', 'who-we-are', 'owner-section', 'contact'];
         const navAnchors = Array.from(document.querySelectorAll('#nav-links a[href^="#"]'));
 
         let ticking = false;
@@ -4350,6 +4488,54 @@ Could you please share more information and arrange a viewing appointment? Thank
             }
         }, { passive: true });
     })();
+
+    // Direct smooth-scroll to "Get In Touch" (#contact) for Acquisition, Advisory, Expert Guidance & Contact links
+    document.querySelectorAll('a[href="#contact"], #front-services-card1-link, #front-services-card3-link, #front-about-card3-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+            const contactSection = document.getElementById('contact');
+            if (!contactSection) return;
+            e.preventDefault();
+            const navEl = document.querySelector('.navbar');
+            const navHeight = navEl ? navEl.offsetHeight : 64;
+            const targetTop = Math.max(0, contactSection.getBoundingClientRect().top + (window.scrollY || window.pageYOffset) - (navHeight + 8));
+            window.scrollTo({ top: targetTop, behavior: 'smooth' });
+        });
+    });
+
+    // Direct smooth-scroll helper if any link targets #contact-inquiry-form specifically
+    document.querySelectorAll('a[href="#contact-inquiry-form"]').forEach(link => {
+        link.addEventListener('click', (e) => {
+            const targetForm = document.getElementById('contact-inquiry-form') || document.querySelector('.contact-form-wrapper') || document.getElementById('contact');
+            if (!targetForm) return;
+            e.preventDefault();
+            const navEl = document.querySelector('.navbar');
+            const navHeight = navEl ? navEl.offsetHeight : 64;
+            const targetTop = Math.max(0, targetForm.getBoundingClientRect().top + (window.scrollY || window.pageYOffset) - (navHeight + 12));
+            window.scrollTo({ top: targetTop, behavior: 'smooth' });
+        });
+    });
+
+    // Interactive "Why Choose Us" cards: whole card clickable + smooth scroll to industrial hubs
+    document.querySelectorAll('.feature-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            if (e.target && e.target.closest('a')) return;
+            const link = card.querySelector('a.feature-link');
+            if (link) link.click();
+        });
+    });
+
+    const exploreHubsLink = document.getElementById('front-about-card1-link');
+    if (exploreHubsLink) {
+        exploreHubsLink.addEventListener('click', (e) => {
+            const hubsEl = document.getElementById('city-filters') || document.getElementById('properties');
+            if (!hubsEl) return;
+            e.preventDefault();
+            const navEl = document.querySelector('.navbar');
+            const navHeight = navEl ? navEl.offsetHeight : 64;
+            const targetTop = Math.max(0, hubsEl.getBoundingClientRect().top + (window.scrollY || window.pageYOffset) - (navHeight + 16));
+            window.scrollTo({ top: targetTop, behavior: 'smooth' });
+        });
+    }
 
     // Keyboard Escape to close any active public modal
     document.addEventListener('keydown', (e) => {

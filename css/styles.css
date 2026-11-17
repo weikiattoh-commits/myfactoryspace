@@ -786,7 +786,11 @@ section,
   margin: 0 auto;
 }
 
-/* Features Grid */
+/* Features Grid (Why Choose Us) */
+.about-bg {
+  background-color: var(--white);
+}
+
 .features-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -801,6 +805,10 @@ section,
   box-shadow: var(--shadow-sm);
   border: 1px solid var(--border-light);
   transition: var(--transition);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
 }
 
 .feature-card:hover {
@@ -836,6 +844,23 @@ section,
 
 .feature-card p {
   color: var(--text-muted);
+  margin-bottom: 1.5rem;
+  flex-grow: 1;
+}
+
+.feature-link {
+  font-weight: 600;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.925rem;
+  transition: var(--transition);
+}
+
+.feature-card:hover .feature-link {
+  color: var(--primary-dark);
+  gap: 0.75rem;
 }
 
 /* Properties Listing */
@@ -1552,6 +1577,7 @@ footer {
   flex: 1;
   text-align: left;
   transition: all 0.25s ease;
+  scroll-margin-top: 84px;
 }
 
 .contact-form-header {
@@ -1822,7 +1848,9 @@ footer {
 
 /* Services Section (How Can We Help) */
 .services-bg {
-  background-color: var(--white);
+  background-color: var(--bg-light);
+  border-top: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .services-grid {
@@ -3151,8 +3179,23 @@ footer {
   color: var(--text-muted);
   font-size: 0.95rem;
   line-height: 1.6;
-  margin: 0;
+  margin: 0 0 1.5rem 0;
   flex-grow: 1;
+}
+
+.owner-feature-link {
+  font-weight: 600;
+  color: var(--primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.925rem;
+  transition: var(--transition);
+}
+
+.owner-feature-card:hover .owner-feature-link {
+  color: var(--primary-dark);
+  gap: 0.75rem;
 }
 
 /* ==========================================================================
@@ -3949,7 +3992,7 @@ footer {
   .feature-card {
     display: grid !important;
     grid-template-columns: auto 1fr !important;
-    grid-template-rows: auto auto !important;
+    grid-template-rows: auto auto auto !important;
     column-gap: 0.95rem !important;
     row-gap: 0.2rem !important;
     align-items: start !important;
@@ -3968,8 +4011,9 @@ footer {
   }
 
   .feature-icon {
-    grid-row: 1 / span 2 !important;
+    grid-row: 1 / span 3 !important;
     grid-column: 1 !important;
+    align-self: center !important;
     width: 46px !important;
     height: 46px !important;
     min-width: 46px !important;
@@ -4004,8 +4048,20 @@ footer {
     grid-row: 2 !important;
     font-size: 0.84rem !important;
     line-height: 1.42 !important;
-    margin: 0 !important;
+    margin: 0.15rem 0 0.35rem 0 !important;
     color: var(--text-muted) !important;
+  }
+
+  .feature-link {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: var(--primary) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    margin: 0 !important;
   }
 
   /* How Can We Help - Space-Saving & Best Fit Mobile Cards */
@@ -4213,7 +4269,7 @@ footer {
   .owner-feature-card {
     display: grid !important;
     grid-template-columns: auto 1fr !important;
-    grid-template-rows: auto auto !important;
+    grid-template-rows: auto auto auto !important;
     column-gap: 0.95rem !important;
     row-gap: 0.2rem !important;
     align-items: start !important;
@@ -4233,8 +4289,9 @@ footer {
   }
 
   .owner-feature-icon {
-    grid-row: 1 / span 2 !important;
+    grid-row: 1 / span 3 !important;
     grid-column: 1 !important;
+    align-self: center !important;
     width: 46px !important;
     height: 46px !important;
     min-width: 46px !important;
@@ -4269,8 +4326,20 @@ footer {
     grid-row: 2 !important;
     font-size: 0.84rem !important;
     line-height: 1.42 !important;
-    margin: 0 !important;
+    margin: 0.15rem 0 0.35rem 0 !important;
     color: var(--text-muted) !important;
+  }
+
+  .owner-feature-link {
+    grid-column: 2 !important;
+    grid-row: 3 !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    color: var(--primary) !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    margin: 0 !important;
   }
 
   /* Submit Your Property Listing Request - Mobile Space-Saving & Best Fit */
@@ -5241,6 +5310,7 @@ footer {
     border-radius: 16px !important;
     box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.06) !important;
     background: #ffffff !important;
+    scroll-margin-top: 74px !important;
   }
 
   .contact-form-header {
@@ -5775,6 +5845,11 @@ footer {
   .feature-card p {
     font-size: 0.8rem !important;
     line-height: 1.38 !important;
+    margin-bottom: 0.3rem !important;
+  }
+
+  .feature-link {
+    font-size: 0.78rem !important;
   }
 
   /* How Can We Help - Extra Compact for Smartphones */
@@ -5889,6 +5964,11 @@ footer {
   .owner-feature-card p {
     font-size: 0.8rem !important;
     line-height: 1.38 !important;
+    margin-bottom: 0.3rem !important;
+  }
+
+  .owner-feature-link {
+    font-size: 0.78rem !important;
   }
 
   /* Submit Your Property Listing Request - Extra Compact for Smartphones */
