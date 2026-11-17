@@ -1869,13 +1869,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.head.appendChild(scriptEl);
             }
 
+            const buildAlternateNames = (p) => {
+                if (!p) return undefined;
+                const alts = new Set();
+                [p.title, p.park].forEach(val => {
+                    if (!val) return;
+                    const plain = String(val).replace(/[-@]/g, ' ').replace(/\s+/g, ' ').trim();
+                    if (plain && plain !== p.title) alts.add(plain);
+                    const noDashCompact = String(val).replace(/-/g, '');
+                    if (noDashCompact && noDashCompact !== val && noDashCompact !== p.title) alts.add(noDashCompact);
+                });
+                return alts.size > 0 ? Array.from(alts) : undefined;
+            };
+
             if (targetProp) {
                 const cleanPrice = String(targetProp.price || '').replace(/[^0-9]/g, '');
+                const altNames = buildAlternateNames(targetProp);
                 const schemaObj = {
                     "@context": "https://schema.org",
                     "@type": "RealEstateListing",
                     "@id": `https://www.myfactoryspace.com/properties.html?id=${encodeURIComponent(targetProp.id)}`,
                     "name": targetProp.title || 'Industrial Property',
+                    "alternateName": altNames,
                     "description": targetProp.description || `${targetProp.title} located in ${targetProp.park || targetProp.location || 'Selangor'}.`,
                     "url": `https://www.myfactoryspace.com/properties.html?id=${encodeURIComponent(targetProp.id)}`,
                     "category": targetProp.type || "Industrial Property",
@@ -1923,12 +1938,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     "@type": "ItemList",
                     "name": "Available Industrial Properties",
                     "numberOfItems": displayedProps.length,
-                    "itemListElement": displayedProps.slice(0, 10).map((p, idx) => ({
+                    "itemListElement": displayedProps.slice(0, 12).map((p, idx) => ({
                         "@type": "ListItem",
                         "position": idx + 1,
                         "item": {
                             "@type": "RealEstateListing",
                             "name": p.title,
+                            "alternateName": buildAlternateNames(p),
                             "url": `https://www.myfactoryspace.com/properties.html?id=${encodeURIComponent(p.id)}`,
                             "price": String(p.price || '').replace(/[^0-9]/g, '') || undefined,
                             "priceCurrency": "MYR"

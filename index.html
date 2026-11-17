@@ -172,22 +172,31 @@
             { "@type": "City", "name": "Shah Alam" },
             { "@type": "City", "name": "Klang" }
           ],
-          "priceRange": "RM 25,000 - RM 12,000,000"
+          "priceRange": "RM 1,700 - RM 12,000,000"
         },
         {
           "@type": "WebSite",
           "@id": "https://www.myfactoryspace.com/#website",
           "url": "https://www.myfactoryspace.com/",
           "name": "MyFactorySpace",
+          "alternateName": ["MyFactorySpace Malaysia", "MyFactorySpace Klang Valley"],
           "description": "Premium Industrial Real Estate Klang Valley",
-          "publisher": { "@id": "https://www.myfactoryspace.com/#organization" }
+          "publisher": { "@id": "https://www.myfactoryspace.com/#organization" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://www.myfactoryspace.com/properties.html?keyword={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
         },
         {
           "@type": "ItemList",
           "@id": "https://www.myfactoryspace.com/#flagship-properties",
-          "name": "Flagship Industrial Properties in Klang Valley",
-          "description": "Verified high-spec warehouses, semi-detached factories, and industrial development plots.",
-          "numberOfItems": 6,
+          "name": "Active Industrial Properties in Klang Valley",
+          "description": "Verified warehouses, semi-detached factories, terrace link factories, and commercial shoplots near industrial hubs.",
+          "numberOfItems": 9,
           "itemListElement": [
             {
               "@type": "ListItem",
@@ -195,8 +204,9 @@
               "item": {
                 "@type": "RealEstateListing",
                 "name": "PJ 51 Business Park - 3-Storey Semi-Detached Factory",
+                "alternateName": ["PJ 51 Business Centre", "PJ 51 Industrial Park Seksyen 51"],
                 "url": "https://www.myfactoryspace.com/properties.html?id=1",
-                "description": "Modern 3-storey semi-detached corporate factory in PJ 51 Industrial Park, Petaling Jaya. 13,000 sqft land, 9,500 sqft built-up, 150 Amp power, cargo lift.",
+                "description": "Modern 3-storey semi-detached corporate factory in PJ 51 Business Centre, Petaling Jaya. 13,000 sqft land, 9,500 sqft built-up, 150 Amp power, cargo lift.",
                 "price": "12000000",
                 "priceCurrency": "MYR"
               }
@@ -207,8 +217,9 @@
               "item": {
                 "@type": "RealEstateListing",
                 "name": "Sekitar 26 Business Park - Freehold Semi-Detached Factory",
+                "alternateName": ["Sekitar 26 Section 26 Shah Alam"],
                 "url": "https://www.myfactoryspace.com/properties.html?id=2",
-                "description": "Prime freehold semi-detached commercial & industrial facility in Sekitar 26, Shah Alam. 9,900 sqft land, 8,800 sqft built-up, 150 Amp power.",
+                "description": "Prime freehold semi-detached commercial & industrial facility in Sekitar 26 Business Park, Shah Alam. 9,900 sqft land, 8,800 sqft built-up, 150 Amp power.",
                 "price": "7000000",
                 "priceCurrency": "MYR"
               }
@@ -219,8 +230,9 @@
               "item": {
                 "@type": "RealEstateListing",
                 "name": "Ace Industrial Park - High-Spec Semi-Detached Factory",
+                "alternateName": ["Ace Industrial Park Section 15 Shah Alam"],
                 "url": "https://www.myfactoryspace.com/properties.html?id=3",
-                "description": "High-spec semi-detached factory for rent in Section 15 Shah Alam. 9,800 sqft land, 8,800 sqft built-up, 5 kN/m² floor loading, 150 Amp power.",
+                "description": "High-spec semi-detached factory for rent in Ace Industrial Park, Section 15 Shah Alam. 9,800 sqft land, 8,800 sqft built-up, 5 kN/m² floor loading, 150 Amp power.",
                 "price": "25000",
                 "priceCurrency": "MYR"
               }
@@ -231,9 +243,75 @@
               "item": {
                 "@type": "RealEstateListing",
                 "name": "Tiong Nam Industrial Park @ Shah Alam - Semi-Detached Factory",
+                "alternateName": ["Tiong Nam Industrial Park Shah Alam", "Tiong Nam Section 15"],
                 "url": "https://www.myfactoryspace.com/properties.html?id=4",
-                "description": "Established semi-detached industrial unit in Section 15 Shah Alam. 9,900 sqft land, 8,800 sqft built-up, 150 Amp power, cargo lift.",
+                "description": "Established semi-detached industrial unit in Tiong Nam Industrial Park, Section 15 Shah Alam. 9,900 sqft land, 8,800 sqft built-up, 150 Amp power, cargo lift.",
                 "price": "7000000",
+                "priceCurrency": "MYR"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 5,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "Hicom-Glenmarie Industrial Park (1.5 Storey Link Factory)",
+                "alternateName": ["Hicom Glenmarie Industrial Park", "Hicom Glenmarie 1.5 Storey Terrace Factory", "Glenmarie U1 Link Factory"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=1794535399915",
+                "description": "Freehold 1.5-storey terrace link factory for sale in Hicom-Glenmarie Industrial Park (Hicom Glenmarie), Shah Alam. 3,300 sqft land, 2,760 sqft built-up, 100 Amp power, 14 ft ceiling peak.",
+                "price": "3000000",
+                "priceCurrency": "MYR"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 6,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "Tiara Square Business Park (2-Storey)",
+                "alternateName": ["Tiara Square Subang Jaya", "Tiara Square SIME UEP"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=1793339269220",
+                "description": "Freehold 2-storey shoplot near industrial hubs in Tiara Square Business Park, Subang Jaya. 1,540 sqft land, 2,926 sqft built-up, Jalan Tiara.",
+                "price": "1350000",
+                "priceCurrency": "MYR"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 7,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "USJ Avenue (1.5 Storey)",
+                "alternateName": ["USJ Avenue USJ Heights Subang Jaya"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=1793338038982",
+                "description": "Freehold 1.5-storey shoplot for rent in USJ Avenue, Jalan USJ Heights 1/1C, Subang Jaya. 1,300 sqft land, 1,960 sqft built-up, fast link to Federal Highway and ELITE.",
+                "price": "4800",
+                "priceCurrency": "MYR"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 8,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "Tiara Square Business Park (Ground Floor)",
+                "alternateName": ["Tiara Square Ground Floor Shoplot Subang Jaya"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=1793336056615",
+                "description": "Freehold ground floor shoplot for rent near industrial parks in Tiara Square Business Park, Subang Jaya. 1,540 sqft land, 1,386 sqft built-up.",
+                "price": "3200",
+                "priceCurrency": "MYR"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 9,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "Tiara Square Business Park (1st Floor)",
+                "alternateName": ["Tiara Square First Floor Office Subang Jaya"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=1793335518953",
+                "description": "Freehold 1st floor commercial unit for rent in Tiara Square Business Park, Subang Jaya. 1,540 sqft built-up, easy access to KESAS and ELITE.",
+                "price": "1700",
                 "priceCurrency": "MYR"
               }
             }
@@ -1103,7 +1181,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js?v=35"></script>
     <script src="js/property-share.js?v=43"></script>
-    <script src="js/scripts.js?v=68"></script>
+    <script src="js/scripts.js?v=69"></script>
     <script src="js/visit-tracker.js?v=2"></script>
     <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
     <script defer src="/_vercel/insights/script.js"></script>
