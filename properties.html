@@ -18,27 +18,43 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
     <link rel="apple-touch-icon" href="/apple-touch-icon.png">
     <link rel="manifest" href="/assets/icons/site.webmanifest">
-    <meta name="description" content="Browse verified warehouses, detached & semi-D factories, and industrial land for sale and rent in Petaling Jaya, Subang Jaya, Shah Alam, and Klang.">
+    <meta id="meta-description" name="description" content="Browse verified warehouses, detached &amp; semi-D factories, and industrial land for sale and rent in Petaling Jaya, Subang Jaya, Shah Alam, and Klang.">
 
     <!-- Canonical & AI / LLM Auto-Discovery -->
-    <link rel="canonical" href="https://www.myfactoryspace.com/properties.html">
+    <link rel="canonical" id="page-canonical" href="https://www.myfactoryspace.com/properties.html">
     <link rel="alternate" type="text/markdown" title="LLM Context (llms.txt)" href="https://www.myfactoryspace.com/llms.txt">
     <link rel="alternate" type="text/markdown" title="LLM Full Dataset (llms-full.txt)" href="https://www.myfactoryspace.com/llms-full.txt">
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="MyFactorySpace">
-    <meta property="og:title" content="Factories & Warehouses For Sale & Rent | MyFactorySpace Listings">
-    <meta property="og:description" content="Browse verified warehouses, detached & semi-D factories, and industrial land for sale and rent in Petaling Jaya, Subang Jaya, Shah Alam, and Klang.">
-    <meta property="og:url" content="https://www.myfactoryspace.com/properties.html">
-    <meta property="og:image" content="https://www.myfactoryspace.com/assets/images/hero.jpg">
+    <meta id="og-title" property="og:title" content="Factories &amp; Warehouses For Sale &amp; Rent | MyFactorySpace Listings">
+    <meta id="og-desc" property="og:description" content="Browse verified warehouses, detached &amp; semi-D factories, and industrial land for sale and rent in Petaling Jaya, Subang Jaya, Shah Alam, and Klang.">
+    <meta id="og-url" property="og:url" content="https://www.myfactoryspace.com/properties.html">
+    <meta id="og-image" property="og:image" content="https://www.myfactoryspace.com/assets/images/hero.jpg">
     <meta property="og:locale" content="en_MY">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Factories & Warehouses For Sale & Rent | MyFactorySpace Listings">
-    <meta name="twitter:description" content="Browse verified warehouses, detached & semi-D factories, and industrial land for sale and rent in Petaling Jaya, Subang Jaya, Shah Alam, and Klang.">
-    <meta name="twitter:image" content="https://www.myfactoryspace.com/assets/images/hero.jpg">
+    <meta id="twitter-title" name="twitter:title" content="Factories &amp; Warehouses For Sale &amp; Rent | MyFactorySpace Listings">
+    <meta id="twitter-desc" name="twitter:description" content="Browse verified warehouses, detached &amp; semi-D factories, and industrial land for sale and rent in Petaling Jaya, Subang Jaya, Shah Alam, and Klang.">
+    <meta id="twitter-image" name="twitter:image" content="https://www.myfactoryspace.com/assets/images/hero.jpg">
+    <script type="application/ld+json" id="listing-schema-json">{}</script>
+    <script>
+    (function() {
+        try {
+            var p = new URLSearchParams(window.location.search);
+            var propId = p.get('id') || p.get('propertyId');
+            if (propId) {
+                var canonicalUrl = 'https://www.myfactoryspace.com/properties.html?id=' + encodeURIComponent(propId);
+                var canon = document.getElementById('page-canonical');
+                if (canon) canon.setAttribute('href', canonicalUrl);
+                var ogUrl = document.getElementById('og-url');
+                if (ogUrl) ogUrl.setAttribute('content', canonicalUrl);
+            }
+        } catch (e) {}
+    })();
+    </script>
     <!-- Resource Hints & Google Fonts -->
     <link rel="preconnect" href="https://vnsinkesbbikeqbywxfd.supabase.co" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
@@ -466,6 +482,22 @@
             <div class="property-grid" id="property-list">
                 <!-- Dynamically Populated by JS -->
             </div>
+            <noscript>
+                <div style="margin: 1.5rem 0; padding: 1.25rem; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;">
+                    <h3>Selangor &amp; Klang Valley Industrial Properties Directory</h3>
+                    <ul>
+                        <li><a href="https://www.myfactoryspace.com/properties.html?id=1">PJ 51 Business Park — Semi-Detached Factory For Sale (Petaling Jaya)</a></li>
+                        <li><a href="https://www.myfactoryspace.com/properties.html?id=2">Sekitar 26 Business Park — Freehold Semi-Detached Factory For Sale (Shah Alam)</a></li>
+                        <li><a href="https://www.myfactoryspace.com/properties.html?id=3">Ace Industrial Park — Semi-Detached Factory For Rent (Shah Alam Sec 15)</a></li>
+                        <li><a href="https://www.myfactoryspace.com/properties.html?id=4">Tiong Nam Industrial Park @ Shah Alam — Semi-Detached Factory For Sale</a></li>
+                        <li><a href="https://www.myfactoryspace.com/properties.html?id=1794535399915">Hicom-Glenmarie Industrial Park — 1.5 Storey Link Factory For Sale (Shah Alam)</a></li>
+                        <li><a href="https://www.myfactoryspace.com/properties.html?id=1793339269220">Tiara Square Business Park (2-Storey) — Shoplot For Sale (Subang Jaya)</a></li>
+                        <li><a href="https://www.myfactoryspace.com/properties.html?id=1793338038982">USJ Avenue (1.5 Storey) — Commercial Shoplot For Rent (Subang Jaya)</a></li>
+                        <li><a href="https://www.myfactoryspace.com/properties.html?id=1793336056615">Tiara Square Business Park (Ground Floor) — Shoplot For Rent (Subang Jaya)</a></li>
+                        <li><a href="https://www.myfactoryspace.com/properties.html?id=1793335518953">Tiara Square Business Park (1st Floor) — Office/Shoplot For Rent (Subang Jaya)</a></li>
+                    </ul>
+                </div>
+            </noscript>
 
             <!-- Property Filters (Moved Below Property Listings) -->
             <div class="property-filters" style="margin-top: 3.5rem;">
@@ -846,8 +878,8 @@
     <!-- Supabase JS SDK & Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js?v=35"></script>
-    <script src="js/property-share.js?v=43"></script>
-    <script src="js/scripts.js?v=69"></script>
+    <script src="js/property-share.js?v=44"></script>
+    <script src="js/scripts.js?v=72"></script>
     <script src="js/visit-tracker.js?v=2"></script>
     <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
     <script defer src="/_vercel/insights/script.js"></script>

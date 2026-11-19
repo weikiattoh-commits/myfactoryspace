@@ -21,7 +21,7 @@
     <meta id="page-meta-desc" name="description" content="Discover prime industrial factories, warehouses, and commercial plots across Petaling Jaya, Subang Jaya, Shah Alam, and Klang. Verified technical specifications and direct agent contact.">
 
     <!-- Canonical & AI / LLM Auto-Discovery -->
-    <link rel="canonical" href="https://www.myfactoryspace.com/location.html">
+    <link rel="canonical" id="page-canonical" href="https://www.myfactoryspace.com/location.html?city=petaling-jaya">
     <link rel="alternate" type="text/markdown" title="LLM Context (llms.txt)" href="https://www.myfactoryspace.com/llms.txt">
     <link rel="alternate" type="text/markdown" title="LLM Full Dataset (llms-full.txt)" href="https://www.myfactoryspace.com/llms-full.txt">
 
@@ -31,7 +31,36 @@
     <meta id="og-title" property="og:title" content="Industrial Properties For Sale & Rent | MyFactorySpace">
     <meta id="og-desc" property="og:description" content="Verified warehouses, detached & semi-detached factories across Klang Valley's prime industrial belt.">
     <meta id="og-image" property="og:image" content="https://www.myfactoryspace.com/assets/images/hero.jpg">
-    <meta id="og-url" property="og:url" content="https://www.myfactoryspace.com/location.html">
+    <meta id="og-url" property="og:url" content="https://www.myfactoryspace.com/location.html?city=petaling-jaya">
+    <script>
+    (function() {
+        try {
+            var p = new URLSearchParams(window.location.search);
+            var slug = (p.get('city') || '').toLowerCase().trim();
+            var map = {
+                'petaling-jaya': ['Petaling Jaya Industrial Properties, Factories & Warehouses | MyFactorySpace', 'Find verified industrial factories, warehouses, and commercial plots for sale and rent in Petaling Jaya (Section 51, 51A, 13 & Kota Damansara).'],
+                'subang-jaya': ['Subang Jaya Industrial Properties, Warehouses & Factories | MyFactorySpace', 'Browse Grade-A logistics warehouses, semi-detached & detached factories in Subang Jaya (Subang Hi-Tech, USJ, TP7 & SS13).'],
+                'shah-alam': ['Shah Alam Industrial Properties, Factories & Warehouses | MyFactorySpace', 'Explore top industrial factories and warehouses in Shah Alam (Hicom-Glenmarie, Sekitar 26, Section 15, Bukit Jelutong & Kota Kemuning).'],
+                'klang': ['Klang Industrial Properties, Warehouses & Port Klang Land | MyFactorySpace', 'Prime heavy industrial factories, logistics hubs & land in Klang, Bandar Bukit Raja, Kapar, Northport & Westport corridors.']
+            };
+            var activeSlug = map[slug] ? slug : 'petaling-jaya';
+            var canonicalUrl = 'https://www.myfactoryspace.com/location.html?city=' + activeSlug;
+            var canon = document.getElementById('page-canonical');
+            if (canon) canon.setAttribute('href', canonicalUrl);
+            var ogUrl = document.getElementById('og-url');
+            if (ogUrl) ogUrl.setAttribute('content', canonicalUrl);
+            if (map[slug]) {
+                document.title = map[slug][0];
+                var d = document.getElementById('page-meta-desc');
+                if (d) d.setAttribute('content', map[slug][1]);
+                var ot = document.getElementById('og-title');
+                if (ot) ot.setAttribute('content', map[slug][0]);
+                var od = document.getElementById('og-desc');
+                if (od) od.setAttribute('content', map[slug][1]);
+            }
+        } catch (e) {}
+    })();
+    </script>
 
     <!-- Fonts & Icons -->
     <link rel="preconnect" href="https://vnsinkesbbikeqbywxfd.supabase.co" crossorigin>
@@ -882,9 +911,9 @@
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js?v=37"></script>
-    <script src="js/property-share.js?v=43"></script>
-    <script src="js/scripts.js?v=69"></script>
-    <script src="js/location-landing.js?v=27"></script>
+    <script src="js/property-share.js?v=44"></script>
+    <script src="js/scripts.js?v=72"></script>
+    <script src="js/location-landing.js?v=29"></script>
     <script src="js/visit-tracker.js?v=2"></script>
 </body>
 </html>

@@ -3,7 +3,7 @@
     <!-- Homepage -->
     <url>
         <loc>https://www.myfactoryspace.com/</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>1.0</priority>
     </url>
@@ -11,7 +11,7 @@
     <!-- Properties Catalog & Search Engine -->
     <url>
         <loc>https://www.myfactoryspace.com/properties.html</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>daily</changefreq>
         <priority>0.9</priority>
     </url>
@@ -19,25 +19,25 @@
     <!-- Location Landing Pages (Google #1 SEO Targets) -->
     <url>
         <loc>https://www.myfactoryspace.com/location.html?city=petaling-jaya</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
     <url>
         <loc>https://www.myfactoryspace.com/location.html?city=subang-jaya</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
     <url>
         <loc>https://www.myfactoryspace.com/location.html?city=shah-alam</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
     <url>
         <loc>https://www.myfactoryspace.com/location.html?city=klang</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.9</priority>
     </url>
@@ -45,55 +45,55 @@
     <!-- Active Property Listings -->
     <url>
         <loc>https://www.myfactoryspace.com/properties.html?id=1</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://www.myfactoryspace.com/properties.html?id=2</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://www.myfactoryspace.com/properties.html?id=3</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://www.myfactoryspace.com/properties.html?id=4</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://www.myfactoryspace.com/properties.html?id=1794535399915</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://www.myfactoryspace.com/properties.html?id=1793339269220</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://www.myfactoryspace.com/properties.html?id=1793338038982</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://www.myfactoryspace.com/properties.html?id=1793336056615</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
     <url>
         <loc>https://www.myfactoryspace.com/properties.html?id=1793335518953</loc>
-        <lastmod>2026-11-17</lastmod>
+        <lastmod>2026-11-19</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>

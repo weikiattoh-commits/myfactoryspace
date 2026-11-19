@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }
                             }
                             if (!copy.images || copy.images.length === 0) {
-                                copy.images = [(copy.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[copy.id]) ? defaultCleanImages[copy.id] : 'assets/images/warehouse.jpg'];
+                                copy.images = [(copy.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[copy.id]) ? defaultCleanImages[copy.id] : 'assets/images/hero.jpg'];
                             }
                             copy.image = copy.images[0];
                             copy.rawImage = (copy.rawImages && copy.rawImages.length > 0) ? copy.rawImages[0] : copy.image;
@@ -284,7 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         if (!p.rawImage || p.rawImage.startsWith('data:') || (isStuckOnWarehouse && p.rawImages && p.rawImages.length > 0)) {
-            p.rawImage = (p.rawImages && p.rawImages.length > 0) ? p.rawImages[0] : ((p.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[p.id]) ? defaultCleanImages[p.id] : 'assets/images/warehouse.jpg');
+            p.rawImage = (p.rawImages && p.rawImages.length > 0) ? p.rawImages[0] : ((p.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[p.id]) ? defaultCleanImages[p.id] : 'assets/images/hero.jpg');
         }
 
         if (isStuckOnWarehouse || !p.images || p.images.length === 0) {
@@ -293,11 +293,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } else if (p.rawImages && p.rawImages.length > 0) {
                 p.images = [...p.rawImages];
             } else {
-                p.images = [(p.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[p.id]) ? defaultCleanImages[p.id] : 'assets/images/warehouse.jpg'];
+                p.images = [(p.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[p.id]) ? defaultCleanImages[p.id] : 'assets/images/hero.jpg'];
             }
         }
         if (!p.image || isStuckOnWarehouse) {
-            p.image = (p.images && p.images.length > 0) ? p.images[0] : ((p.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[p.id]) ? defaultCleanImages[p.id] : 'assets/images/warehouse.jpg');
+            p.image = (p.images && p.images.length > 0) ? p.images[0] : ((p.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[p.id]) ? defaultCleanImages[p.id] : 'assets/images/hero.jpg');
         }
         if (String(p.id) === '3' && (!p.availableUnits || p.availableUnits === '1')) {
             p.availableUnits = '2';
@@ -403,8 +403,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const base = sp.specs && typeof sp.specs === 'object' ? sp.specs : {};
                     const rawPriceVal = base.price || (typeof sp.price === 'number' ? `RM ${sp.price}` : sp.price) || '';
                     const rawIntent = base.intent || sp.intent || (rawPriceVal && String(rawPriceVal).toLowerCase().includes('mo') ? 'Rent' : 'Sale');
-                    const propImages = Array.isArray(sp.images) && sp.images.length > 0 ? sp.images : (Array.isArray(base.images) && base.images.length > 0 ? base.images : [(base.image || sp.image || 'assets/images/warehouse.jpg')]);
-                    const firstImg = propImages[0] || 'assets/images/warehouse.jpg';
+                    const propImages = Array.isArray(sp.images) && sp.images.length > 0 ? sp.images : (Array.isArray(base.images) && base.images.length > 0 ? base.images : [(base.image || sp.image || 'assets/images/hero.jpg')]);
+                    const firstImg = propImages[0] || 'assets/images/hero.jpg';
                     let rawImgs = [];
                     if (Array.isArray(base.rawImages) && base.rawImages.length > 0) {
                         rawImgs = [...base.rawImages];
@@ -491,6 +491,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (typeof populateLeadInterest === 'function') {
                     populateLeadInterest();
+                }
+                if (typeof window.IndustraSupabase.fetchSiteSetting === 'function') {
+                    try {
+                        const sbWmPre = await window.IndustraSupabase.fetchSiteSetting('watermark_settings');
+                        if (sbWmPre && typeof sbWmPre === 'object') {
+                            safeLocalStorageSet('industria_watermark_settings', sbWmPre);
+                        }
+                    } catch (wmErr) {}
                 }
                 applyWatermarksToProperties().then(() => {
                     if (typeof renderProperties === 'function') renderProperties();
@@ -623,6 +631,10 @@ document.addEventListener('DOMContentLoaded', () => {
         randomFeaturedAgents: true,
         maxFeaturedAgents: 6,
         maxFeaturedAgentsDisplayed: 3,
+        prioritizeFeaturedAtTop: true,
+        featuredPriorityMode: 'location-then-section',
+        locationPriorityOrder: ['Petaling Jaya', 'Subang Jaya', 'Shah Alam', 'Klang'],
+        sectionPriorityOrder: [],
 
         // Time Zone & Regional Management
         timezone: 'Asia/Kuala_Lumpur',
@@ -1039,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const base = data.specs && typeof data.specs === 'object' ? data.specs : {};
                             const rawPriceVal = base.price || (typeof data.price === 'number' ? `RM ${data.price}` : data.price) || '';
                             const rawIntent = base.intent || data.intent || (rawPriceVal && String(rawPriceVal).toLowerCase().includes('mo') ? 'Rent' : 'Sale');
-                            const propImages = Array.isArray(data.images) && data.images.length > 0 ? data.images : (Array.isArray(base.images) && base.images.length > 0 ? base.images : [(base.image || data.image || 'assets/images/warehouse.jpg')]);
+                            const propImages = Array.isArray(data.images) && data.images.length > 0 ? data.images : (Array.isArray(base.images) && base.images.length > 0 ? base.images : [(base.image || data.image || 'assets/images/hero.jpg')]);
                             const mappedSingle = Object.assign({}, base, {
                                 id: data.id,
                                 title: data.title || base.title || '',
@@ -1057,7 +1069,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 featured: true,
                                 showOnMainpage: true,
                                 images: propImages,
-                                image: propImages[0] || 'assets/images/warehouse.jpg'
+                                image: propImages[0] || 'assets/images/hero.jpg'
                             });
                             if (!properties.some(p => String(p.id) === String(mappedSingle.id))) {
                                 properties.unshift(mappedSingle);
@@ -1086,10 +1098,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- 4. NAVIGATION & SCROLL HANDLERS ---
     if (navbar) {
+        let navScrollTicking = false;
         window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) navbar.classList.add('scrolled');
-            else navbar.classList.remove('scrolled');
-        });
+            if (!navScrollTicking) {
+                window.requestAnimationFrame(() => {
+                    if (window.scrollY > 50) navbar.classList.add('scrolled');
+                    else navbar.classList.remove('scrolled');
+                    navScrollTicking = false;
+                });
+                navScrollTicking = true;
+            }
+        }, { passive: true });
     }
 
     if (mobileToggle && navLinks) {
@@ -1666,7 +1685,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!modal) return;
 
         currentGalleryProperty = prop;
-        const photos = (prop.images && prop.images.length > 0) ? prop.images : [prop.image || 'assets/images/warehouse.jpg'];
+        const photos = (prop.images && prop.images.length > 0) ? prop.images : [prop.image || 'assets/images/hero.jpg'];
         currentGalleryIndex = Math.max(0, Math.min(startIndex, photos.length - 1));
 
         document.getElementById('pg-modal-title').textContent = prop.title || 'Industrial Property';
@@ -1747,14 +1766,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function navigateGallery(direction) {
         if (!currentGalleryProperty) return;
-        const photos = (currentGalleryProperty.images && currentGalleryProperty.images.length > 0) ? currentGalleryProperty.images : [currentGalleryProperty.image || 'assets/images/warehouse.jpg'];
+        const photos = (currentGalleryProperty.images && currentGalleryProperty.images.length > 0) ? currentGalleryProperty.images : [currentGalleryProperty.image || 'assets/images/hero.jpg'];
         currentGalleryIndex = (currentGalleryIndex + direction + photos.length) % photos.length;
         updateGalleryView();
     }
 
     function updateGalleryView() {
         if (!currentGalleryProperty) return;
-        const photos = (currentGalleryProperty.images && currentGalleryProperty.images.length > 0) ? currentGalleryProperty.images : [currentGalleryProperty.image || 'assets/images/warehouse.jpg'];
+        const photos = (currentGalleryProperty.images && currentGalleryProperty.images.length > 0) ? currentGalleryProperty.images : [currentGalleryProperty.image || 'assets/images/hero.jpg'];
         
         const mainImg = document.getElementById('pg-main-image');
         const counter = document.getElementById('pg-modal-counter');
@@ -2644,6 +2663,111 @@ Could you please share more information and arrange a viewing appointment? Thank
             return article;
     };
 
+    function isPropertyFeatured(prop) {
+        if (!prop) return false;
+        return prop.featured === true || String(prop.featured) === 'true' || prop.showOnMainpage === true || String(prop.showOnMainpage) === 'true';
+    }
+
+    function getPriorityRankIndex(val, priorityList) {
+        if (!Array.isArray(priorityList) || priorityList.length === 0) return Number.MAX_SAFE_INTEGER;
+        const norm = String(val || '').trim().toLowerCase();
+        if (!norm) return Number.MAX_SAFE_INTEGER;
+        const idx = priorityList.findIndex(item => String(item || '').trim().toLowerCase() === norm);
+        return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+    }
+
+    function compareByBaseSortMode(a, b, sortMode) {
+        if (sortMode === 'date-asc') {
+            const dateA = a.lastUpdated || a.updatedAt || a.dateAdded || a.dateCreated;
+            const dateB = b.lastUpdated || b.updatedAt || b.dateAdded || b.dateCreated;
+            const timeA = dateA ? new Date(dateA).getTime() : (typeof a.id === 'number' ? a.id : 0);
+            const timeB = dateB ? new Date(dateB).getTime() : (typeof b.id === 'number' ? b.id : 0);
+            return timeA - timeB;
+        } else if (sortMode === 'location-asc') {
+            const locA = (a.location || '').toLowerCase();
+            const locB = (b.location || '').toLowerCase();
+            if (locA !== locB) return locA.localeCompare(locB);
+            const secA = (getSectionForProperty(a) || a.park || '').toLowerCase();
+            const secB = (getSectionForProperty(b) || b.park || '').toLowerCase();
+            return secA.localeCompare(secB);
+        } else if (sortMode === 'location-desc') {
+            const locA = (a.location || '').toLowerCase();
+            const locB = (b.location || '').toLowerCase();
+            if (locA !== locB) return locB.localeCompare(locA);
+            const secA = (getSectionForProperty(a) || a.park || '').toLowerCase();
+            const secB = (getSectionForProperty(b) || b.park || '').toLowerCase();
+            return secB.localeCompare(secA);
+        } else if (sortMode === 'section-asc') {
+            const secA = (getSectionForProperty(a) || a.park || '').toLowerCase();
+            const secB = (getSectionForProperty(b) || b.park || '').toLowerCase();
+            if (secA !== secB) return secA.localeCompare(secB);
+            const locA = (a.location || '').toLowerCase();
+            const locB = (b.location || '').toLowerCase();
+            return locA.localeCompare(locB);
+        } else if (sortMode === 'section-desc') {
+            const secA = (getSectionForProperty(a) || a.park || '').toLowerCase();
+            const secB = (getSectionForProperty(b) || b.park || '').toLowerCase();
+            if (secA !== secB) return secB.localeCompare(secA);
+            const locA = (a.location || '').toLowerCase();
+            const locB = (b.location || '').toLowerCase();
+            return locB.localeCompare(locA);
+        } else if (sortMode === 'price-asc') {
+            return parsePriceValue(a.price) - parsePriceValue(b.price);
+        } else if (sortMode === 'price-desc') {
+            return parsePriceValue(b.price) - parsePriceValue(a.price);
+        }
+        // Default: date-desc (newest first)
+        const dateA = a.lastUpdated || a.updatedAt || a.dateAdded || a.dateCreated;
+        const dateB = b.lastUpdated || b.updatedAt || b.dateAdded || b.dateCreated;
+        const timeA = dateA ? new Date(dateA).getTime() : (typeof a.id === 'number' ? a.id : (parseFloat(String(a.id || '').replace(/[^0-9]/g, '')) || 0));
+        const timeB = dateB ? new Date(dateB).getTime() : (typeof b.id === 'number' ? b.id : (parseFloat(String(b.id || '').replace(/[^0-9]/g, '')) || 0));
+        return timeB - timeA;
+    }
+
+    function compareFeaturedByPriority(a, b, siteSettings) {
+        const mode = siteSettings.featuredPriorityMode || 'location-then-section';
+        const locOrder = Array.isArray(siteSettings.locationPriorityOrder) ? siteSettings.locationPriorityOrder : [];
+        const secOrder = Array.isArray(siteSettings.sectionPriorityOrder) ? siteSettings.sectionPriorityOrder : [];
+
+        const locRankA = getPriorityRankIndex(a.location, locOrder);
+        const locRankB = getPriorityRankIndex(b.location, locOrder);
+        const secRankA = getPriorityRankIndex(getSectionForProperty(a) || a.park || '', secOrder);
+        const secRankB = getPriorityRankIndex(getSectionForProperty(b) || b.park || '', secOrder);
+
+        if (mode === 'section-then-location') {
+            if (secRankA !== secRankB) return secRankA - secRankB;
+            if (locRankA !== locRankB) return locRankA - locRankB;
+        } else if (mode === 'location-only') {
+            if (locRankA !== locRankB) return locRankA - locRankB;
+        } else if (mode === 'section-only') {
+            if (secRankA !== secRankB) return secRankA - secRankB;
+        } else {
+            // location-then-section (default)
+            if (locRankA !== locRankB) return locRankA - locRankB;
+            if (secRankA !== secRankB) return secRankA - secRankB;
+        }
+        return 0;
+    }
+
+    window.sortPropertiesWithFeaturedPriority = function(list, sortMode = 'date-desc', settingsOverride = null) {
+        if (!Array.isArray(list)) return [];
+        const siteSettings = Object.assign({}, defaultSettings, settingsOverride || safeJsonParse('industria_settings', null) || {});
+        const pinFeaturedTop = siteSettings.prioritizeFeaturedAtTop !== false && String(siteSettings.prioritizeFeaturedAtTop) !== 'false';
+
+        return list.slice().sort((a, b) => {
+            if (pinFeaturedTop) {
+                const featA = isPropertyFeatured(a);
+                const featB = isPropertyFeatured(b);
+                if (featA !== featB) return featA ? -1 : 1;
+                if (featA && featB) {
+                    const prioDiff = compareFeaturedByPriority(a, b, siteSettings);
+                    if (prioDiff !== 0) return prioDiff;
+                }
+            }
+            return compareByBaseSortMode(a, b, sortMode || 'date-desc');
+        });
+    };
+
     function renderProperties() {
         updateCityBadges();
         if (!propertyList) return;
@@ -2654,6 +2778,62 @@ Could you please share more information and arrange a viewing appointment? Thank
         let targetProp = null;
         if (directPropId && Array.isArray(properties)) {
             targetProp = properties.find(p => p && String(p.id) === String(directPropId));
+        }
+
+        const isPropertiesCatalogPage = !!document.getElementById('listing-schema-json') || window.location.pathname.toLowerCase().includes('properties');
+        if (isPropertiesCatalogPage && targetProp) {
+            const listingUrl = `https://www.myfactoryspace.com/properties.html?id=${encodeURIComponent(directPropId)}`;
+            const listingTitle = `${targetProp.title} — ${targetProp.location || 'Selangor'} ${targetProp.type || 'Industrial Property'} | MyFactorySpace`;
+            const listingSpecs = [
+                targetProp.intent ? `For ${targetProp.intent}` : '',
+                targetProp.price || '',
+                targetProp.park || '',
+                targetProp.size && targetProp.size !== 'N/A' ? `Built-up: ${targetProp.size}` : '',
+                targetProp.landArea && targetProp.landArea !== 'N/A' ? `Land: ${targetProp.landArea}` : '',
+                targetProp.power && targetProp.power !== 'N/A' ? `${targetProp.power} Amp` : ''
+            ].filter(Boolean).join(' • ');
+            const listingDesc = targetProp.description
+                ? `${listingSpecs}. ${String(targetProp.description).replace(/\s+/g, ' ').slice(0, 140)}`
+                : `${targetProp.title} in ${targetProp.location || 'Selangor'} — ${listingSpecs}`;
+
+            const canon = document.getElementById('page-canonical') || document.querySelector('link[rel="canonical"]');
+            if (canon) canon.setAttribute('href', listingUrl);
+            const metaDesc = document.getElementById('meta-description') || document.querySelector('meta[name="description"]');
+            if (metaDesc) metaDesc.setAttribute('content', listingDesc);
+            const ogTitle = document.getElementById('og-title');
+            if (ogTitle) ogTitle.setAttribute('content', listingTitle);
+            const ogDesc = document.getElementById('og-desc');
+            if (ogDesc) ogDesc.setAttribute('content', listingDesc);
+            const ogUrl = document.getElementById('og-url');
+            if (ogUrl) ogUrl.setAttribute('content', listingUrl);
+            const twTitle = document.getElementById('twitter-title');
+            if (twTitle) twTitle.setAttribute('content', listingTitle);
+            const twDesc = document.getElementById('twitter-desc');
+            if (twDesc) twDesc.setAttribute('content', listingDesc);
+            const schemaEl = document.getElementById('listing-schema-json');
+            if (schemaEl) {
+                const rawNumPrice = parsePriceValue(targetProp.price);
+                schemaEl.textContent = JSON.stringify({
+                    "@context": "https://schema.org",
+                    "@type": "RealEstateListing",
+                    "name": targetProp.title,
+                    "url": listingUrl,
+                    "description": listingDesc,
+                    "offers": rawNumPrice > 0 ? {
+                        "@type": "Offer",
+                        "price": rawNumPrice,
+                        "priceCurrency": "MYR",
+                        "availability": "https://schema.org/InStock"
+                    } : undefined,
+                    "address": {
+                        "@type": "PostalAddress",
+                        "streetAddress": targetProp.road || targetProp.park || targetProp.location || 'Selangor',
+                        "addressLocality": targetProp.location || 'Selangor',
+                        "addressRegion": "Selangor",
+                        "addressCountry": "MY"
+                    }
+                });
+            }
         }
 
         // Direct Shared Listing Banner UI Sync
@@ -2698,6 +2878,12 @@ Could you please share more information and arrange a viewing appointment? Thank
                         window.history.replaceState({}, '', cleanUrl);
                         try {
                             document.title = 'Factories & Warehouses For Sale & Rent | MyFactorySpace Listings';
+                            const canon = document.getElementById('page-canonical') || document.querySelector('link[rel="canonical"]');
+                            if (canon) canon.setAttribute('href', 'https://www.myfactoryspace.com/properties.html');
+                            const ogUrl = document.getElementById('og-url');
+                            if (ogUrl) ogUrl.setAttribute('content', 'https://www.myfactoryspace.com/properties.html');
+                            const schemaEl = document.getElementById('listing-schema-json');
+                            if (schemaEl) schemaEl.textContent = '{}';
                         } catch(e) {}
                         renderProperties();
                         const browseSec = document.getElementById('browse-properties') || document.getElementById('properties');
@@ -2775,55 +2961,8 @@ Could you please share more information and arrange a viewing appointment? Thank
             filtered.unshift(targetProp);
         }
 
-        // Sort properties by Date, Location/City, Section/Park, or Price
-        filtered.sort((a, b) => {
-            if (activeSort === 'date-desc') {
-                const dateA = a.lastUpdated || a.updatedAt || a.dateAdded || a.dateCreated;
-                const dateB = b.lastUpdated || b.updatedAt || b.dateAdded || b.dateCreated;
-                const timeA = dateA ? new Date(dateA).getTime() : (typeof a.id === 'number' ? a.id : 0);
-                const timeB = dateB ? new Date(dateB).getTime() : (typeof b.id === 'number' ? b.id : 0);
-                return timeB - timeA;
-            } else if (activeSort === 'date-asc') {
-                const dateA = a.lastUpdated || a.updatedAt || a.dateAdded || a.dateCreated;
-                const dateB = b.lastUpdated || b.updatedAt || b.dateAdded || b.dateCreated;
-                const timeA = dateA ? new Date(dateA).getTime() : (typeof a.id === 'number' ? a.id : 0);
-                const timeB = dateB ? new Date(dateB).getTime() : (typeof b.id === 'number' ? b.id : 0);
-                return timeA - timeB;
-            } else if (activeSort === 'location-asc') {
-                const locA = (a.location || '').toLowerCase();
-                const locB = (b.location || '').toLowerCase();
-                if (locA !== locB) return locA.localeCompare(locB);
-                const secA = (getSectionForProperty(a) || a.park || '').toLowerCase();
-                const secB = (getSectionForProperty(b) || b.park || '').toLowerCase();
-                return secA.localeCompare(secB);
-            } else if (activeSort === 'location-desc') {
-                const locA = (a.location || '').toLowerCase();
-                const locB = (b.location || '').toLowerCase();
-                if (locA !== locB) return locB.localeCompare(locA);
-                const secA = (getSectionForProperty(a) || a.park || '').toLowerCase();
-                const secB = (getSectionForProperty(b) || b.park || '').toLowerCase();
-                return secB.localeCompare(secA);
-            } else if (activeSort === 'section-asc') {
-                const secA = (getSectionForProperty(a) || a.park || '').toLowerCase();
-                const secB = (getSectionForProperty(b) || b.park || '').toLowerCase();
-                if (secA !== secB) return secA.localeCompare(secB);
-                const locA = (a.location || '').toLowerCase();
-                const locB = (b.location || '').toLowerCase();
-                return locA.localeCompare(locB);
-            } else if (activeSort === 'section-desc') {
-                const secA = (getSectionForProperty(a) || a.park || '').toLowerCase();
-                const secB = (getSectionForProperty(b) || b.park || '').toLowerCase();
-                if (secA !== secB) return secB.localeCompare(secA);
-                const locA = (a.location || '').toLowerCase();
-                const locB = (b.location || '').toLowerCase();
-                return locB.localeCompare(locA);
-            } else if (activeSort === 'price-asc') {
-                return parsePriceValue(a.price) - parsePriceValue(b.price);
-            } else if (activeSort === 'price-desc') {
-                return parsePriceValue(b.price) - parsePriceValue(a.price);
-            }
-            return 0;
-        });
+        // Sort properties (Featured pinned first by Location & Section priority when enabled, then activeSort)
+        filtered = window.sortPropertiesWithFeaturedPriority(filtered, activeSort);
 
         // If direct listing target is specified, sort it to the very top (index 0)
         if (targetProp) {
@@ -2915,20 +3054,14 @@ Could you please share more information and arrange a viewing appointment? Thank
                 });
 
                 // Shuffle or sort each agent's pool
-                agentGroups.forEach((groupProps) => {
+                agentGroups.forEach((groupProps, agentId) => {
                     if (isRandomEnabled) {
                         for (let i = groupProps.length - 1; i > 0; i--) {
                             const j = Math.floor(Math.random() * (i + 1));
                             [groupProps[i], groupProps[j]] = [groupProps[j], groupProps[i]];
                         }
                     } else {
-                        groupProps.sort((a, b) => {
-                            const dateA = a.lastUpdated || a.updatedAt || a.dateAdded || a.dateCreated;
-                            const dateB = b.lastUpdated || b.updatedAt || b.dateAdded || b.dateCreated;
-                            const timeA = dateA ? new Date(dateA).getTime() : (typeof a.id === 'number' ? a.id : (parseFloat(String(a.id).replace(/[^0-9]/g, '')) || 0));
-                            const timeB = dateB ? new Date(dateB).getTime() : (typeof b.id === 'number' ? b.id : (parseFloat(String(b.id).replace(/[^0-9]/g, '')) || 0));
-                            return timeB - timeA;
-                        });
+                        agentGroups.set(agentId, window.sortPropertiesWithFeaturedPriority(groupProps, 'date-desc', currentSettings));
                     }
                 });
 
@@ -2938,13 +3071,8 @@ Could you please share more information and arrange a viewing appointment? Thank
                         [unassignedGroup[i], unassignedGroup[j]] = [unassignedGroup[j], unassignedGroup[i]];
                     }
                 } else {
-                    unassignedGroup.sort((a, b) => {
-                        const dateA = a.lastUpdated || a.updatedAt || a.dateAdded || a.dateCreated;
-                        const dateB = b.lastUpdated || b.updatedAt || b.dateAdded || b.dateCreated;
-                        const timeA = dateA ? new Date(dateA).getTime() : (typeof a.id === 'number' ? a.id : (parseFloat(String(a.id).replace(/[^0-9]/g, '')) || 0));
-                        const timeB = dateB ? new Date(dateB).getTime() : (typeof b.id === 'number' ? b.id : (parseFloat(String(b.id).replace(/[^0-9]/g, '')) || 0));
-                        return timeB - timeA;
-                    });
+                    const sortedUnassigned = window.sortPropertiesWithFeaturedPriority(unassignedGroup, 'date-desc', currentSettings);
+                    unassignedGroup.splice(0, unassignedGroup.length, ...sortedUnassigned);
                 }
 
                 // Fair round-robin distribution across agent groups (maximum maxMainpageFeatured displayed)
@@ -2989,7 +3117,9 @@ Could you please share more information and arrange a viewing appointment? Thank
                     selected.push(...remainingFeatured.slice(0, maxMainpageFeatured - selected.length));
                 }
 
-                propertiesToDisplay = selected.slice(0, maxMainpageFeatured);
+                propertiesToDisplay = (!isRandomEnabled && currentSettings.prioritizeFeaturedAtTop !== false && String(currentSettings.prioritizeFeaturedAtTop) !== 'false')
+                    ? window.sortPropertiesWithFeaturedPriority(selected.slice(0, maxMainpageFeatured), 'date-desc', currentSettings)
+                    : selected.slice(0, maxMainpageFeatured);
             } else {
                 if (isRandomEnabled) {
                     let pool = [...filtered];
@@ -3992,10 +4122,23 @@ Could you please share more information and arrange a viewing appointment? Thank
         if (!banner || !el1 || !el2 || !el3) return;
 
         let hasAnimated = false;
+        let scrollBound = false;
+
+        function checkScroll() {
+            if (hasAnimated) return;
+            const rect = banner.getBoundingClientRect();
+            if (rect.top <= window.innerHeight * 0.95 && rect.bottom >= 0) {
+                runCountUp();
+            }
+        }
 
         function runCountUp() {
             if (hasAnimated) return;
             hasAnimated = true;
+            if (scrollBound) {
+                window.removeEventListener('scroll', checkScroll);
+                scrollBound = false;
+            }
 
             const startTime = performance.now();
             const duration = 1600; // ms
@@ -4036,14 +4179,6 @@ Could you please share more information and arrange a viewing appointment? Thank
             requestAnimationFrame(step);
         }
 
-        function checkScroll() {
-            if (hasAnimated) return;
-            const rect = banner.getBoundingClientRect();
-            if (rect.top <= window.innerHeight * 0.95 && rect.bottom >= 0) {
-                runCountUp();
-            }
-        }
-
         if ('IntersectionObserver' in window) {
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
@@ -4056,6 +4191,7 @@ Could you please share more information and arrange a viewing appointment? Thank
             observer.observe(banner);
         }
 
+        scrollBound = true;
         window.addEventListener('scroll', checkScroll, { passive: true });
         checkScroll();
     }
@@ -4065,7 +4201,7 @@ Could you please share more information and arrange a viewing appointment? Thank
     const defaultLogoSvg = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iOTAiIHZpZXdCb3g9IjAgMCAzMDAgOTAiPjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iOTAiIHJ4PSIxMCIgZmlsbD0iIzAwNzdiNiIvPjxwYXRoIGQ9Ik0zMCA2MFYzMGwyMC0xMHY0MGwyMC0xMHYzNUgzMHoiIGZpbGw9IiMzOGJkZjgiLz48dGV4dCB4PSI4NSIgeT0iNTIiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjIyIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iI2ZmZmZmZiIgbGV0dGVyLXNwYWNpbmc9IjIiPk5PIExPR088L3RleHQ+PC9zdmc+';
 
     const defaultWatermarkSettings = {
-        type: 'logo',
+        type: 'none',
         text: 'MyFactorySpace',
         position: 'bottom-right',
         opacity: 85,
@@ -4144,20 +4280,41 @@ Could you please share more information and arrange a viewing appointment? Thank
 
         return new Promise((resolve) => {
             let isResolved = false;
-            const timeoutId = setTimeout(() => {
-                console.warn('applyWatermark timeout hit, returning original image');
-                safeResolve(base64Image);
-            }, 5000);
+            let canvasRef = null;
+            let logoImgRef = null;
+            const img = new Image();
+
+            const releaseMemory = () => {
+                if (canvasRef) {
+                    canvasRef.width = 0;
+                    canvasRef.height = 0;
+                    canvasRef = null;
+                }
+                img.onload = null;
+                img.onerror = null;
+                try { img.src = ''; } catch (e) {}
+                if (logoImgRef) {
+                    logoImgRef.onload = null;
+                    logoImgRef.onerror = null;
+                    try { logoImgRef.src = ''; } catch (e) {}
+                    logoImgRef = null;
+                }
+            };
 
             const safeResolve = (val) => {
                 if (!isResolved) {
                     isResolved = true;
                     clearTimeout(timeoutId);
+                    releaseMemory();
                     resolve(val);
                 }
             };
 
-            const img = new Image();
+            const timeoutId = setTimeout(() => {
+                console.warn('applyWatermark timeout hit, returning original image');
+                safeResolve(base64Image);
+            }, 5000);
+
             if (typeof sourceSrc === 'string' && (sourceSrc.startsWith('http://') || sourceSrc.startsWith('https://'))) {
                 img.crossOrigin = 'anonymous';
             }
@@ -4165,6 +4322,7 @@ Could you please share more information and arrange a viewing appointment? Thank
             img.onload = () => {
                 try {
                     const canvas = document.createElement('canvas');
+                    canvasRef = canvas;
                     let width = img.naturalWidth || img.width || 800;
                     let height = img.naturalHeight || img.height || 600;
                     const maxDim = 2400;
@@ -4301,11 +4459,13 @@ Could you please share more information and arrange a viewing appointment? Thank
 
                         if (isDefaultSvgLogo) {
                             const logoImg = new Image();
+                            logoImgRef = logoImg;
                             logoImg.onload = () => drawAndExportLogo(logoImg);
                             logoImg.onerror = () => drawAndExportLogo(null);
                             logoImg.src = logoSrc;
                         } else {
                             const logoImg = new Image();
+                            logoImgRef = logoImg;
                             if (typeof logoSrc === 'string' && (logoSrc.startsWith('http://') || logoSrc.startsWith('https://'))) {
                                 logoImg.crossOrigin = 'anonymous';
                             }
@@ -4380,14 +4540,22 @@ Could you please share more information and arrange a viewing appointment? Thank
                         p.rawImages = [...p.images];
                         p.rawImage = p.rawImages[0];
                     } else {
-                        p.rawImages = ['assets/images/warehouse.jpg'];
-                        p.rawImage = 'assets/images/warehouse.jpg';
+                        p.rawImages = ['assets/images/hero.jpg'];
+                        p.rawImage = 'assets/images/hero.jpg';
                     }
                 }
 
-                const newWatermarkedImages = await Promise.all(p.rawImages.map(async (rawItem) => {
-                    return await applyWatermark(rawItem);
-                }));
+                // Skip redundant client-side canvas encoding if dashboard already uploaded watermarked URLs
+                const hasPreWatermarkedUrls = Array.isArray(p.images) && p.images.length > 0 &&
+                    p.images.length === p.rawImages.length &&
+                    JSON.stringify(p.images) !== JSON.stringify(p.rawImages) &&
+                    p.images.every(img => typeof img === 'string' && (img.startsWith('http://') || img.startsWith('https://') || img.startsWith('data:image')));
+                if (hasPreWatermarkedUrls) continue;
+
+                const newWatermarkedImages = [];
+                for (let j = 0; j < p.rawImages.length; j++) {
+                    newWatermarkedImages.push(await applyWatermark(p.rawImages[j]));
+                }
 
                 const newPrimaryImage = (newWatermarkedImages && newWatermarkedImages.length > 0) ? newWatermarkedImages[0] : p.rawImage;
 
@@ -4408,8 +4576,13 @@ Could you please share more information and arrange a viewing appointment? Thank
         }
     }
 
-    // Run watermark process on index page load
-    applyWatermarksToProperties();
+    // Only run pre-Supabase watermark pass if a non-'none' watermark setting is already cached locally
+    try {
+        const cachedWm = safeJsonParse('industria_watermark_settings', null);
+        if (cachedWm && cachedWm.type && cachedWm.type !== 'none') {
+            applyWatermarksToProperties();
+        }
+    } catch (e) {}
 
     // Real-Time Cross-Tab / Dashboard Sync Handler
     window.addEventListener('storage', (e) => {
@@ -4442,6 +4615,7 @@ Could you please share more information and arrange a viewing appointment? Thank
         if (!e.key || e.key === 'industria_settings' || e.key === 'industria_branding_settings') {
             applySiteSettings();
             applyBranding();
+            if (typeof renderProperties === 'function') renderProperties();
         }
     });
 

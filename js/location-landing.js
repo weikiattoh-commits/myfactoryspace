@@ -504,7 +504,10 @@
         const ogDesc = document.getElementById('og-desc');
         if (ogDesc) ogDesc.setAttribute('content', data.metaDescription);
         const ogUrl = document.getElementById('og-url');
-        if (ogUrl) ogUrl.setAttribute('content', `https://www.myfactoryspace.com/location.html?city=${data.slug}`);
+        const cityCanonicalUrl = `https://www.myfactoryspace.com/location.html?city=${data.slug}`;
+        if (ogUrl) ogUrl.setAttribute('content', cityCanonicalUrl);
+        const canonicalEl = document.getElementById('page-canonical') || document.querySelector('link[rel="canonical"]');
+        if (canonicalEl) canonicalEl.setAttribute('href', cityCanonicalUrl);
 
         // 2. Active Tab in City Navigation Bar
         document.querySelectorAll('.city-nav-btn').forEach(btn => btn.classList.remove('active'));
@@ -800,8 +803,12 @@
             return;
         }
 
+        const orderedProps = typeof window.sortPropertiesWithFeaturedPriority === 'function'
+            ? window.sortPropertiesWithFeaturedPriority(propsList, 'date-desc')
+            : propsList;
+
         container.innerHTML = '';
-        propsList.forEach(prop => {
+        orderedProps.forEach(prop => {
             if (typeof window.createStandardPropertyCard === 'function') {
                 const card = window.createStandardPropertyCard(prop);
                 if (card) container.appendChild(card);
@@ -835,7 +842,7 @@
 
     // Cross-tab auto sync: re-render location page whenever parks, settings, or properties change in Dashboard
     window.addEventListener('storage', (e) => {
-        if (e.key === 'industria_industrial_parks' || e.key === 'industria_location_settings' || e.key === 'industria_properties') {
+        if (e.key === 'industria_industrial_parks' || e.key === 'industria_location_settings' || e.key === 'industria_properties' || e.key === 'industria_settings') {
             renderLocationPage();
         }
     });

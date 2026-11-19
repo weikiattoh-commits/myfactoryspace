@@ -1513,7 +1513,7 @@
             allImages.unshift(prop.image.trim());
         }
         if (allImages.length === 0) {
-            allImages.push('assets/images/warehouse.jpg');
+            allImages.push('assets/images/hero.jpg');
         }
 
         const totalPhotos = allImages.length;
@@ -2042,15 +2042,32 @@
         try {
             const dataUri = await new Promise((resolve) => {
                 const tempImg = new Image();
+                let canvas = null;
+                let done = false;
+                const finish = (val) => {
+                    if (done) return;
+                    done = true;
+                    clearTimeout(timeoutId);
+                    if (canvas) {
+                        canvas.width = 0;
+                        canvas.height = 0;
+                        canvas = null;
+                    }
+                    tempImg.onload = null;
+                    tempImg.onerror = null;
+                    try { tempImg.src = ''; } catch (e) {}
+                    resolve(val);
+                };
+                const timeoutId = setTimeout(() => finish(canonicalUrl), 3500);
                 tempImg.crossOrigin = 'anonymous';
                 tempImg.onload = () => {
                     try {
                         const nw = tempImg.naturalWidth;
                         const nh = tempImg.naturalHeight;
                         if (!nw || !nh) {
-                            return resolve(canonicalUrl);
+                            return finish(canonicalUrl);
                         }
-                        const canvas = document.createElement('canvas');
+                        canvas = document.createElement('canvas');
                         canvas.width = nw;
                         canvas.height = nh;
                         const ctx = canvas.getContext('2d');
@@ -2058,17 +2075,16 @@
                         const isPng = canonicalUrl.toLowerCase().includes('.png');
                         const b64 = canvas.toDataURL(isPng ? 'image/png' : 'image/jpeg', 0.95);
                         if (b64 && b64.length > 500) {
-                            resolve(b64);
+                            finish(b64);
                         } else {
-                            resolve(canonicalUrl);
+                            finish(canonicalUrl);
                         }
                     } catch (canvasErr) {
-                        resolve(canonicalUrl);
+                        finish(canonicalUrl);
                     }
                 };
-                tempImg.onerror = () => resolve(canonicalUrl);
+                tempImg.onerror = () => finish(canonicalUrl);
                 tempImg.src = canonicalUrl;
-                setTimeout(() => resolve(canonicalUrl), 3500);
             });
             if (dataUri && typeof dataUri === 'string' && dataUri.startsWith('data:image')) {
                 return dataUri;
@@ -2159,12 +2175,17 @@
                     try {
                         if (img.complete && img.naturalWidth > 0 && img.naturalHeight > 0) {
                             const c = document.createElement('canvas');
-                            c.width = img.naturalWidth;
-                            c.height = img.naturalHeight;
-                            const ctx = c.getContext('2d');
-                            ctx.drawImage(img, 0, 0);
-                            const isPng = (img.src || '').toLowerCase().includes('.png') || (img.currentSrc || '').toLowerCase().includes('.png');
-                            dataUri = c.toDataURL(isPng ? 'image/png' : 'image/jpeg', 0.95);
+                            try {
+                                c.width = img.naturalWidth;
+                                c.height = img.naturalHeight;
+                                const ctx = c.getContext('2d');
+                                ctx.drawImage(img, 0, 0);
+                                const isPng = (img.src || '').toLowerCase().includes('.png') || (img.currentSrc || '').toLowerCase().includes('.png');
+                                dataUri = c.toDataURL(isPng ? 'image/png' : 'image/jpeg', 0.95);
+                            } finally {
+                                c.width = 0;
+                                c.height = 0;
+                            }
                         }
                     } catch(e) {}
 

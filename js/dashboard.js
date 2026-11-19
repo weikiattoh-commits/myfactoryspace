@@ -421,6 +421,28 @@ function initDashboardApp() {
         randomFeaturedAgents: true,
         maxFeaturedAgents: 6,
         maxFeaturedAgentsDisplayed: 3,
+        maxPhotosPerProperty: 5,
+        maxListingsPerAgent: 10,
+        prioritizeFeaturedAtTop: true,
+        featuredPriorityMode: 'location-then-section',
+        locationPriorityOrder: ['Petaling Jaya', 'Subang Jaya', 'Shah Alam', 'Klang'],
+        sectionPriorityOrder: [],
+        costingConfig: {
+            agentCount: 5,
+            usdMyrRate: 4.45,
+            bufferPct: 8,
+            godaddyYearlyMyr: 108,
+            supabasePlan: '25',
+            supabaseUsd: 25,
+            vercelPlan: '20',
+            vercelUsd: 20,
+            googleAiMyr: 97.99,
+            googleAiAllocPct: 100,
+            mandayRate: 350,
+            buildMandays: 15,
+            amortizeMonths: 12,
+            maintMandaysMo: 1.5
+        },
 
         // Time Zone & Regional Management
         timezone: 'Asia/Kuala_Lumpur',
@@ -598,6 +620,30 @@ function initDashboardApp() {
     }
     window.isParkAllowed = isParkAllowed;
 
+    function getMaxPhotosPerProperty() {
+        const s = Object.assign({}, defaultSettings, JSON.parse(localStorage.getItem('industria_settings') || 'null') || settings || {});
+        const val = parseInt(s.maxPhotosPerProperty, 10);
+        return (!isNaN(val) && val >= 1) ? val : 5;
+    }
+
+    function getMaxListingsPerAgent() {
+        const s = Object.assign({}, defaultSettings, JSON.parse(localStorage.getItem('industria_settings') || 'null') || settings || {});
+        const val = parseInt(s.maxListingsPerAgent, 10);
+        return (!isNaN(val) && val >= 0) ? val : 10; // 0 = Unlimited
+    }
+
+    function getAgentListingCount(agentObj, allProps, allAgentsList, excludePropId) {
+        if (!agentObj || !Array.isArray(allProps)) return 0;
+        const agIdStr = String(agentObj.id || '');
+        return allProps.filter(p => {
+            if (!p || (excludePropId !== undefined && excludePropId !== null && String(p.id) === String(excludePropId))) return false;
+            const matched = typeof getAgentForProperty === 'function' ? getAgentForProperty(p, allAgentsList) : null;
+            if (matched && String(matched.id) === agIdStr) return true;
+            if (!matched && p.createdByAgentId && String(p.createdByAgentId) === agIdStr) return true;
+            return false;
+        }).length;
+    }
+
     function updateAgentPropertyScopeBanner() {
         const scopeCard = document.getElementById('agent-property-scope-card');
         const scopeBadges = document.getElementById('agent-property-parks-badges');
@@ -607,6 +653,26 @@ function initDashboardApp() {
         if (allowedParks !== null) {
             scopeCard.style.display = 'flex';
             scopeBadges.innerHTML = '';
+
+            // Show agent's current listing quota pill
+            const activeAgent = typeof getCurrentAgent === 'function' ? getCurrentAgent() : null;
+            const maxListings = getMaxListingsPerAgent();
+            if (activeAgent) {
+                const allAgentsList = (typeof agents !== 'undefined' && Array.isArray(agents)) ? agents : safeJsonParse('industria_agents', []);
+                const allPropsList = (typeof properties !== 'undefined' && Array.isArray(properties)) ? properties : safeJsonParse('industria_properties', []);
+                const currentCount = getAgentListingCount(activeAgent, allPropsList, allAgentsList);
+                const isAtLimit = maxListings > 0 && currentCount >= maxListings;
+                const quotaBadge = document.createElement('span');
+                quotaBadge.className = 'status-badge';
+                quotaBadge.style.cssText = isAtLimit
+                    ? 'background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; font-weight: 700; font-size: 0.78rem; border-radius: 12px; padding: 2px 10px; margin-right: 4px;'
+                    : 'background: #fffbeb; color: #b45309; border: 1px solid #fde68a; font-weight: 700; font-size: 0.78rem; border-radius: 12px; padding: 2px 10px; margin-right: 4px;';
+                quotaBadge.innerHTML = maxListings > 0
+                    ? `<i class="fa-solid fa-layer-group" style="margin-right: 4px;"></i> Listings: ${currentCount} / ${maxListings}${isAtLimit ? ' (Limit)' : ''}`
+                    : `<i class="fa-solid fa-layer-group" style="margin-right: 4px;"></i> Listings: ${currentCount} / Unlimited`;
+                scopeBadges.appendChild(quotaBadge);
+            }
+
             if (allowedParks.length > 0) {
                 allowedParks.forEach(park => {
                     const badge = document.createElement('span');
@@ -649,11 +715,13 @@ function initDashboardApp() {
         addPropertyBtn.style.display = 'none';
     }
 
-    const isCurrentAdminRole = currentUserRole === 'Administrator';
+    const isCurrentAdminRole = String(currentUserRole || '').trim().toLowerCase() === 'administrator';
     const initNavSettingsGeneral = document.getElementById('nav-settings-general');
     const initNavSettingsServer = document.getElementById('nav-settings-server');
+    const initNavSettingsCosting = document.getElementById('nav-settings-costing');
     if (initNavSettingsGeneral) initNavSettingsGeneral.style.display = isCurrentAdminRole ? '' : 'none';
     if (initNavSettingsServer) initNavSettingsServer.style.display = isCurrentAdminRole ? '' : 'none';
+    if (initNavSettingsCosting) initNavSettingsCosting.style.display = isCurrentAdminRole ? '' : 'none';
 
     function escapeHtml(str) {
         return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -696,7 +764,7 @@ function initDashboardApp() {
                                 }
                             }
                             if (!copy.images || copy.images.length === 0) {
-                                copy.images = [(copy.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[copy.id]) ? defaultCleanImages[copy.id] : 'assets/images/warehouse.jpg'];
+                                copy.images = [(copy.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[copy.id]) ? defaultCleanImages[copy.id] : 'assets/images/hero.jpg'];
                             }
                             copy.image = copy.images[0];
                             copy.rawImage = (copy.rawImages && copy.rawImages.length > 0) ? copy.rawImages[0] : copy.image;
@@ -737,8 +805,8 @@ function initDashboardApp() {
         2: ['assets/images/drone_shahalam.jpg'],
         3: ['assets/images/factory.jpg', 'assets/images/drone_shahalam.jpg'],
         4: ['assets/images/hero.jpg'],
-        5: ['assets/images/drone_subang.jpg', 'assets/images/warehouse.jpg', 'assets/images/drone_shahalam.jpg', 'assets/images/factory.jpg'],
-        6: ['assets/images/drone_klang.jpg', 'assets/images/drone_all.jpg', 'assets/images/hero.jpg', 'assets/images/warehouse.jpg']
+        5: ['assets/images/drone_subang.jpg', 'assets/images/hero.jpg', 'assets/images/drone_shahalam.jpg', 'assets/images/factory.jpg'],
+        6: ['assets/images/drone_klang.jpg', 'assets/images/drone_all.jpg', 'assets/images/hero.jpg']
     };
 
     // Mock Data for Properties
@@ -822,7 +890,7 @@ function initDashboardApp() {
             }
         }
         if (!p.rawImage || p.rawImage.startsWith('data:') || (isStuckOnWarehouse && p.rawImages && p.rawImages.length > 0)) {
-            p.rawImage = (p.rawImages && p.rawImages.length > 0) ? p.rawImages[0] : ((p.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[p.id]) ? defaultCleanImages[p.id] : 'assets/images/warehouse.jpg');
+            p.rawImage = (p.rawImages && p.rawImages.length > 0) ? p.rawImages[0] : ((p.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[p.id]) ? defaultCleanImages[p.id] : 'assets/images/hero.jpg');
         }
 
         if (isStuckOnWarehouse || !p.images || p.images.length === 0) {
@@ -831,11 +899,11 @@ function initDashboardApp() {
             } else if (p.rawImages && p.rawImages.length > 0) {
                 p.images = [...p.rawImages];
             } else {
-                p.images = [(p.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[p.id]) ? defaultCleanImages[p.id] : 'assets/images/warehouse.jpg'];
+                p.images = [(p.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[p.id]) ? defaultCleanImages[p.id] : 'assets/images/hero.jpg'];
             }
         }
         if (!p.image || isStuckOnWarehouse) {
-            p.image = (p.images && p.images.length > 0) ? p.images[0] : ((p.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[p.id]) ? defaultCleanImages[p.id] : 'assets/images/warehouse.jpg');
+            p.image = (p.images && p.images.length > 0) ? p.images[0] : ((p.id && typeof defaultCleanImages !== 'undefined' && defaultCleanImages[p.id]) ? defaultCleanImages[p.id] : 'assets/images/hero.jpg');
         }
         if (String(p.id) === '3' && (!p.availableUnits || p.availableUnits === '1')) {
             p.availableUnits = '2';
@@ -860,6 +928,7 @@ function initDashboardApp() {
             }
         }
     });
+    window.properties = properties;
     safeLocalStorageSet('industria_properties', properties);
 
     function formatAreaString(val, defaultUnit = 'sqft') {
@@ -895,8 +964,8 @@ function initDashboardApp() {
                     const base = sp.specs && typeof sp.specs === 'object' ? sp.specs : {};
                     const rawPriceVal = base.price || (typeof sp.price === 'number' ? `RM ${sp.price}` : sp.price) || '';
                     const rawIntent = base.intent || sp.intent || (rawPriceVal && String(rawPriceVal).toLowerCase().includes('mo') ? 'Rent' : 'Sale');
-                    const propImages = Array.isArray(sp.images) && sp.images.length > 0 ? sp.images : (Array.isArray(base.images) && base.images.length > 0 ? base.images : [(base.image || sp.image || 'assets/images/warehouse.jpg')]);
-                    const firstImg = propImages[0] || 'assets/images/warehouse.jpg';
+                    const propImages = Array.isArray(sp.images) && sp.images.length > 0 ? sp.images : (Array.isArray(base.images) && base.images.length > 0 ? base.images : [(base.image || sp.image || 'assets/images/hero.jpg')]);
+                    const firstImg = propImages[0] || 'assets/images/hero.jpg';
                     let rawImgs = [];
                     if (Array.isArray(base.rawImages) && base.rawImages.length > 0) {
                         rawImgs = [...base.rawImages];
@@ -958,6 +1027,7 @@ function initDashboardApp() {
                     });
                 });
                 properties = mappedProps;
+                window.properties = properties;
                 safeLocalStorageSet('industria_properties', properties);
                 if (typeof renderTable === 'function') renderTable();
                 else if (typeof window.renderTable === 'function') window.renderTable();
@@ -1017,6 +1087,7 @@ function initDashboardApp() {
                 parks = parksObj;
                 safeLocalStorageSet('industria_industrial_parks', parks);
                 if (typeof renderParksTable === 'function') renderParksTable();
+                if (typeof renderFeaturedPrioritySettings === 'function') renderFeaturedPrioritySettings(settings);
                 else if (typeof window.renderParksTable === 'function') window.renderParksTable();
             }
         } catch (e) {
@@ -1246,6 +1317,7 @@ function initDashboardApp() {
     window.formatDateTimeWithTimezone = formatDateTimeWithTimezone;
 
     function updateLiveClocks() {
+        if (document.hidden) return;
         const tzCfg = getTimezoneSettings();
         const now = new Date();
         const tz = tzCfg.timezone || 'Asia/Kuala_Lumpur';
@@ -1271,6 +1343,10 @@ function initDashboardApp() {
                 }
             }
         }
+
+        // Skip settings-view clock DOM formatting when the Settings tab is hidden
+        const settingsView = document.getElementById('settings-view');
+        if (!settingsView || settingsView.style.display === 'none') return;
 
         // 2. General Settings Quick Overview Banner
         const genClock = document.getElementById('gen-overview-clock');
@@ -1616,6 +1692,9 @@ function initDashboardApp() {
             syncPropertyFeaturesUI(settings);
         } else if (typeof window.syncPropertyFeaturesUI === 'function') {
             window.syncPropertyFeaturesUI(settings);
+        }
+        if (typeof window.renderCostingCalculator === 'function') {
+            window.renderCostingCalculator();
         } else if (typeof updateFeaturedRandomUI === 'function') {
             const isRandomEnabled = settings && (settings.randomFeaturedProperties !== false && String(settings.randomFeaturedProperties) !== 'false');
             updateFeaturedRandomUI(isRandomEnabled);
@@ -1664,7 +1743,7 @@ function initDashboardApp() {
                 `;
             }
 
-            const photoThumbSrc = prop.image || (prop.images && prop.images.length > 0 ? prop.images[0] : 'assets/images/warehouse.jpg');
+            const photoThumbSrc = prop.image || (prop.images && prop.images.length > 0 ? prop.images[0] : 'assets/images/hero.jpg');
             const dateCreatedText = formatDateCreated(prop.dateCreated || prop.dateAdded || prop.postedDate || prop.createdAt);
             const lastUpdatedText = formatDateCreated(prop.lastUpdated || prop.updatedAt || prop.dateUpdated || prop.updated_at || prop.dateCreated || prop.dateAdded);
 
@@ -1884,7 +1963,7 @@ function initDashboardApp() {
                 ? 'background-color: #fef08a; color: #854d0e; border: 1px solid #fde047;' 
                 : 'background-color: #fecdd3; color: #9f1239; border: 1px solid #fda4af;';
             const statusClass = prop.status === 'Inactive' ? 'status-inactive' : (prop.status === 'Pending' ? 'status-pending' : 'status-active');
-            const photoThumbSrc = prop.image || (prop.images && prop.images.length > 0 ? prop.images[0] : 'assets/images/warehouse.jpg');
+            const photoThumbSrc = prop.image || (prop.images && prop.images.length > 0 ? prop.images[0] : 'assets/images/hero.jpg');
             const dateCreatedText = formatDateCreated(prop.dateCreated || prop.dateAdded || prop.postedDate || prop.createdAt);
             const lastUpdatedText = formatDateCreated(prop.lastUpdated || prop.updatedAt || prop.dateUpdated || prop.updated_at || prop.dateCreated || prop.dateAdded);
 
@@ -2032,7 +2111,7 @@ function initDashboardApp() {
                 try {
                     const uploaded = await window.IndustraSupabase.uploadImages(prop.images);
                     prop.images = uploaded;
-                    prop.image = uploaded[0] || 'assets/images/warehouse.jpg';
+                    prop.image = uploaded[0] || 'assets/images/hero.jpg';
                 } catch(e) {
                     console.warn('Image upload error during Supabase sync:', e);
                 }
@@ -2041,7 +2120,7 @@ function initDashboardApp() {
                 try {
                     const uploadedRaw = await window.IndustraSupabase.uploadImages(prop.rawImages);
                     prop.rawImages = uploadedRaw;
-                    prop.rawImage = uploadedRaw[0] || 'assets/images/warehouse.jpg';
+                    prop.rawImage = uploadedRaw[0] || 'assets/images/hero.jpg';
                 } catch(e) {
                     console.warn('Raw image upload error during Supabase sync:', e);
                 }
@@ -2408,6 +2487,20 @@ function initDashboardApp() {
         const propTbCtrl = document.getElementById('mainpage-featured-toolbar-ctrl');
         if (propTbCtrl) {
             propTbCtrl.title = `Randomly select from the up to ${maxPerAgent} properties per agent to appear on the homepage (display up to ${maxPropsDisplay}).`;
+        }
+
+        const maxPhotosLimit = getMaxPhotosPerProperty();
+        const maxPhotosLabelEl = document.getElementById('properties-max-photos-label');
+        if (maxPhotosLabelEl) {
+            maxPhotosLabelEl.textContent = maxPhotosLimit;
+        }
+
+        const maxListingsLimit = getMaxListingsPerAgent();
+        const maxListingsBadgeEl = document.getElementById('properties-listing-quota-badge');
+        if (maxListingsBadgeEl) {
+            maxListingsBadgeEl.innerHTML = maxListingsLimit > 0
+                ? `<i class="fa-solid fa-layer-group" style="color: #d97706;"></i> Max <span id="properties-max-listings-per-agent-label">${maxListingsLimit}</span> Listings / Agent`
+                : `<i class="fa-solid fa-layer-group" style="color: #d97706;"></i> <span id="properties-max-listings-per-agent-label">Unlimited</span> Listings / Agent`;
         }
 
         // Agents view controls
@@ -2987,41 +3080,53 @@ function initDashboardApp() {
     // Reusable image pre-compression helper: compresses & resizes raw ultra high-res photos before crop
     function compressImageBeforeCrop(dataUrl, maxDimension, quality, mimeType, callback) {
         const img = new Image();
+        const cleanupImg = () => {
+            img.onload = null;
+            img.onerror = null;
+            try { img.src = ''; } catch (e) {}
+        };
         img.onload = function() {
-            let width = img.width;
-            let height = img.height;
-            
-            // Downscale proportionally if dimensions exceed maxDimension (e.g. 2048px)
-            if (width > maxDimension || height > maxDimension) {
-                if (width > height) {
-                    height = Math.round((height * maxDimension) / width);
-                    width = maxDimension;
-                } else {
-                    width = Math.round((width * maxDimension) / height);
-                    height = maxDimension;
-                }
-            }
-
             const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = 'high';
-            
-            if (mimeType === 'image/png') {
-                ctx.clearRect(0, 0, width, height);
-            } else {
-                ctx.fillStyle = '#ffffff';
-                ctx.fillRect(0, 0, width, height);
-            }
-            ctx.drawImage(img, 0, 0, width, height);
+            try {
+                let width = img.width;
+                let height = img.height;
+                
+                // Downscale proportionally if dimensions exceed maxDimension (e.g. 2048px)
+                if (width > maxDimension || height > maxDimension) {
+                    if (width > height) {
+                        height = Math.round((height * maxDimension) / width);
+                        width = maxDimension;
+                    } else {
+                        width = Math.round((width * maxDimension) / height);
+                        height = maxDimension;
+                    }
+                }
 
-            const compressedDataUrl = canvas.toDataURL(mimeType || 'image/jpeg', quality || 0.88);
-            callback(compressedDataUrl);
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                
+                ctx.imageSmoothingEnabled = true;
+                ctx.imageSmoothingQuality = 'high';
+                
+                if (mimeType === 'image/png') {
+                    ctx.clearRect(0, 0, width, height);
+                } else {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, width, height);
+                }
+                ctx.drawImage(img, 0, 0, width, height);
+
+                const compressedDataUrl = canvas.toDataURL(mimeType || 'image/jpeg', quality || 0.88);
+                callback(compressedDataUrl);
+            } finally {
+                canvas.width = 0;
+                canvas.height = 0;
+                cleanupImg();
+            }
         };
         img.onerror = function() {
+            cleanupImg();
             callback(dataUrl);
         };
         img.src = dataUrl;
@@ -3071,9 +3176,43 @@ function initDashboardApp() {
 
     // Property photo input — 3:2 ratio
     let fileQueue = [];
+
+    function enqueuePropertyPhotos(files) {
+        if (!files || files.length === 0) return;
+        const maxPhotos = getMaxPhotosPerProperty();
+        const remaining = maxPhotos - currentPropertyImages.length;
+
+        const clearFileInputs = () => {
+            const multi = document.getElementById('propImageMultiple');
+            if (multi) multi.value = '';
+            if (propImageInput) propImageInput.value = '';
+        };
+
+        if (remaining <= 0) {
+            clearFileInputs();
+            alert(`⚠️ Photo Limit Reached: Each property listing allows up to ${maxPhotos} photos.\n\nPlease remove an existing photo or adjust "Max Photos Per Property" in Dashboard > Settings.`);
+            return;
+        }
+
+        const incoming = Array.from(files);
+        if (incoming.length > remaining) {
+            alert(`⚠️ Photo Limit Notice: Each property listing allows up to ${maxPhotos} photos (currently ${currentPropertyImages.length}).\n\nOnly the first ${remaining} selected photo(s) will be uploaded.`);
+            fileQueue = incoming.slice(0, remaining);
+        } else {
+            fileQueue = incoming;
+        }
+        processNextInQueue();
+    }
     
     function processNextInQueue() {
         if (fileQueue.length > 0) {
+            if (currentPropertyImages.length >= getMaxPhotosPerProperty()) {
+                fileQueue = [];
+                const propImageInputMultiple = document.getElementById('propImageMultiple');
+                if (propImageInputMultiple) propImageInputMultiple.value = '';
+                if (propImageInput) propImageInput.value = '';
+                return;
+            }
             const file = fileQueue.shift();
             processFileForCropper(
                 file, 3 / 2, 'property',
@@ -3090,10 +3229,8 @@ function initDashboardApp() {
 
     if (propImageInput) {
         propImageInput.addEventListener('change', function(e) {
-            const files = e.target.files;
-            if (files && files.length > 0) {
-                fileQueue = Array.from(files);
-                processNextInQueue();
+            if (e.target.files && e.target.files.length > 0) {
+                enqueuePropertyPhotos(e.target.files);
             }
         });
     }
@@ -3379,6 +3516,14 @@ function initDashboardApp() {
                             }
                         }
 
+                        const maxPhotos = getMaxPhotosPerProperty();
+                        if (currentPropertyImages.length >= maxPhotos) {
+                            fileQueue = [];
+                            closeCropper();
+                            alert(`⚠️ Photo Limit Reached: Each property listing allows up to ${maxPhotos} photos.`);
+                            return;
+                        }
+
                         currentPropertyImages.push(storedWatermarkedUrl);
                         currentRawPropertyImages.push(storedRawUrl);
 
@@ -3386,8 +3531,15 @@ function initDashboardApp() {
 
                         if (window.renderPropertyGallery) window.renderPropertyGallery();
                         
-                        // Proceed to next photo in queue if multiple images were uploaded
-                        processNextInQueue();
+                        // Proceed to next photo in queue if remaining slots allow
+                        if (currentPropertyImages.length < maxPhotos) {
+                            processNextInQueue();
+                        } else {
+                            fileQueue = [];
+                            const multi = document.getElementById('propImageMultiple');
+                            if (multi) multi.value = '';
+                            if (propImageInput) propImageInput.value = '';
+                        }
                     }
                 }
             }
@@ -3405,6 +3557,20 @@ function initDashboardApp() {
         if (allowedParks !== null && allowedParks.length === 0) {
             alert('Access Restricted: You do not have any assigned parks. Please contact an Administrator to assign parks to your account before adding properties.');
             return;
+        }
+
+        // Enforce per-agent listing quota for specialist agents when creating new properties
+        const maxListingsPerAgent = getMaxListingsPerAgent();
+        if (allowedParks !== null && maxListingsPerAgent > 0) {
+            const activeAgent = typeof getCurrentAgent === 'function' ? getCurrentAgent() : null;
+            if (activeAgent) {
+                const allAgentsList = (typeof agents !== 'undefined' && Array.isArray(agents)) ? agents : safeJsonParse('industria_agents', []);
+                const currentCount = getAgentListingCount(activeAgent, properties, allAgentsList);
+                if (currentCount >= maxListingsPerAgent) {
+                    alert(`⚠️ Agent Listing Limit Reached: ${activeAgent.name} already has ${currentCount} property listings (maximum allowed is ${maxListingsPerAgent} per agent).\n\nPlease delete an existing listing or contact an Administrator to increase "Max Listings Per Agent" in Dashboard > Settings.`);
+                    return;
+                }
+            }
         }
 
         editingPropertyId = null;
@@ -3615,6 +3781,25 @@ function initDashboardApp() {
             }
 
             const isEditing = editingPropertyId !== null && editingPropertyId !== undefined;
+
+            // Enforce Max Listings Per Agent quota (checks target agent resolved by Park or active Agent)
+            const maxListingsPerAgent = getMaxListingsPerAgent();
+            if (maxListingsPerAgent > 0) {
+                const allAgentsList = (typeof agents !== 'undefined' && Array.isArray(agents)) ? agents : safeJsonParse('industria_agents', []);
+                const matchedTargetAgent = typeof getAgentForProperty === 'function'
+                    ? getAgentForProperty({ park: parkVal, location: locationVal }, allAgentsList)
+                    : null;
+                const quotaAgent = matchedTargetAgent || (allowedParks !== null && typeof getCurrentAgent === 'function' ? getCurrentAgent() : null);
+
+                if (quotaAgent) {
+                    const currentCount = getAgentListingCount(quotaAgent, properties, allAgentsList, isEditing ? editingPropertyId : null);
+                    if (currentCount >= maxListingsPerAgent) {
+                        alert(`⚠️ Agent Listing Limit Reached: ${quotaAgent.name} already has ${currentCount} property listings (limit is ${maxListingsPerAgent} per agent).\n\nPlease delete or reassign an existing listing for ${quotaAgent.name}, or adjust "Max Listings Per Agent" in Dashboard > Settings.`);
+                        return;
+                    }
+                }
+            }
+
             let targetPropIndex = -1;
 
             if (isEditing) {
@@ -3724,10 +3909,10 @@ function initDashboardApp() {
                     dateCreated: new Date().toISOString().split('T')[0],
                     dateAdded: new Date().toISOString().split('T')[0],
                     lastUpdated: new Date().toISOString().split('T')[0],
-                    images: currentPropertyImages.length > 0 ? [...currentPropertyImages] : ['assets/images/warehouse.jpg'],
-                    image: currentPropertyImages.length > 0 ? currentPropertyImages[0] : 'assets/images/warehouse.jpg',
-                    rawImages: currentRawPropertyImages.length > 0 ? [...currentRawPropertyImages] : (currentPropertyImages.length > 0 ? [...currentPropertyImages] : ['assets/images/warehouse.jpg']),
-                    rawImage: currentRawPropertyImages.length > 0 ? currentRawPropertyImages[0] : (currentPropertyImages.length > 0 ? currentPropertyImages[0] : 'assets/images/warehouse.jpg'),
+                    images: currentPropertyImages.length > 0 ? [...currentPropertyImages] : ['assets/images/hero.jpg'],
+                    image: currentPropertyImages.length > 0 ? currentPropertyImages[0] : 'assets/images/hero.jpg',
+                    rawImages: currentRawPropertyImages.length > 0 ? [...currentRawPropertyImages] : (currentPropertyImages.length > 0 ? [...currentPropertyImages] : ['assets/images/hero.jpg']),
+                    rawImage: currentRawPropertyImages.length > 0 ? currentRawPropertyImages[0] : (currentPropertyImages.length > 0 ? currentPropertyImages[0] : 'assets/images/hero.jpg'),
                     cleanRaw: currentRawPropertyImages.length > 0
                 };
                 properties.push(newProp);
@@ -6220,16 +6405,19 @@ function initDashboardApp() {
         const subtabGeneral = document.getElementById('settings-subtab-general');
         const subtabTimezone = document.getElementById('settings-subtab-timezone');
         const subtabServer = document.getElementById('settings-subtab-server');
+        const subtabCosting = document.getElementById('settings-subtab-costing');
         const subtabAdmin = document.getElementById('settings-subtab-admin');
 
         const tabBtnGeneral = document.getElementById('tab-btn-general');
         const tabBtnTimezone = document.getElementById('tab-btn-timezone');
         const tabBtnServer = document.getElementById('tab-btn-server');
+        const tabBtnCosting = document.getElementById('tab-btn-costing');
         const tabBtnAdmin = document.getElementById('tab-btn-admin');
 
         const navSettingsGeneral = document.getElementById('nav-settings-general');
         const navSettingsTimezone = document.getElementById('nav-settings-timezone');
         const navSettingsServer = document.getElementById('nav-settings-server');
+        const navSettingsCosting = document.getElementById('nav-settings-costing');
         const navSettingsAdmin = document.getElementById('nav-settings-admin');
 
         const settingsPageTitle = document.getElementById('settings-page-title');
@@ -6239,7 +6427,7 @@ function initDashboardApp() {
         const isCurrentAdmin = String(userRole).toLowerCase() === 'administrator';
         const canAccessGeneral = isCurrentAdmin;
 
-        // Non-Administrators (Supervisor, Assistant, Entry Support) CANNOT access General Settings, Time Zone, or Server Configuration
+        // Non-Administrators (Supervisor, Assistant, Entry Support) CANNOT access General Settings, Time Zone, Server Configuration, or Costing
         if (!isCurrentAdmin) {
             subtabName = 'admin';
         }
@@ -6248,26 +6436,31 @@ function initDashboardApp() {
         subtabGeneral.style.display = 'none';
         if (subtabTimezone) subtabTimezone.style.display = 'none';
         if (subtabServer) subtabServer.style.display = 'none';
+        if (subtabCosting) subtabCosting.style.display = 'none';
         subtabAdmin.style.display = 'none';
 
         // Remove active states
         if (tabBtnGeneral) tabBtnGeneral.classList.remove('active');
         if (tabBtnTimezone) tabBtnTimezone.classList.remove('active');
         if (tabBtnServer) tabBtnServer.classList.remove('active');
+        if (tabBtnCosting) tabBtnCosting.classList.remove('active');
         if (tabBtnAdmin) tabBtnAdmin.classList.remove('active');
 
         if (navSettingsGeneral) navSettingsGeneral.classList.remove('active');
         if (navSettingsTimezone) navSettingsTimezone.classList.remove('active');
         if (navSettingsServer) navSettingsServer.classList.remove('active');
+        if (navSettingsCosting) navSettingsCosting.classList.remove('active');
         if (navSettingsAdmin) navSettingsAdmin.classList.remove('active');
 
-        // Button visibility - strictly isCurrentAdmin for General, Timezone, and Server
+        // Button visibility - strictly isCurrentAdmin for General, Timezone, Server, and Costing
         if (tabBtnGeneral) tabBtnGeneral.style.display = isCurrentAdmin ? '' : 'none';
         if (tabBtnTimezone) tabBtnTimezone.style.display = isCurrentAdmin ? '' : 'none';
         if (tabBtnServer) tabBtnServer.style.display = isCurrentAdmin ? '' : 'none';
+        if (tabBtnCosting) tabBtnCosting.style.display = isCurrentAdmin ? '' : 'none';
         if (navSettingsGeneral) navSettingsGeneral.style.display = isCurrentAdmin ? '' : 'none';
         if (navSettingsTimezone) navSettingsTimezone.style.display = isCurrentAdmin ? '' : 'none';
         if (navSettingsServer) navSettingsServer.style.display = isCurrentAdmin ? '' : 'none';
+        if (navSettingsCosting) navSettingsCosting.style.display = isCurrentAdmin ? '' : 'none';
 
         const breadcrumbCurrent = document.getElementById('header-breadcrumb-current');
 
@@ -6286,6 +6479,13 @@ function initDashboardApp() {
             if (breadcrumbCurrent) breadcrumbCurrent.textContent = 'Settings / Server Config';
             if (typeof window.updateLocalStorageStatsUI === 'function') window.updateLocalStorageStatsUI();
             if (typeof window.checkSupabaseStorageUsage === 'function') window.checkSupabaseStorageUsage();
+        } else if (subtabName === 'costing' && isCurrentAdmin) {
+            if (subtabCosting) subtabCosting.style.display = 'block';
+            if (tabBtnCosting) tabBtnCosting.classList.add('active');
+            if (navSettingsCosting) navSettingsCosting.classList.add('active');
+            if (settingsPageTitle) settingsPageTitle.innerHTML = 'Settings <span style="font-weight: 400; font-size: 1.2rem; color: var(--text-muted);">&gt; Costing &amp; Agent Fee</span>';
+            if (breadcrumbCurrent) breadcrumbCurrent.textContent = 'Settings / Costing & Agent Fee';
+            if (typeof window.renderCostingCalculator === 'function') window.renderCostingCalculator();
         } else if (subtabName === 'admin') {
             subtabAdmin.style.display = 'block';
             if (tabBtnAdmin) tabBtnAdmin.classList.add('active');
@@ -6345,20 +6545,19 @@ function initDashboardApp() {
     }
 
     function getMinimizedSubcardsState() {
+        const fallback = {
+            'subcard-listing-badges': true,
+            'subcard-mainpage-featured-properties': true,
+            'subcard-mainpage-featured-agents': true,
+            'subcard-property-quotas': true,
+            'subcard-featured-priority': true
+        };
         try {
             const raw = localStorage.getItem(SETTINGS_MINIMIZED_SUBCARDS_KEY);
             if (raw) return JSON.parse(raw);
-            return {
-                'subcard-listing-badges': true,
-                'subcard-mainpage-featured-properties': true,
-                'subcard-mainpage-featured-agents': true
-            };
+            return fallback;
         } catch (e) {
-            return {
-                'subcard-listing-badges': true,
-                'subcard-mainpage-featured-properties': true,
-                'subcard-mainpage-featured-agents': true
-            };
+            return fallback;
         }
     }
 
@@ -6506,10 +6705,11 @@ function initDashboardApp() {
         }
     };
 
-    // Make entire card header clickable for fast expand/collapse on mobile & desktop
+    // Make entire card header clickable for fast expand/collapse on mobile & desktop (skip if header already binds onclick)
     document.addEventListener('click', function(e) {
         const header = e.target.closest('#settings-subtab-general .collapsible-card .card-header');
         if (header) {
+            if (header.hasAttribute('onclick')) return;
             if (e.target.closest('button, input, select, textarea, a, label')) return;
             const card = header.closest('.collapsible-card');
             if (card && card.id) {
@@ -9181,10 +9381,38 @@ function initDashboardApp() {
             maxAgentsDisplayEl.value = (typeof settings.maxFeaturedAgentsDisplayed === 'number' && settings.maxFeaturedAgentsDisplayed > 0) ? Math.min(6, settings.maxFeaturedAgentsDisplayed) : 3;
         }
 
+        const maxPhotosEl = document.getElementById('setting-max-photos-per-property');
+        if (maxPhotosEl) {
+            const pVal = parseInt(settings.maxPhotosPerProperty, 10);
+            maxPhotosEl.value = (!isNaN(pVal) && pVal >= 1) ? pVal : 5;
+        }
+
+        const maxListingsPerAgentEl = document.getElementById('setting-max-listings-per-agent');
+        if (maxListingsPerAgentEl) {
+            const lVal = parseInt(settings.maxListingsPerAgent, 10);
+            maxListingsPerAgentEl.value = (!isNaN(lVal) && lVal >= 0) ? lVal : 10;
+        }
+
+        const prioritizeTopEl = document.getElementById('setting-prioritize-featured-at-top');
+        if (prioritizeTopEl) {
+            prioritizeTopEl.checked = (settings.prioritizeFeaturedAtTop !== false && String(settings.prioritizeFeaturedAtTop) !== 'false');
+        }
+        const priorityModeEl = document.getElementById('setting-featured-priority-mode');
+        if (priorityModeEl) {
+            const modeVal = settings.featuredPriorityMode || 'location-then-section';
+            priorityModeEl.value = ['location-then-section', 'section-then-location', 'location-only', 'section-only'].includes(modeVal) ? modeVal : 'location-then-section';
+        }
+        if (typeof renderFeaturedPrioritySettings === 'function') {
+            renderFeaturedPrioritySettings(settings);
+        }
+
         if (typeof syncPropertyFeaturesUI === 'function') {
             syncPropertyFeaturesUI(settings);
         } else if (typeof window.syncPropertyFeaturesUI === 'function') {
             window.syncPropertyFeaturesUI(settings);
+        }
+        if (typeof window.renderCostingCalculator === 'function') {
+            window.renderCostingCalculator();
         }
 
         // Server Configuration
@@ -9227,6 +9455,371 @@ function initDashboardApp() {
             minLabel.textContent = `Minimum ${num}`;
         }
     }
+
+    // --- FEATURED LISTING DISPLAY PRIORITY (LOCATIONS & SECTIONS) ---
+    let pendingLocationPriorityOrder = Array.isArray(defaultSettings.locationPriorityOrder) ? [...defaultSettings.locationPriorityOrder] : ['Petaling Jaya', 'Subang Jaya', 'Shah Alam', 'Klang'];
+    let pendingSectionPriorityOrder = [];
+    let locPrioritySortable = null;
+    let secPrioritySortable = null;
+
+    function inferSectionFromParkForPriority(parkName) {
+        if (!parkName) return '';
+        const name = String(parkName).toLowerCase();
+        if (name.includes('pj 51') || name.includes('pjs 5')) return 'Seksyen 51';
+        if (name.includes('ace industrial') || name.includes('15/') || name.includes('tiong nam industrial park shah alam') || (name.includes('tiong nam') && !name.includes('pj'))) return 'Seksyen 15';
+        if (name.includes('sekitar 26') || name.includes('i-parc 1') || name.includes('i-parc 2') || name.includes('26/')) return 'Seksyen 26';
+        if (name.includes('hicom 27') || name.includes('27/')) return 'Seksyen 27';
+        if (name.includes('glenmarie') || name.includes('temasya')) return 'Glenmarie';
+        if (name.includes('batu tiga')) return 'Batu Tiga';
+        if (name.includes('sime uep')) return 'SIME UEP';
+        if (name.includes('subang hi-tech')) return 'Subang Hi-Tech';
+        if (name.includes('pjs 11') || name.includes('pjs 7') || name.includes('sunway')) return 'Bandar Sunway';
+        if (name.includes('bukit raja')) return 'Bandar Bukit Raja';
+        return '';
+    }
+
+    function collectLocationsAndSectionsMetadata() {
+        const activeParksObj = (typeof parks !== 'undefined' && parks && typeof parks === 'object') ? parks : safeJsonParse('industria_industrial_parks', {});
+        const activePropsList = (typeof properties !== 'undefined' && Array.isArray(properties)) ? properties : safeJsonParse('industria_properties', []);
+
+        const defaultLocs = ['Petaling Jaya', 'Subang Jaya', 'Shah Alam', 'Klang'];
+        const knownLocsMap = new Map();
+        const addLoc = (name) => {
+            const clean = String(name || '').trim();
+            if (!clean) return;
+            const key = clean.toLowerCase();
+            if (!knownLocsMap.has(key)) knownLocsMap.set(key, clean);
+        };
+        defaultLocs.forEach(addLoc);
+        Object.keys(activeParksObj).forEach(addLoc);
+
+        const knownSectionsMap = new Map(); // lower -> { name, cities: Set, totalCount, featuredCount }
+        const ensureSec = (secName, cityName) => {
+            const cleanSec = String(secName || '').trim();
+            if (!cleanSec) return;
+            const key = cleanSec.toLowerCase();
+            if (!knownSectionsMap.has(key)) {
+                knownSectionsMap.set(key, { name: cleanSec, cities: new Set(), totalCount: 0, featuredCount: 0 });
+            }
+            if (cityName) knownSectionsMap.get(key).cities.add(String(cityName).trim());
+        };
+
+        for (const city in activeParksObj) {
+            if (!Array.isArray(activeParksObj[city])) continue;
+            activeParksObj[city].forEach(pk => {
+                const pkName = (pk && typeof pk === 'object') ? pk.name : pk;
+                const pkSec = (pk && typeof pk === 'object' && pk.section) ? pk.section : inferSectionFromParkForPriority(pkName);
+                if (pkSec) ensureSec(pkSec, city);
+            });
+        }
+
+        const locStats = new Map();
+        activePropsList.forEach(p => {
+            if (!p) return;
+            const loc = String(p.location || '').trim();
+            if (loc) {
+                addLoc(loc);
+                const lKey = loc.toLowerCase();
+                if (!locStats.has(lKey)) locStats.set(lKey, { total: 0, featured: 0 });
+                const st = locStats.get(lKey);
+                st.total += 1;
+                if (p.featured === true || String(p.featured) === 'true' || p.showOnMainpage === true || String(p.showOnMainpage) === 'true') {
+                    st.featured += 1;
+                }
+            }
+
+            let propSec = String(p.section || '').trim();
+            if (!propSec && p.park && activeParksObj && typeof activeParksObj === 'object') {
+                for (const c in activeParksObj) {
+                    const arr = Array.isArray(activeParksObj[c]) ? activeParksObj[c] : [];
+                    const found = arr.find(pk => ((pk && typeof pk === 'object' ? pk.name : pk) || '').trim().toLowerCase() === String(p.park).trim().toLowerCase());
+                    if (found && typeof found === 'object' && found.section) {
+                        propSec = String(found.section).trim();
+                        break;
+                    }
+                }
+            }
+            if (!propSec && p.park) propSec = inferSectionFromParkForPriority(p.park);
+            if (propSec) {
+                ensureSec(propSec, loc);
+                const sEntry = knownSectionsMap.get(propSec.toLowerCase());
+                if (sEntry) {
+                    sEntry.totalCount += 1;
+                    if (p.featured === true || String(p.featured) === 'true' || p.showOnMainpage === true || String(p.showOnMainpage) === 'true') {
+                        sEntry.featuredCount += 1;
+                    }
+                }
+            }
+        });
+
+        return { knownLocsMap, locStats, knownSectionsMap };
+    }
+
+    function mergeOrderedKeys(savedOrder, knownMap, fallbackAlpha = false) {
+        const result = [];
+        const seen = new Set();
+        (Array.isArray(savedOrder) ? savedOrder : []).forEach(item => {
+            const clean = String(item || '').trim();
+            if (!clean) return;
+            const key = clean.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            const canonical = knownMap.has(key)
+                ? (typeof knownMap.get(key) === 'string' ? knownMap.get(key) : knownMap.get(key).name)
+                : clean;
+            result.push(canonical);
+        });
+        const remaining = [];
+        knownMap.forEach((val, key) => {
+            if (!seen.has(key)) {
+                remaining.push(typeof val === 'string' ? val : val.name);
+            }
+        });
+        if (fallbackAlpha) remaining.sort((a, b) => a.localeCompare(b));
+        return result.concat(remaining);
+    }
+
+    function updateFeaturedPrioritySummaryPill() {
+        const pill = document.getElementById('setting-featured-priority-summary-pill');
+        const prioritizeEl = document.getElementById('setting-prioritize-featured-at-top');
+        if (!pill) return;
+        const isActive = !prioritizeEl || prioritizeEl.checked;
+        if (isActive) {
+            pill.innerHTML = '<i class="fa-solid fa-crown" style="color: #f59e0b;"></i> Top Priority Active';
+            pill.style.background = '#e0e7ff';
+            pill.style.color = '#3730a3';
+        } else {
+            pill.innerHTML = '<i class="fa-solid fa-pause"></i> Priority Pinned Off';
+            pill.style.background = '#f1f5f9';
+            pill.style.color = '#64748b';
+        }
+    }
+
+    function buildPriorityRowElement({ name, rankIndex, totalLength, subtitle, countText, kind, accentColor }) {
+        const row = document.createElement('div');
+        row.className = 'priority-order-item';
+        row.dataset.name = name;
+        row.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.5rem 0.65rem; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 9px; box-shadow: 0 1px 2px rgba(15,23,42,0.04);';
+
+        const left = document.createElement('div');
+        left.style.cssText = 'display: flex; align-items: center; gap: 0.5rem; min-width: 0; flex: 1;';
+
+        const dragHandle = document.createElement('span');
+        dragHandle.className = 'priority-drag-handle';
+        dragHandle.title = 'Drag to reorder';
+        dragHandle.style.cssText = 'color: #94a3b8; cursor: grab; padding: 2px 4px; flex-shrink: 0;';
+        dragHandle.innerHTML = '<i class="fa-solid fa-grip-vertical"></i>';
+
+        const rankBadge = document.createElement('span');
+        rankBadge.style.cssText = `background: ${rankIndex === 0 ? accentColor : '#e2e8f0'}; color: ${rankIndex === 0 ? '#ffffff' : '#334155'}; font-weight: 800; font-size: 0.72rem; padding: 2px 7px; border-radius: 6px; flex-shrink: 0;`;
+        rankBadge.textContent = `#${rankIndex + 1}`;
+
+        const labelWrap = document.createElement('div');
+        labelWrap.style.cssText = 'min-width: 0; flex: 1;';
+
+        const titleEl = document.createElement('div');
+        titleEl.style.cssText = 'font-weight: 700; font-size: 0.83rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+        titleEl.textContent = name;
+        labelWrap.appendChild(titleEl);
+
+        if (subtitle || countText) {
+            const metaEl = document.createElement('div');
+            metaEl.style.cssText = 'font-size: 0.71rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;';
+            metaEl.textContent = [subtitle, countText].filter(Boolean).join(' · ');
+            labelWrap.appendChild(metaEl);
+        }
+
+        left.appendChild(dragHandle);
+        left.appendChild(rankBadge);
+        left.appendChild(labelWrap);
+
+        const actions = document.createElement('div');
+        actions.style.cssText = 'display: flex; align-items: center; gap: 3px; flex-shrink: 0;';
+
+        const makeMoveBtn = (iconClass, title, disabled, onClick) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.title = title;
+            btn.disabled = disabled;
+            btn.style.cssText = `width: 24px; height: 24px; border-radius: 6px; border: 1px solid #e2e8f0; background: ${disabled ? '#f8fafc' : '#ffffff'}; color: ${disabled ? '#cbd5e1' : '#334155'}; display: inline-flex; align-items: center; justify-content: center; cursor: ${disabled ? 'not-allowed' : 'pointer'}; font-size: 0.7rem;`;
+            btn.innerHTML = `<i class="${iconClass}"></i>`;
+            if (!disabled) btn.addEventListener('click', onClick);
+            return btn;
+        };
+
+        actions.appendChild(makeMoveBtn('fa-solid fa-angles-up', 'Move to Top (#1)', rankIndex === 0, () => movePriorityItem(kind, name, 'top')));
+        actions.appendChild(makeMoveBtn('fa-solid fa-arrow-up', 'Move Up', rankIndex === 0, () => movePriorityItem(kind, name, 'up')));
+        actions.appendChild(makeMoveBtn('fa-solid fa-arrow-down', 'Move Down', rankIndex >= totalLength - 1, () => movePriorityItem(kind, name, 'down')));
+
+        row.appendChild(left);
+        row.appendChild(actions);
+        return row;
+    }
+
+    function movePriorityItem(kind, name, direction) {
+        const arr = kind === 'location' ? pendingLocationPriorityOrder : pendingSectionPriorityOrder;
+        const idx = arr.findIndex(item => item.toLowerCase() === String(name).toLowerCase());
+        if (idx === -1) return;
+
+        if (direction === 'top' && idx > 0) {
+            const [item] = arr.splice(idx, 1);
+            arr.unshift(item);
+        } else if (direction === 'up' && idx > 0) {
+            [arr[idx - 1], arr[idx]] = [arr[idx], arr[idx - 1]];
+        } else if (direction === 'down' && idx < arr.length - 1) {
+            [arr[idx], arr[idx + 1]] = [arr[idx + 1], arr[idx]];
+        }
+        renderPriorityListsOnly();
+    }
+
+    function renderPriorityListsOnly() {
+        const locListEl = document.getElementById('setting-location-priority-list');
+        const secListEl = document.getElementById('setting-section-priority-list');
+        if (!locListEl && !secListEl) return;
+
+        const { locStats, knownSectionsMap } = collectLocationsAndSectionsMetadata();
+
+        if (locListEl) {
+            locListEl.innerHTML = '';
+            pendingLocationPriorityOrder.forEach((locName, idx) => {
+                const st = locStats.get(locName.toLowerCase()) || { total: 0, featured: 0 };
+                const countText = `${st.total} listings (${st.featured} featured)`;
+                locListEl.appendChild(buildPriorityRowElement({
+                    name: locName,
+                    rankIndex: idx,
+                    totalLength: pendingLocationPriorityOrder.length,
+                    subtitle: '',
+                    countText,
+                    kind: 'location',
+                    accentColor: '#2563eb'
+                }));
+            });
+            if (typeof Sortable !== 'undefined') {
+                if (locPrioritySortable && typeof locPrioritySortable.destroy === 'function') locPrioritySortable.destroy();
+                locPrioritySortable = new Sortable(locListEl, {
+                    handle: '.priority-drag-handle',
+                    animation: 150,
+                    onEnd: () => {
+                        pendingLocationPriorityOrder = Array.from(locListEl.querySelectorAll('.priority-order-item')).map(el => el.dataset.name).filter(Boolean);
+                        renderPriorityListsOnly();
+                    }
+                });
+            }
+        }
+
+        if (secListEl) {
+            const secFilterInput = document.getElementById('setting-section-priority-filter');
+            const secCitySelect = document.getElementById('setting-section-city-filter');
+            const kw = secFilterInput ? secFilterInput.value.trim().toLowerCase() : '';
+            const selectedCity = secCitySelect ? secCitySelect.value : 'All';
+
+            secListEl.innerHTML = '';
+            const filteredIndices = [];
+            pendingSectionPriorityOrder.forEach((secName, globalIdx) => {
+                const meta = knownSectionsMap.get(secName.toLowerCase());
+                const cities = meta ? Array.from(meta.cities) : [];
+                const matchKw = !kw || secName.toLowerCase().includes(kw) || cities.some(c => c.toLowerCase().includes(kw));
+                const matchCity = selectedCity === 'All' || cities.some(c => c.toLowerCase() === selectedCity.toLowerCase());
+                if (matchKw && matchCity) {
+                    filteredIndices.push({ secName, globalIdx, meta, cities });
+                }
+            });
+
+            if (filteredIndices.length === 0) {
+                secListEl.innerHTML = '<div style="padding: 1rem; text-align: center; color: #64748b; font-size: 0.8rem;">No sections match the filter.</div>';
+            } else {
+                filteredIndices.forEach(({ secName, globalIdx, meta, cities }) => {
+                    const subtitle = cities.length > 0 ? cities.join(', ') : 'Custom Section';
+                    const countText = meta ? `${meta.totalCount} listings (${meta.featuredCount} featured)` : '';
+                    secListEl.appendChild(buildPriorityRowElement({
+                        name: secName,
+                        rankIndex: globalIdx,
+                        totalLength: pendingSectionPriorityOrder.length,
+                        subtitle,
+                        countText,
+                        kind: 'section',
+                        accentColor: '#7c3aed'
+                    }));
+                });
+            }
+
+            if (typeof Sortable !== 'undefined' && !kw && selectedCity === 'All') {
+                if (secPrioritySortable && typeof secPrioritySortable.destroy === 'function') secPrioritySortable.destroy();
+                secPrioritySortable = new Sortable(secListEl, {
+                    handle: '.priority-drag-handle',
+                    animation: 150,
+                    onEnd: () => {
+                        pendingSectionPriorityOrder = Array.from(secListEl.querySelectorAll('.priority-order-item')).map(el => el.dataset.name).filter(Boolean);
+                        renderPriorityListsOnly();
+                    }
+                });
+            }
+        }
+    }
+
+    function renderFeaturedPrioritySettings(currentSettings) {
+        const s = Object.assign({}, defaultSettings, currentSettings || {});
+        const { knownLocsMap, knownSectionsMap } = collectLocationsAndSectionsMetadata();
+
+        pendingLocationPriorityOrder = mergeOrderedKeys(
+            Array.isArray(s.locationPriorityOrder) && s.locationPriorityOrder.length > 0 ? s.locationPriorityOrder : defaultSettings.locationPriorityOrder,
+            knownLocsMap,
+            false
+        );
+        pendingSectionPriorityOrder = mergeOrderedKeys(s.sectionPriorityOrder, knownSectionsMap, true);
+
+        const cityFilterSelect = document.getElementById('setting-section-city-filter');
+        if (cityFilterSelect) {
+            const prevVal = cityFilterSelect.value || 'All';
+            cityFilterSelect.innerHTML = '<option value="All">All Locations</option>';
+            pendingLocationPriorityOrder.forEach(loc => {
+                const opt = document.createElement('option');
+                opt.value = loc;
+                opt.textContent = loc;
+                cityFilterSelect.appendChild(opt);
+            });
+            if (Array.from(cityFilterSelect.options).some(o => o.value === prevVal)) {
+                cityFilterSelect.value = prevVal;
+            }
+        }
+
+        updateFeaturedPrioritySummaryPill();
+        renderPriorityListsOnly();
+    }
+    window.renderFeaturedPrioritySettings = renderFeaturedPrioritySettings;
+
+    // Bind priority UI filters, toggle & reset controls
+    (function initFeaturedPriorityUIControls() {
+        const prioritizeEl = document.getElementById('setting-prioritize-featured-at-top');
+        if (prioritizeEl) prioritizeEl.addEventListener('change', updateFeaturedPrioritySummaryPill);
+
+        const secFilterInput = document.getElementById('setting-section-priority-filter');
+        if (secFilterInput) secFilterInput.addEventListener('input', renderPriorityListsOnly);
+
+        const secCitySelect = document.getElementById('setting-section-city-filter');
+        if (secCitySelect) secCitySelect.addEventListener('change', renderPriorityListsOnly);
+
+        const resetLocBtn = document.getElementById('reset-location-priority-btn');
+        if (resetLocBtn) {
+            resetLocBtn.addEventListener('click', () => {
+                const { knownLocsMap } = collectLocationsAndSectionsMetadata();
+                pendingLocationPriorityOrder = mergeOrderedKeys(defaultSettings.locationPriorityOrder, knownLocsMap, false);
+                renderPriorityListsOnly();
+            });
+        }
+
+        const resetSecBtn = document.getElementById('reset-section-priority-btn');
+        if (resetSecBtn) {
+            resetSecBtn.addEventListener('click', () => {
+                const { knownSectionsMap } = collectLocationsAndSectionsMetadata();
+                pendingSectionPriorityOrder = mergeOrderedKeys([], knownSectionsMap, true);
+                renderPriorityListsOnly();
+            });
+        }
+    })();
+
+    // Populate priority lists immediately on dashboard init
+    renderFeaturedPrioritySettings(settings);
 
     // Property Features Form Handler
     const propFeaturesForm = document.getElementById('settings-property-features-form');
@@ -9279,6 +9872,29 @@ function initDashboardApp() {
                 settings.maxFeaturedAgentsDisplayed = (val > 0 && val <= 6) ? val : 3;
             }
 
+            const maxPhotosEl = document.getElementById('setting-max-photos-per-property');
+            if (maxPhotosEl) {
+                const val = parseInt(maxPhotosEl.value, 10);
+                settings.maxPhotosPerProperty = (!isNaN(val) && val >= 1 && val <= 30) ? val : 5;
+            }
+
+            const maxListingsPerAgentEl = document.getElementById('setting-max-listings-per-agent');
+            if (maxListingsPerAgentEl) {
+                const val = parseInt(maxListingsPerAgentEl.value, 10);
+                settings.maxListingsPerAgent = (!isNaN(val) && val >= 0 && val <= 500) ? val : 10;
+            }
+
+            const prioritizeTopEl = document.getElementById('setting-prioritize-featured-at-top');
+            settings.prioritizeFeaturedAtTop = prioritizeTopEl ? prioritizeTopEl.checked : true;
+
+            const priorityModeEl = document.getElementById('setting-featured-priority-mode');
+            if (priorityModeEl) {
+                settings.featuredPriorityMode = priorityModeEl.value || 'location-then-section';
+            }
+            settings.locationPriorityOrder = [...pendingLocationPriorityOrder];
+            settings.sectionPriorityOrder = [...pendingSectionPriorityOrder];
+            updateFeaturedPrioritySummaryPill();
+
             // Immediately persist to localStorage
             localStorage.setItem('industria_settings', JSON.stringify(settings));
 
@@ -9287,6 +9903,9 @@ function initDashboardApp() {
                 syncPropertyFeaturesUI(settings);
             } else if (typeof window.syncPropertyFeaturesUI === 'function') {
                 window.syncPropertyFeaturesUI(settings);
+            }
+            if (typeof window.renderPropertyGallery === 'function') {
+                window.renderPropertyGallery();
             }
             if (typeof renderTable === 'function') renderTable();
             else if (typeof window.renderTable === 'function') window.renderTable();
@@ -9355,6 +9974,472 @@ function initDashboardApp() {
             await saveGeneralSettingsToSupabase();
             alert('Notifications Configuration saved successfully!');
         });
+    }
+
+    // --- COSTING & AGENT FEE SPLIT CALCULATOR ---
+    function getCostingConfigFromSettings() {
+        return Object.assign({}, defaultSettings.costingConfig, (settings && settings.costingConfig) || {});
+    }
+
+    function readCostingInputs() {
+        const num = (id, fallback) => {
+            const el = document.getElementById(id);
+            if (!el) return fallback;
+            const v = parseFloat(el.value);
+            return (!isNaN(v) && v >= 0) ? v : fallback;
+        };
+        const supaPlanEl = document.getElementById('cost-supabase-plan');
+        const vercelPlanEl = document.getElementById('cost-vercel-plan');
+        return {
+            agentCount: Math.max(1, Math.round(num('cost-agent-count', 5))),
+            usdMyrRate: Math.max(1, num('cost-usd-myr', 4.45)),
+            bufferPct: num('cost-buffer-pct', 8),
+            godaddyYearlyMyr: num('cost-godaddy-yearly-myr', 108),
+            supabasePlan: supaPlanEl ? supaPlanEl.value : '25',
+            supabaseUsd: num('cost-supabase-usd', 25),
+            vercelPlan: vercelPlanEl ? vercelPlanEl.value : '20',
+            vercelUsd: num('cost-vercel-usd', 20),
+            googleAiMyr: num('cost-google-ai-myr', 97.99),
+            googleAiAllocPct: Math.min(100, num('cost-google-ai-alloc', 100)),
+            mandayRate: num('cost-manday-rate', 350),
+            buildMandays: num('cost-build-mandays', 15),
+            amortizeMonths: Math.round(num('cost-amortize-months', 12)),
+            maintMandaysMo: num('cost-maint-mandays-mo', 1.5)
+        };
+    }
+
+    function computeCostingBreakdown(cfg) {
+        const fx = cfg.usdMyrRate;
+        const bufferMult = 1 + (cfg.bufferPct / 100);
+        const godaddyMo = (cfg.godaddyYearlyMyr / 12) * bufferMult;
+        const supabaseMo = (cfg.supabaseUsd * fx) * bufferMult;
+        const vercelMo = (cfg.vercelUsd * fx) * bufferMult;
+        const googleAiMo = (cfg.googleAiMyr * (cfg.googleAiAllocPct / 100)) * bufferMult;
+        const infraTotalMo = godaddyMo + supabaseMo + vercelMo + googleAiMo;
+
+        const buildTotalValue = cfg.buildMandays * cfg.mandayRate;
+        const buildAmortizedMo = cfg.amortizeMonths > 0 ? (buildTotalValue / cfg.amortizeMonths) : 0;
+        const maintMo = cfg.maintMandaysMo * cfg.mandayRate;
+        const mandayTotalMo = buildAmortizedMo + maintMo;
+
+        const grandTotalMo = infraTotalMo + mandayTotalMo;
+        const perAgentMo = grandTotalMo / cfg.agentCount;
+        const perAgentYr = perAgentMo * 12;
+
+        return {
+            godaddyMo, supabaseMo, vercelMo, googleAiMo, infraTotalMo,
+            buildTotalValue, buildAmortizedMo, maintMo, mandayTotalMo,
+            grandTotalMo, grandTotalYr: grandTotalMo * 12, perAgentMo, perAgentYr
+        };
+    }
+
+    function recalcCostingCalculator() {
+        const cfg = readCostingInputs();
+        const calc = computeCostingBreakdown(cfg);
+        const setTxt = (id, txt) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = txt;
+        };
+        const fmt = (n) => `RM ${n.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        setTxt('costing-kpi-infra-mo', fmt(calc.infraTotalMo));
+        setTxt('costing-kpi-manday-mo', fmt(calc.mandayTotalMo));
+        setTxt('costing-kpi-manday-sub', `${fmt(calc.buildAmortizedMo)} build + ${fmt(calc.maintMo)} ops`);
+        setTxt('costing-kpi-total-mo', fmt(calc.grandTotalMo));
+        setTxt('costing-kpi-total-yr', `Yearly Total: ${fmt(calc.grandTotalYr)}`);
+        setTxt('costing-kpi-per-agent-mo', `${fmt(calc.perAgentMo)} / mo`);
+        setTxt('costing-kpi-per-agent-yr', `Or ${fmt(calc.perAgentYr)} / year per agent (${cfg.agentCount} agents)`);
+
+        setTxt('costing-line-godaddy-mo', `${fmt(calc.godaddyMo)}/mo`);
+        setTxt('costing-line-supabase-mo', `${fmt(calc.supabaseMo)}/mo`);
+        setTxt('costing-line-vercel-mo', `${fmt(calc.vercelMo)}/mo`);
+        setTxt('costing-line-googleai-mo', `${fmt(calc.googleAiMo)}/mo`);
+        setTxt('costing-line-mandays-mo', `${fmt(calc.mandayTotalMo)}/mo`);
+
+        const noteEl = document.getElementById('costing-manday-detail-note');
+        if (noteEl) {
+            noteEl.textContent = cfg.amortizeMonths > 0
+                ? `Build value: ${fmt(calc.buildTotalValue)} (${cfg.buildMandays} days @ ${fmt(cfg.mandayRate)}/day) amortized over ${cfg.amortizeMonths} months = ${fmt(calc.buildAmortizedMo)}/mo + Ongoing ops ${cfg.maintMandaysMo} days/mo = ${fmt(calc.maintMo)}/mo.`
+                : `Build recovery skipped (0 months) + Ongoing ops ${cfg.maintMandaysMo} days/mo = ${fmt(calc.maintMo)}/mo.`;
+        }
+
+        const tbody = document.getElementById('costing-scaling-tbody');
+        if (tbody) {
+            const tiers = Array.from(new Set([3, 5, 10, 15, 20, cfg.agentCount])).sort((a, b) => a - b);
+            tbody.innerHTML = '';
+            tiers.forEach(count => {
+                const isSelected = count === cfg.agentCount;
+                const supaNote = cfg.supabaseUsd >= 25
+                    ? 'Pro Plan ($25 covers 100 GB storage / 100k MAU)'
+                    : (count <= 3 ? 'Free Tier (Dev/Idle Risk)' : 'Upgrade to Pro ($25/mo) advised');
+                const tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #e2e8f0';
+                if (isSelected) tr.style.background = '#eff6ff';
+                tr.innerHTML = `
+                    <td style="padding: 0.75rem 1rem; font-weight: 700; color: ${isSelected ? '#1d4ed8' : '#0f172a'};">${count} Agents ${isSelected ? '<span style="font-size:0.7rem; background:#dbeafe; color:#1e40af; padding:1px 6px; border-radius:10px; margin-left:4px;">Selected</span>' : ''}</td>
+                    <td style="padding: 0.75rem 1rem; color: #475569; font-size: 0.82rem;">${supaNote}</td>
+                    <td style="padding: 0.75rem 1rem; font-weight: 600;">${fmt(calc.infraTotalMo / count)}</td>
+                    <td style="padding: 0.75rem 1rem; font-weight: 800; color: #059669;">${fmt(calc.grandTotalMo / count)}</td>
+                    <td style="padding: 0.75rem 1rem; font-weight: 700; color: #334155;">${fmt((calc.grandTotalMo / count) * 12)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+    }
+
+    function renderCostingCalculator() {
+        const cfg = getCostingConfigFromSettings();
+        const setInput = (id, val) => {
+            const el = document.getElementById(id);
+            if (el && val !== undefined && val !== null) el.value = val;
+        };
+        setInput('cost-agent-count', cfg.agentCount);
+        setInput('cost-usd-myr', cfg.usdMyrRate);
+        setInput('cost-buffer-pct', cfg.bufferPct);
+        setInput('cost-godaddy-yearly-myr', cfg.godaddyYearlyMyr);
+        setInput('cost-supabase-plan', cfg.supabasePlan);
+        setInput('cost-supabase-usd', cfg.supabaseUsd);
+        setInput('cost-vercel-plan', cfg.vercelPlan);
+        setInput('cost-vercel-usd', cfg.vercelUsd);
+        setInput('cost-google-ai-myr', cfg.googleAiMyr);
+        setInput('cost-google-ai-alloc', cfg.googleAiAllocPct);
+        setInput('cost-manday-rate', cfg.mandayRate);
+        setInput('cost-build-mandays', cfg.buildMandays);
+        setInput('cost-amortize-months', cfg.amortizeMonths);
+        setInput('cost-maint-mandays-mo', cfg.maintMandaysMo);
+
+        const allAgentsList = (typeof agents !== 'undefined' && Array.isArray(agents)) ? agents : safeJsonParse('industria_agents', []);
+        const liveNumEl = document.getElementById('costing-live-agents-num');
+        if (liveNumEl) liveNumEl.textContent = allAgentsList.length;
+
+        recalcCostingCalculator();
+    }
+    window.renderCostingCalculator = renderCostingCalculator;
+
+    window.syncCostingLiveAgentCount = function() {
+        const allAgentsList = (typeof agents !== 'undefined' && Array.isArray(agents)) ? agents : safeJsonParse('industria_agents', []);
+        const countInput = document.getElementById('cost-agent-count');
+        if (countInput) {
+            countInput.value = Math.max(1, allAgentsList.length);
+            recalcCostingCalculator();
+        }
+    };
+
+    window.copyCostingSummary = function() {
+        const cfg = readCostingInputs();
+        const calc = computeCostingBreakdown(cfg);
+        const fmt = (n) => `RM ${n.toFixed(2)}`;
+        const summary = [
+            `MyFactorySpace Platform Costing & Agent Fee Breakdown (${cfg.agentCount} Agents)`,
+            `1. GoDaddy Domain (www.myfactoryspace.com): RM ${cfg.godaddyYearlyMyr.toFixed(2)}/yr (~${fmt(calc.godaddyMo)}/mo incl. ${cfg.bufferPct}% buffer)`,
+            `2. Supabase Cloud DB & Storage ($${cfg.supabaseUsd}/mo): ${fmt(calc.supabaseMo)}/mo`,
+            `3. Vercel Pro Commercial Hosting ($${cfg.vercelUsd}/mo): ${fmt(calc.vercelMo)}/mo`,
+            `4. Google AI Pro (${cfg.googleAiAllocPct}% business share of RM ${cfg.googleAiMyr}): ${fmt(calc.googleAiMo)}/mo`,
+            `   -> Subtotal Infra Subscriptions: ${fmt(calc.infraTotalMo)}/mo (${fmt(calc.infraTotalMo / cfg.agentCount)}/agent/mo)`,
+            `5. Man-Days Effort (Build ${cfg.buildMandays}d / ${cfg.amortizeMonths}mo + Ops ${cfg.maintMandaysMo}d/mo @ RM ${cfg.mandayRate}/d): ${fmt(calc.mandayTotalMo)}/mo`,
+            `TOTAL MONTHLY PLATFORM COST: ${fmt(calc.grandTotalMo)}/mo (${fmt(calc.grandTotalYr)}/yr)`,
+            `RECOMMENDED SPLIT FEE: ${fmt(calc.perAgentMo)} / agent / month (or ${fmt(calc.perAgentYr)} / agent / year)`
+        ].join('\n');
+
+        if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+            navigator.clipboard.writeText(summary).then(() => alert('Costing & Agent Fee summary copied to clipboard!')).catch(() => alert(summary));
+        } else {
+            alert(summary);
+        }
+    };
+
+    function ensureCostingJsPdfLoaded() {
+        const getPdf = () => (window.jspdf && window.jspdf.jsPDF) || window.jsPDF || null;
+        if (getPdf()) return Promise.resolve(getPdf());
+        return new Promise((resolve, reject) => {
+            const existing = document.querySelector('script[src*="jspdf.umd.min.js"]');
+            if (existing) {
+                setTimeout(() => (getPdf() ? resolve(getPdf()) : reject(new Error('jsPDF unavailable'))), 350);
+                return;
+            }
+            const script = document.createElement('script');
+            script.src = 'js/vendor/jspdf.umd.min.js';
+            script.onload = () => (getPdf() ? resolve(getPdf()) : reject(new Error('jsPDF failed to initialize')));
+            script.onerror = () => {
+                const cdn = document.createElement('script');
+                cdn.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+                cdn.onload = () => (getPdf() ? resolve(getPdf()) : reject(new Error('jsPDF CDN failed')));
+                cdn.onerror = () => reject(new Error('Unable to load jsPDF library'));
+                document.head.appendChild(cdn);
+            };
+            document.head.appendChild(script);
+        });
+    }
+
+    function openCostingPrintFallback(cfg, calc) {
+        const fmt = (n) => `RM ${n.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const w = window.open('', '_blank');
+        if (!w) {
+            alert('Unable to export PDF directly. Please allow pop-ups or check js/vendor/jspdf.umd.min.js.');
+            return;
+        }
+        const tiers = Array.from(new Set([3, 5, 10, 15, 20, cfg.agentCount])).sort((a, b) => a - b);
+        const rowsHtml = tiers.map(cnt => `
+            <tr style="background:${cnt === cfg.agentCount ? '#eff6ff' : '#fff'};">
+                <td><strong>${cnt} Agents</strong>${cnt === cfg.agentCount ? ' (Current)' : ''}</td>
+                <td>${fmt(calc.infraTotalMo / cnt)}</td>
+                <td><strong>${fmt(calc.grandTotalMo / cnt)}</strong></td>
+                <td>${fmt((calc.grandTotalMo / cnt) * 12)}</td>
+            </tr>`).join('');
+        w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>MyFactorySpace Agent Cost-Split Proposal</title>
+        <style>body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:#0f172a;margin:28px;font-size:12px;}
+        h1{font-size:19px;margin:0 0 4px;color:#0a2540;} .sub{color:#475569;margin-bottom:16px;}
+        .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+        .kpi{border:1px solid #cbd5e1;border-radius:8px;padding:10px;background:#f8fafc;} .kpi .val{font-size:15px;font-weight:800;color:#1d4ed8;margin-top:4px;}
+        table{width:100%;border-collapse:collapse;margin-bottom:18px;} th,td{border:1px solid #cbd5e1;padding:7px 9px;text-align:left;}
+        th{background:#f1f5f9;font-size:11px;text-transform:uppercase;} @page{size:A4;margin:12mm;}</style></head><body>
+        <h1>MyFactorySpace — Platform Costing &amp; Agent Fee Proposal</h1>
+        <div class="sub">Generated ${new Date().toLocaleDateString()} &bull; Splitting across ${cfg.agentCount} Agents &bull; FX 1 USD = RM ${cfg.usdMyrRate.toFixed(2)} &bull; Buffer: ${cfg.bufferPct}%</div>
+        <div class="kpis">
+            <div class="kpi"><div>Infra / Month</div><div class="val">${fmt(calc.infraTotalMo)}</div></div>
+            <div class="kpi"><div>Man-Days / Month</div><div class="val">${fmt(calc.mandayTotalMo)}</div></div>
+            <div class="kpi"><div>Total / Month</div><div class="val">${fmt(calc.grandTotalMo)}</div></div>
+            <div class="kpi"><div>Fee / Agent / Mo</div><div class="val">${fmt(calc.perAgentMo)}</div></div>
+        </div>
+        <h3>1. Platform &amp; Effort Cost Breakdown</h3>
+        <table><thead><tr><th>Cost Item</th><th>Basis / Reference</th><th>Monthly Equiv.</th><th>Purpose</th></tr></thead><tbody>
+        <tr><td>1. GoDaddy Domain (www.myfactoryspace.com)</td><td>Yearly: RM ${cfg.godaddyYearlyMyr.toFixed(2)}/yr</td><td>${fmt(calc.godaddyMo)}</td><td>Corporate .com domain registration &amp; DNS</td></tr>
+        <tr><td>2. Supabase Cloud DB &amp; Storage</td><td>$${cfg.supabaseUsd}/mo</td><td>${fmt(calc.supabaseMo)}</td><td>Always-on PostgreSQL, image storage, 250GB egress &amp; daily backups</td></tr>
+        <tr><td>3. Vercel Pro Hosting</td><td>$${cfg.vercelUsd}/mo</td><td>${fmt(calc.vercelMo)}</td><td>Commercial website hosting SLA &amp; 1 TB global CDN bandwidth</td></tr>
+        <tr><td>4. Google AI Pro</td><td>${cfg.googleAiAllocPct}% of RM ${cfg.googleAiMyr.toFixed(2)}/mo</td><td>${fmt(calc.googleAiMo)}</td><td>AI property descriptions, SEO/AEO content &amp; engineering</td></tr>
+        <tr><td>5. Founder Man-Days Effort</td><td>Build ${cfg.buildMandays}d / ${cfg.amortizeMonths}mo + Ops ${cfg.maintMandaysMo}d/mo @ RM ${cfg.mandayRate}/d</td><td>${fmt(calc.mandayTotalMo)}</td><td>Site build recovery, feature updates &amp; agent support</td></tr>
+        <tr style="background:#f8fafc;"><td colspan="2"><strong>Combined Monthly Total (${fmt(calc.grandTotalYr)} / year)</strong></td><td><strong>${fmt(calc.grandTotalMo)}</strong></td><td><strong>Recommended: ${fmt(calc.perAgentMo)} / agent / mo</strong></td></tr>
+        </tbody></table>
+        <h3>2. Fee Per Agent by Team Size</h3>
+        <table><thead><tr><th>Agents</th><th>Infra Only / Agent / Mo</th><th>Full Total / Agent / Mo</th><th>Full Total / Agent / Yr</th></tr></thead><tbody>${rowsHtml}</tbody></table>
+        </body></html>`);
+        w.document.close();
+        setTimeout(() => { w.focus(); w.print(); }, 350);
+    }
+
+    window.exportCostingPdf = async function(options = {}) {
+        const btn = document.getElementById('btn-export-costing-pdf');
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating PDF...';
+        }
+
+        const cfg = readCostingInputs();
+        const calc = computeCostingBreakdown(cfg);
+        const fmt = (n) => `RM ${n.toLocaleString('en-MY', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        try {
+            const JsPdf = await ensureCostingJsPdfLoaded();
+            const doc = new JsPdf({ orientation: 'portrait', unit: 'pt', format: 'a4' });
+            const pageW = doc.internal.pageSize.getWidth();
+            const margin = 36;
+            const contentW = pageW - margin * 2;
+            let y = 0;
+
+            // Header Banner
+            doc.setFillColor(10, 37, 64);
+            doc.rect(0, 0, pageW, 78, 'F');
+            doc.setFillColor(37, 99, 235);
+            doc.rect(0, 74, pageW, 4, 'F');
+
+            doc.setTextColor(255, 255, 255);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(17);
+            doc.text('MyFactorySpace — Costing & Agent Fee Proposal', margin, 34);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(9.5);
+            doc.setTextColor(203, 213, 225);
+            doc.text(`Prepared for Specialist Agents  |  Date: ${new Date().toLocaleDateString()}  |  Split Across: ${cfg.agentCount} Agents  |  FX: 1 USD = RM ${cfg.usdMyrRate.toFixed(2)} (+${cfg.bufferPct}% buffer)`, margin, 54);
+
+            y = 98;
+
+            // 4 KPI Boxes
+            const boxGap = 8;
+            const boxW = (contentW - boxGap * 3) / 4;
+            const kpis = [
+                { label: 'INFRA / MONTH', val: fmt(calc.infraTotalMo), sub: '4 Subscriptions', bg: [248, 250, 252], bd: [203, 213, 225], fg: [15, 23, 42] },
+                { label: 'MAN-DAYS / MONTH', val: fmt(calc.mandayTotalMo), sub: `Build + ${cfg.maintMandaysMo}d/mo Ops`, bg: [255, 251, 235], bd: [252, 211, 77], fg: [146, 64, 14] },
+                { label: 'GRAND TOTAL / MO', val: fmt(calc.grandTotalMo), sub: `${fmt(calc.grandTotalYr)} / yr`, bg: [236, 253, 245], bd: [110, 231, 183], fg: [6, 95, 70] },
+                { label: 'FEE / AGENT / MO', val: fmt(calc.perAgentMo), sub: `${fmt(calc.perAgentYr)} / yr`, bg: [29, 78, 216], bd: [29, 78, 216], fg: [255, 255, 255] }
+            ];
+            kpis.forEach((k, idx) => {
+                const bx = margin + idx * (boxW + boxGap);
+                doc.setFillColor(...k.bg);
+                doc.setDrawColor(...k.bd);
+                doc.roundedRect(bx, y, boxW, 56, 5, 5, 'FD');
+                doc.setTextColor(...(idx === 3 ? [219, 234, 254] : [100, 116, 139]));
+                doc.setFont('helvetica', 'bold');
+                doc.setFontSize(7.2);
+                doc.text(k.label, bx + 8, y + 15);
+                doc.setTextColor(...k.fg);
+                doc.setFontSize(12);
+                doc.text(k.val, bx + 8, y + 33);
+                doc.setFont('helvetica', 'normal');
+                doc.setFontSize(7.5);
+                doc.text(k.sub, bx + 8, y + 47);
+            });
+
+            y += 76;
+
+            // Section 1: Itemized Breakdown Table
+            doc.setTextColor(15, 23, 42);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11.5);
+            doc.text('1. Platform Subscriptions & Founder Effort Breakdown', margin, y);
+            y += 10;
+
+            const colWidths = [155, 118, 72, contentW - 345];
+            const drawRow = (cells, rowY, isHeader = false, isHighlight = false) => {
+                doc.setFont('helvetica', (isHeader || isHighlight) ? 'bold' : 'normal');
+                doc.setFontSize(isHeader ? 8 : 8.2);
+                let maxLines = 1;
+                const wrapped = cells.map((txt, i) => {
+                    const lines = doc.splitTextToSize(String(txt), colWidths[i] - 10);
+                    if (lines.length > maxLines) maxLines = lines.length;
+                    return lines;
+                });
+                const rowH = Math.max(22, maxLines * 10 + 10);
+                if (isHeader) doc.setFillColor(241, 245, 249);
+                else if (isHighlight) doc.setFillColor(239, 246, 255);
+                else doc.setFillColor(255, 255, 255);
+                doc.setDrawColor(203, 213, 225);
+                doc.rect(margin, rowY, contentW, rowH, 'FD');
+
+                let cx = margin;
+                wrapped.forEach((lines, i) => {
+                    if (i > 0) doc.line(cx, rowY, cx, rowY + rowH);
+                    doc.setTextColor(isHeader ? 51 : 15, isHeader ? 65 : 23, isHeader ? 85 : 42);
+                    doc.text(lines, cx + 5, rowY + 13);
+                    cx += colWidths[i];
+                });
+                return rowY + rowH;
+            };
+
+            y = drawRow(['Cost Item', 'Subscription / Basis', 'Monthly (RM)', 'Why Required for Multi-Agent Website'], y, true);
+            const items = [
+                ['1. GoDaddy Domain\n(www.myfactoryspace.com)', `Yearly Subscription:\nRM ${cfg.godaddyYearlyMyr.toFixed(2)} / yr`, fmt(calc.godaddyMo), 'Corporate .com domain registration & DNS routing (+ free WHOIS privacy).'],
+                ['2. Supabase Cloud DB\n& File Storage', `Monthly: $${cfg.supabaseUsd}/mo\n(${cfg.supabaseUsd >= 25 ? 'Pro Plan' : 'Free Tier'})`, fmt(calc.supabaseMo), 'Always-on PostgreSQL 17, 100GB photo storage, 250GB bandwidth, 100k MAU & daily backups (no 7-day auto-pause).'],
+                ['3. Vercel Hosting\n(Pro Edition)', `Monthly: $${cfg.vercelUsd}/mo\n(${cfg.vercelUsd >= 20 ? 'Pro Plan' : 'Hobby Tier'})`, fmt(calc.vercelMo), 'Required under Vercel Terms for commercial real estate portals + 1 TB global CDN bandwidth.'],
+                ['4. Google AI Pro\n(Gemini Workspace)', `RM ${cfg.googleAiMyr.toFixed(2)}/mo\n(${cfg.googleAiAllocPct}% business share)`, fmt(calc.googleAiMo), 'AI property descriptions, SEO/AEO content updates & website engineering tools.'],
+                ['Subtotal: Hard Infra', 'Monthly Subscriptions Only', fmt(calc.infraTotalMo), `Infra-only split across ${cfg.agentCount} agents: ${fmt(calc.infraTotalMo / cfg.agentCount)} / agent / mo.`],
+                ['5. Founder Man-Days\nEffort (Build + Ops)', `Build: ${cfg.buildMandays}d / ${cfg.amortizeMonths}mo\nOps: ${cfg.maintMandaysMo}d/mo @ RM ${cfg.mandayRate}/d`, fmt(calc.mandayTotalMo), 'Amortized website creation effort plus ongoing feature updates, backups & agent onboarding.'],
+                ['GRAND TOTAL', `${cfg.agentCount} Paying Agents Split`, fmt(calc.grandTotalMo), `Recommended contribution: ${fmt(calc.perAgentMo)} / agent / month (${fmt(calc.perAgentYr)} / yr).`]
+            ];
+            items.forEach((row, idx) => {
+                y = drawRow(row, y, false, idx === 4 || idx === 6);
+            });
+
+            y += 22;
+
+            // Section 2: Agent Growth Cost-Split Schedule
+            doc.setTextColor(15, 23, 42);
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(11.5);
+            doc.text('2. Fee Per Agent by Team Size (Economies of Scale)', margin, y);
+            y += 10;
+
+            const tCols = [95, 175, 84, 84, contentW - 438];
+            const drawTierRow = (cells, rowY, isHeader = false, isHighlight = false) => {
+                doc.setFont('helvetica', (isHeader || isHighlight) ? 'bold' : 'normal');
+                doc.setFontSize(8.2);
+                const rowH = 22;
+                if (isHeader) doc.setFillColor(241, 245, 249);
+                else if (isHighlight) doc.setFillColor(239, 246, 255);
+                else doc.setFillColor(255, 255, 255);
+                doc.setDrawColor(203, 213, 225);
+                doc.rect(margin, rowY, contentW, rowH, 'FD');
+                let cx = margin;
+                cells.forEach((txt, i) => {
+                    if (i > 0) doc.line(cx, rowY, cx, rowY + rowH);
+                    doc.setTextColor(15, 23, 42);
+                    doc.text(String(txt), cx + 6, rowY + 14);
+                    cx += tCols[i];
+                });
+                return rowY + rowH;
+            };
+
+            y = drawTierRow(['Agents Count', 'Supabase Tier Status', 'Infra / Agent / Mo', 'Full / Agent / Mo', 'Full / Agent / Yr'], y, true);
+            const tiers = Array.from(new Set([3, 5, 10, 15, 20, cfg.agentCount])).sort((a, b) => a - b);
+            tiers.forEach(cnt => {
+                const isSel = cnt === cfg.agentCount;
+                const supaLabel = cfg.supabaseUsd >= 25
+                    ? 'Pro Plan ($25 covers 100GB / 100k MAU)'
+                    : (cnt <= 3 ? 'Free Tier (Dev/Idle Risk)' : 'Pro Plan ($25/mo) recommended');
+                y = drawTierRow([
+                    `${cnt} Agents${isSel ? ' *' : ''}`,
+                    supaLabel,
+                    fmt(calc.infraTotalMo / cnt),
+                    fmt(calc.grandTotalMo / cnt),
+                    fmt((calc.grandTotalMo / cnt) * 12)
+                ], y, false, isSel);
+            });
+
+            // Footer
+            doc.setFont('helvetica', 'italic');
+            doc.setFontSize(8);
+            doc.setTextColor(100, 116, 139);
+            doc.text('* Prepared transparently from MyFactorySpace Admin Dashboard > Settings > Costing & Agent Fee Calculator.', margin, doc.internal.pageSize.getHeight() - 28);
+
+            const filename = `MyFactorySpace-Costing-${cfg.agentCount}-Agents.pdf`;
+            if (!options.returnBlobUri) {
+                doc.save(filename);
+            }
+            return { success: true, filename, pages: doc.getNumberOfPages() };
+        } catch (err) {
+            console.warn('jsPDF costing export failed, falling back to print view:', err);
+            openCostingPrintFallback(cfg, calc);
+            return { success: false, fallbackPrint: true, error: err.message };
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
+    };
+
+    const costingForm = document.getElementById('settings-costing-form');
+    if (costingForm) {
+        costingForm.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('change', () => {
+                if (el.id === 'cost-supabase-plan' && el.value !== 'custom') {
+                    const supaUsd = document.getElementById('cost-supabase-usd');
+                    if (supaUsd) supaUsd.value = el.value;
+                }
+                if (el.id === 'cost-vercel-plan' && el.value !== 'custom') {
+                    const vercelUsd = document.getElementById('cost-vercel-usd');
+                    if (vercelUsd) vercelUsd.value = el.value;
+                }
+                recalcCostingCalculator();
+            });
+            if (el.tagName === 'INPUT') {
+                el.addEventListener('input', () => {
+                    if (el.id === 'cost-supabase-usd') {
+                        const sel = document.getElementById('cost-supabase-plan');
+                        if (sel) sel.value = (el.value === '25' || el.value === '0') ? el.value : 'custom';
+                    }
+                    if (el.id === 'cost-vercel-usd') {
+                        const sel = document.getElementById('cost-vercel-plan');
+                        if (sel) sel.value = (el.value === '20' || el.value === '0') ? el.value : 'custom';
+                    }
+                    recalcCostingCalculator();
+                });
+            }
+        });
+
+        costingForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            settings.costingConfig = readCostingInputs();
+            localStorage.setItem('industria_settings', JSON.stringify(settings));
+            try {
+                await saveGeneralSettingsToSupabase();
+            } catch (err) {
+                console.warn('Could not sync costing config to Supabase:', err);
+            }
+            recalcCostingCalculator();
+            alert('Costing & Agent Fee Reference saved successfully!');
+        });
+        renderCostingCalculator();
     }
 
     const serverBrowse = document.getElementById('setting-server-browse');
@@ -10828,6 +11913,11 @@ function initDashboardApp() {
     if (dropzone && propImageInputMultiple) {
         dropzone.addEventListener('click', (e) => {
             if (e.target !== propImageInputMultiple) {
+                const maxPhotos = getMaxPhotosPerProperty();
+                if (currentPropertyImages.length >= maxPhotos) {
+                    alert(`⚠️ Photo Limit Reached: Each property listing allows up to ${maxPhotos} photos.\n\nPlease remove an existing photo first or adjust "Max Photos Per Property" in Dashboard > Settings.`);
+                    return;
+                }
                 propImageInputMultiple.click();
             }
         });
@@ -10845,19 +11935,52 @@ function initDashboardApp() {
             dropzone.style.borderColor = 'var(--border-light)';
             dropzone.style.backgroundColor = 'var(--bg-light)';
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                fileQueue = Array.from(e.dataTransfer.files);
-                processNextInQueue();
+                enqueuePropertyPhotos(e.dataTransfer.files);
             }
         });
         propImageInputMultiple.addEventListener('change', (e) => {
             if (e.target.files && e.target.files.length > 0) {
-                fileQueue = Array.from(e.target.files);
-                processNextInQueue();
+                enqueuePropertyPhotos(e.target.files);
             }
         });
     }
 
     window.renderPropertyGallery = function() {
+        const maxPhotos = getMaxPhotosPerProperty();
+        const photoCount = currentPropertyImages.length;
+        const isAtLimit = photoCount >= maxPhotos;
+
+        const photoLimitBadge = document.getElementById('property-photo-limit-badge');
+        if (photoLimitBadge) {
+            photoLimitBadge.textContent = `${photoCount} / ${maxPhotos} Photos`;
+            if (isAtLimit) {
+                photoLimitBadge.style.background = '#fee2e2';
+                photoLimitBadge.style.color = '#b91c1c';
+                photoLimitBadge.style.borderColor = '#fca5a5';
+            } else {
+                photoLimitBadge.style.background = '';
+                photoLimitBadge.style.color = '';
+                photoLimitBadge.style.borderColor = '';
+            }
+        }
+
+        const dropTitle = document.getElementById('property-photo-dropzone-title');
+        const dropHint = document.getElementById('property-photo-dropzone-hint');
+        if (dropTitle) {
+            dropTitle.textContent = isAtLimit
+                ? `Photo limit reached (${maxPhotos}/${maxPhotos})`
+                : 'Click or drag images to upload';
+        }
+        if (dropHint) {
+            dropHint.textContent = isAtLimit
+                ? `Remove an existing photo or update Max Photos in Settings`
+                : `JPG, PNG, HEIC supported · Max ${maxPhotos} photos per listing`;
+        }
+        if (dropzone) {
+            dropzone.style.opacity = isAtLimit ? '0.68' : '1';
+            dropzone.style.cursor = isAtLimit ? 'not-allowed' : 'pointer';
+        }
+
         if (!galleryContainer) return;
         galleryContainer.innerHTML = '';
         currentPropertyImages.forEach((imgSrc, index) => {
@@ -11418,7 +12541,7 @@ function initDashboardApp() {
                     } else if (p.images && p.images.length > 0) {
                         p.rawImages = [...p.images];
                     }
-                    p.image = (p.images && p.images.length > 0) ? p.images[0] : 'assets/images/warehouse.jpg';
+                    p.image = (p.images && p.images.length > 0) ? p.images[0] : 'assets/images/hero.jpg';
                     if (!p.rawImage) p.rawImage = p.image;
 
                     // Sync unwatermarked property to Supabase Cloud Database
@@ -11429,6 +12552,7 @@ function initDashboardApp() {
                     }
                 }
                 properties = currentProperties;
+                window.properties = properties;
                 safeLocalStorageSet('industria_properties', currentProperties);
                 if (typeof renderTable === 'function') renderTable();
                 window.dispatchEvent(new Event('storage'));
@@ -11450,20 +12574,23 @@ function initDashboardApp() {
                         prop.rawImages = [...prop.images];
                         prop.rawImage = prop.rawImages[0];
                     } else {
-                        prop.rawImages = ['assets/images/warehouse.jpg'];
-                        prop.rawImage = 'assets/images/warehouse.jpg';
+                        prop.rawImages = ['assets/images/hero.jpg'];
+                        prop.rawImage = 'assets/images/hero.jpg';
                     }
                 }
 
-                prop.images = await Promise.all(prop.rawImages.map(async (rawItem) => {
-                    return await window.applyWatermark(rawItem);
-                }));
+                const watermarkedBatch = [];
+                for (let j = 0; j < prop.rawImages.length; j++) {
+                    watermarkedBatch.push(await window.applyWatermark(prop.rawImages[j]));
+                }
+                prop.images = watermarkedBatch;
 
                 prop.image = (prop.images && prop.images.length > 0) ? prop.images[0] : prop.rawImage;
                 count++;
             }
 
             properties = currentProperties;
+            window.properties = properties;
 
             // Sync watermarked properties & upload watermarked photos to Supabase Storage & Database
             for (let i = 0; i < currentProperties.length; i++) {
@@ -11518,24 +12645,45 @@ function initDashboardApp() {
 
         return new Promise((resolve) => {
             let isResolved = false;
-            const timeoutId = setTimeout(() => {
-                console.warn('applyWatermark timeout hit, returning original image');
-                safeResolve(base64Image);
-            }, 5000);
+            let canvasRef = null;
+            let logoImgRef = null;
+            const img = new Image();
+
+            const releaseMemory = () => {
+                if (canvasRef) {
+                    canvasRef.width = 0;
+                    canvasRef.height = 0;
+                    canvasRef = null;
+                }
+                img.onload = null;
+                img.onerror = null;
+                try { img.src = ''; } catch (e) {}
+                if (logoImgRef) {
+                    logoImgRef.onload = null;
+                    logoImgRef.onerror = null;
+                    try { logoImgRef.src = ''; } catch (e) {}
+                    logoImgRef = null;
+                }
+            };
 
             const safeResolve = (val) => {
                 if (!isResolved) {
                     isResolved = true;
                     clearTimeout(timeoutId);
+                    releaseMemory();
                     resolve(val);
                 }
             };
+
+            const timeoutId = setTimeout(() => {
+                console.warn('applyWatermark timeout hit, returning original image');
+                safeResolve(base64Image);
+            }, 5000);
 
             if (currentSettings.type === 'logo' && (!currentSettings.logoBase64 || currentSettings.logoBase64.trim() === '')) {
                 currentSettings.logoBase64 = defaultLogoSvg;
             }
             
-            const img = new Image();
             if (typeof sourceSrc === 'string' && (sourceSrc.startsWith('http://') || sourceSrc.startsWith('https://'))) {
                 img.crossOrigin = 'anonymous';
             }
@@ -11543,6 +12691,7 @@ function initDashboardApp() {
             img.onload = () => {
                 try {
                     const canvas = document.createElement('canvas');
+                    canvasRef = canvas;
                     let width = img.naturalWidth || img.width || 800;
                     let height = img.naturalHeight || img.height || 600;
                     const maxDim = 2400;
@@ -11679,11 +12828,13 @@ function initDashboardApp() {
 
                         if (isDefaultSvgLogo) {
                             const logoImg = new Image();
+                            logoImgRef = logoImg;
                             logoImg.onload = () => drawAndExportLogo(logoImg);
                             logoImg.onerror = () => drawAndExportLogo(null);
                             logoImg.src = logoSrc;
                         } else {
                             const logoImg = new Image();
+                            logoImgRef = logoImg;
                             if (typeof logoSrc === 'string' && (logoSrc.startsWith('http://') || logoSrc.startsWith('https://'))) {
                                 logoImg.crossOrigin = 'anonymous';
                             }
@@ -12597,6 +13748,7 @@ function initDashboardApp() {
             const stored = safeJsonParse('industria_properties', null);
             if (Array.isArray(stored)) {
                 properties = stored;
+                window.properties = properties;
                 if (typeof window.updateActivePropertiesMetric === 'function') {
                     window.updateActivePropertiesMetric(properties);
                 }

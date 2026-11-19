@@ -10,6 +10,7 @@
     { "source": "/android-chrome-192x192.png", "destination": "/assets/icons/android-chrome-192x192.png" },
     { "source": "/android-chrome-512x512.png", "destination": "/assets/icons/android-chrome-512x512.png" },
     { "source": "/site.webmanifest", "destination": "/assets/icons/site.webmanifest" },
+    { "source": "/assets/images/warehouse.jpg", "destination": "/assets/images/hero.jpg" },
     { "source": "/images/assets/:path*", "destination": "/assets/images/:path*" },
     { "source": "/images/:path*", "destination": "/assets/images/:path*" }
   ],
