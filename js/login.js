@@ -98,18 +98,71 @@ document.addEventListener('DOMContentLoaded', () => {
             localStorage.removeItem('login_failed_attempts');
             localStorage.removeItem('login_lockout_until');
 
-            const userRole = authenticatedUser.role || (username.toLowerCase() === 'admin' ? 'Administrator' : 'Assistant');
+            const resolvedUsername = authenticatedUser.username || username;
+            const userRole = authenticatedUser.role || (resolvedUsername.toLowerCase() === 'admin' ? 'Administrator' : 'Assistant');
             const loginTime = Date.now().toString();
+            const specs = (authenticatedUser.specs && typeof authenticatedUser.specs === 'object') ? authenticatedUser.specs : authenticatedUser;
+            const linkedAgentId = authenticatedUser.agent_id || authenticatedUser.agentId || specs.agentId || null;
+            const isEntrySupport = String(userRole).trim().toLowerCase() === 'entry support';
+            const isBuiltinAdmin = resolvedUsername.trim().toLowerCase() === 'admin';
+            const needsAgentSetup = !isEntrySupport &&
+                !linkedAgentId &&
+                specs.agentProfileCompleted !== true &&
+                (
+                    specs.requiresAgentProfileSetup === true ||
+                    authenticatedUser.requiresAgentProfileSetup === true ||
+                    !isBuiltinAdmin
+                );
+
+            try {
+                const cachedUsers = JSON.parse(localStorage.getItem('industria_users') || '[]');
+                if (Array.isArray(cachedUsers)) {
+                    const normalizedUser = Object.assign({}, specs, {
+                        id: authenticatedUser.id || specs.id,
+                        username: authenticatedUser.username || username,
+                        password: authenticatedUser.password || password,
+                        role: userRole,
+                        agentId: linkedAgentId ? (isNaN(linkedAgentId) ? linkedAgentId : Number(linkedAgentId)) : null,
+                        whatsapp: authenticatedUser.whatsapp || specs.whatsapp || '',
+                        requiresAgentProfileSetup: needsAgentSetup,
+                        agentProfileCompleted: specs.agentProfileCompleted === true || !!linkedAgentId
+                    });
+                    const idx = cachedUsers.findIndex(u => u && u.username && u.username.toLowerCase() === normalizedUser.username.toLowerCase());
+                    if (idx > -1) cachedUsers[idx] = Object.assign({}, cachedUsers[idx], normalizedUser);
+                    else cachedUsers.push(normalizedUser);
+                    localStorage.setItem('industria_users', JSON.stringify(cachedUsers));
+                }
+            } catch (syncErr) {}
 
             sessionStorage.setItem('isAuthenticated', 'true');
             sessionStorage.setItem('loggedInUser', authenticatedUser.username || username);
             sessionStorage.setItem('currentUserRole', userRole);
             sessionStorage.setItem('login_session_time', loginTime);
+            sessionStorage.setItem('requiresAgentProfileSetup', needsAgentSetup ? 'true' : 'false');
 
             localStorage.setItem('isAuthenticated', 'true');
             localStorage.setItem('loggedInUser', authenticatedUser.username || username);
             localStorage.setItem('currentUserRole', userRole);
             localStorage.setItem('login_session_time', loginTime);
+            localStorage.setItem('requiresAgentProfileSetup', needsAgentSetup ? 'true' : 'false');
+
+            try {
+                const loginEntry = {
+                    id: 'act_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+                    createdAt: new Date().toISOString(),
+                    actorUsername: authenticatedUser.username || username,
+                    actorRole: userRole,
+                    category: 'Authentication',
+                    action: 'Login',
+                    target: authenticatedUser.username || username,
+                    details: 'Signed into Dashboard (' + userRole + ')' + (needsAgentSetup ? ' — First-login agent setup required' : '')
+                };
+                const existingLogs = JSON.parse(localStorage.getItem('industria_activity_logs') || '[]');
+                const updatedLogs = Array.isArray(existingLogs) ? existingLogs : [];
+                updatedLogs.unshift(loginEntry);
+                localStorage.setItem('industria_activity_logs', JSON.stringify(updatedLogs.slice(0, 300)));
+                sessionStorage.setItem('__pending_login_activity', JSON.stringify(loginEntry));
+            } catch (logErr) {}
             
             window.location.href = 'dashboard.html';
         } else {

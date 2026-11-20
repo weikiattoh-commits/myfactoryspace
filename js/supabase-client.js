@@ -590,5 +590,59 @@ window.IndustraSupabase = {
         }
         await Promise.all(workers);
         return uploadedUrls;
+    },
+
+    // Fetch Dashboard Activity Logs
+    async fetchActivityLogs(limit = 250) {
+        const client = this.getClient();
+        if (!client) return { tableMissing: false, rows: null };
+        try {
+            const { data, error } = await client
+                .from('activity_logs')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(limit);
+            if (error) {
+                const msg = String(error.message || '').toLowerCase();
+                if (error.code === '42P01' || error.code === 'PGRST205' || msg.includes('activity_logs')) {
+                    return { tableMissing: true, rows: null };
+                }
+                console.warn('Error fetching activity_logs from Supabase:', error);
+                return { tableMissing: false, rows: null };
+            }
+            return { tableMissing: false, rows: data || [] };
+        } catch (e) {
+            return { tableMissing: false, rows: null };
+        }
+    },
+
+    // Insert a single Dashboard Activity Log entry
+    async insertActivityLog(entry) {
+        const client = this.getClient();
+        if (!client || !entry) return { success: false, tableMissing: false };
+        try {
+            const payload = {
+                id: String(entry.id || `act_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`),
+                created_at: entry.createdAt || new Date().toISOString(),
+                actor_username: String(entry.actorUsername || 'admin'),
+                actor_role: String(entry.actorRole || 'Administrator'),
+                category: String(entry.category || 'System'),
+                action: String(entry.action || 'Update'),
+                target: String(entry.target || ''),
+                details: String(entry.details || ''),
+                specs: entry
+            };
+            const { error } = await client.from('activity_logs').upsert(payload, { onConflict: 'id' });
+            if (error) {
+                const msg = String(error.message || '').toLowerCase();
+                if (error.code === '42P01' || error.code === 'PGRST205' || msg.includes('activity_logs')) {
+                    return { success: false, tableMissing: true };
+                }
+                return { success: false, tableMissing: false };
+            }
+            return { success: true, tableMissing: false };
+        } catch (e) {
+            return { success: false, tableMissing: false };
+        }
     }
 };

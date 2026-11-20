@@ -104,6 +104,14 @@
 
             saveAgents(list);
             window.renderAgentsTable();
+            if (typeof window.logDashboardActivity === 'function') {
+                window.logDashboardActivity({
+                    category: 'Specialist Agents',
+                    action: 'Edit',
+                    target: targetAgent.name || ('Agent #' + agentId),
+                    details: isChecked ? 'Enabled Mainpage Featured placement' : 'Disabled Mainpage Featured placement'
+                });
+            }
             window.dispatchEvent(new Event('storage'));
         };
 
@@ -413,6 +421,40 @@
             return result;
         }
 
+        function setMandatoryOnboardingUI(isMandatory, info) {
+            window._mandatoryAgentOnboarding = !!isMandatory;
+            var modal = document.getElementById('agent-modal');
+            var banner = document.getElementById('agent-mandatory-onboarding-banner');
+            var descEl = document.getElementById('agent-mandatory-onboarding-desc');
+            var closeBtn = document.getElementById('close-agent-modal-btn');
+            var cancelBtn = document.getElementById('cancel-agent-btn');
+            var logoutBtn = document.getElementById('agent-mandatory-logout-btn');
+
+            if (modal) modal.classList.toggle('mandatory-onboarding', !!isMandatory);
+            if (banner) {
+                if (isMandatory) banner.style.setProperty('display', 'flex', 'important');
+                else banner.style.setProperty('display', 'none', 'important');
+            }
+            if (isMandatory && descEl) {
+                var uname = (info && info.username) ? info.username : (sessionStorage.getItem('loggedInUser') || 'User');
+                var urole = (info && info.role) ? info.role : (sessionStorage.getItem('currentUserRole') || 'Agent');
+                descEl.innerHTML = 'Welcome <strong>' + escapeHtml(uname) + '</strong> (<span style="font-weight:700;">' + escapeHtml(urole) + '</span>)! On your first login, completing and saving your Specialist / Agent profile is required before entering the dashboard.';
+            }
+            if (closeBtn) {
+                if (isMandatory) closeBtn.style.setProperty('display', 'none', 'important');
+                else closeBtn.style.removeProperty('display');
+            }
+            if (cancelBtn) {
+                if (isMandatory) cancelBtn.style.setProperty('display', 'none', 'important');
+                else cancelBtn.style.removeProperty('display');
+            }
+            if (logoutBtn) {
+                if (isMandatory) logoutBtn.style.setProperty('display', 'inline-flex', 'important');
+                else logoutBtn.style.setProperty('display', 'none', 'important');
+            }
+        }
+        window.setMandatoryOnboardingUI = setMandatoryOnboardingUI;
+
         function openModal() {
             var m = document.getElementById('agent-modal');
             if (!m) return;
@@ -423,9 +465,12 @@
         window.openModal = openModal;
         window.openAgentModal = openModal;
 
-        function closeModal() {
+        function closeModal(forceClose) {
+            if (window._mandatoryAgentOnboarding && !forceClose) return;
             var m = document.getElementById('agent-modal');
             if (!m) return;
+            window._mandatoryAgentOnboarding = false;
+            setMandatoryOnboardingUI(false);
             m.classList.remove('active');
             m.style.display = 'none';
             var f = document.getElementById('agent-form');
@@ -615,13 +660,16 @@
         };
 
         /* ---- open add agent modal ---- */
-        window.openAddAgentModal = function() {
+        window.openAddAgentModal = function(options) {
+            var opts = (options && typeof options === 'object') ? options : {};
+            var isMandatory = !!opts.mandatoryOnboarding;
             window._editingAgentId = null;
             window._agentCroppedResult = null;
             var hidEl = document.getElementById('editAgentId');
             if (hidEl) hidEl.value = '';
             var titleEl = document.getElementById('agent-modal-title');
-            if (titleEl) titleEl.textContent = 'Add Specialist / Agent';
+            if (titleEl) titleEl.textContent = isMandatory ? 'First-Login Setup: Add Specialist / Agent' : 'Add Specialist / Agent';
+            setMandatoryOnboardingUI(isMandatory, opts);
             var nameEl = document.getElementById('agentName');
             if (nameEl) nameEl.value = '';
             var renEl = document.getElementById('agentRen');
@@ -637,7 +685,9 @@
             if (ph)  ph.style.display = 'flex';
             if (fn)  fn.textContent = 'No file chosen';
             var waPreview = document.getElementById('agent-modal-wa-preview');
-            if (waPreview) waPreview.textContent = '';
+            if (waPreview) {
+                waPreview.textContent = (opts.whatsapp && String(opts.whatsapp).trim()) ? '(Linked WhatsApp: ' + String(opts.whatsapp).trim() + ')' : '';
+            }
             var showMainEl = document.getElementById('agentShowOnMainpage');
             if (showMainEl) {
                 var curAgents = (typeof getAgents === 'function' ? getAgents() : (typeof window.getAgents === 'function' ? window.getAgents() : [])) || [];
@@ -680,6 +730,7 @@
             var showMainEl = document.getElementById('agentShowOnMainpage');
 
             if (titleEl) titleEl.textContent = 'Edit Specialist / Agent';
+            setMandatoryOnboardingUI(false);
             if (hidEl)   hidEl.value = id;
             if (nameEl)  nameEl.value = agent.name  || '';
             if (renEl)   renEl.value  = agent.ren   || '';
@@ -717,11 +768,21 @@
         /* ---- delete ---- */
         window.deleteAgent = function(id) {
             if (!confirm('Are you sure you want to delete this agent?')) return;
-            var list = getAgents().filter(function(a) { return String(a.id) !== String(id); });
+            var prevList = getAgents();
+            var removedAgent = prevList.find(function(a) { return String(a.id) === String(id); });
+            var list = prevList.filter(function(a) { return String(a.id) !== String(id); });
             if (list.length === 0) list = JSON.parse(JSON.stringify(DEFAULT_AGENTS));
             saveAgents(list);
             if (window.IndustraSupabase && typeof window.IndustraSupabase.deleteAgent === 'function') {
                 window.IndustraSupabase.deleteAgent(id).catch(function(e) { console.warn('Supabase delete agent error:', e); });
+            }
+            if (typeof window.logDashboardActivity === 'function') {
+                window.logDashboardActivity({
+                    category: 'Specialist Agents',
+                    action: 'Delete',
+                    target: (removedAgent && removedAgent.name) ? removedAgent.name : ('Agent #' + id),
+                    details: 'Deleted specialist agent profile' + (removedAgent && removedAgent.ren ? ' (' + removedAgent.ren + ')' : '')
+                });
             }
             window.renderAgentsTable();
         };
@@ -748,15 +809,21 @@
                 });
             }
 
-            if (closeBtn)  closeBtn.addEventListener('click',  closeModal);
-            if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+            if (closeBtn)  closeBtn.addEventListener('click', function() { closeModal(false); });
+            if (cancelBtn) cancelBtn.addEventListener('click', function() { closeModal(false); });
 
             var modal = document.getElementById('agent-modal');
             if (modal) {
                 modal.addEventListener('click', function(e) {
-                    if (e.target === modal) closeModal();
+                    if (e.target === modal && !window._mandatoryAgentOnboarding) closeModal(false);
                 });
             }
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && modal && modal.classList.contains('active') && !window._mandatoryAgentOnboarding) {
+                    closeModal(false);
+                }
+            });
 
             /* ---- save (add or edit) ---- */
             if (form) {
@@ -799,6 +866,17 @@
                         var editIdInput = (document.getElementById('editAgentId') || {}).value;
                         var targetEditId = (window._editingAgentId !== null && window._editingAgentId !== undefined) ? window._editingAgentId : (editIdInput || null);
 
+                        var wasMandatoryOnboarding = !!window._mandatoryAgentOnboarding;
+                        var onboardingUsername = window._pendingAssignUsername || (wasMandatoryOnboarding ? (sessionStorage.getItem('loggedInUser') || localStorage.getItem('loggedInUser') || '') : '');
+                        var linkedUserWa = '';
+                        if (onboardingUsername) {
+                            try {
+                                var preUsers = JSON.parse(localStorage.getItem('industria_users')) || [];
+                                var preUserObj = preUsers.find(function(u) { return u && u.username && u.username.toLowerCase() === onboardingUsername.toLowerCase(); });
+                                if (preUserObj && preUserObj.whatsapp) linkedUserWa = String(preUserObj.whatsapp).trim();
+                            } catch(e) {}
+                        }
+
                         var targetAgent = null;
 
                         if (targetEditId !== null && targetEditId !== undefined && String(targetEditId).trim() !== '') {
@@ -827,6 +905,8 @@
                                 ren:            renVal,
                                 email:          emailVal.trim(),
                                 bio:            bioVal,
+                                phone:          linkedUserWa,
+                                whatsapp:       linkedUserWa,
                                 showOnMainpage: (currentFeatured < 4),
                                 parks:          parksVal,
                                 assignedParks:  parksVal,
@@ -882,31 +962,57 @@
                             }
                         }
 
-                        window.renderAgentsTable();
-                        window._agentCroppedResult = null;
-                        closeModal();
-
-                        if (window._pendingAssignUsername) {
-                            var assignUser = window._pendingAssignUsername;
+                        if (onboardingUsername && targetAgent) {
                             window._pendingAssignUsername = null;
                             try {
                                 var usersList = JSON.parse(localStorage.getItem('industria_users')) || [];
-                                var uTarget = usersList.find(function(u) { return u.username.toLowerCase() === assignUser.toLowerCase(); });
-                                if (uTarget && list.length > 0) {
-                                    var latestAgent = list[list.length - 1];
-                                    uTarget.agentId = latestAgent.id;
+                                var uTarget = usersList.find(function(u) { return u && u.username && u.username.toLowerCase() === onboardingUsername.toLowerCase(); });
+                                if (uTarget) {
+                                    uTarget.agentId = targetAgent.id;
+                                    uTarget.requiresAgentProfileSetup = false;
+                                    uTarget.agentProfileCompleted = true;
                                     localStorage.setItem('industria_users', JSON.stringify(usersList));
                                     if (window.IndustraSupabase && typeof window.IndustraSupabase.upsertUser === 'function') {
-                                        window.IndustraSupabase.upsertUser(uTarget);
+                                        await window.IndustraSupabase.upsertUser(uTarget);
                                     }
                                 }
                             } catch(e) { console.warn('Could not auto-assign new agent to user:', e); }
                         }
+
+                        if (wasMandatoryOnboarding) {
+                            sessionStorage.setItem('requiresAgentProfileSetup', 'false');
+                            localStorage.setItem('requiresAgentProfileSetup', 'false');
+                        }
+
+                        window.renderAgentsTable();
+                        window._agentCroppedResult = null;
+                        window._mandatoryAgentOnboarding = false;
+                        closeModal(true);
+
                         if (typeof window.populateCreateAdminAgentSelect === 'function') {
                             window.populateCreateAdminAgentSelect();
                         }
                         if (typeof window.renderAdminManagement === 'function') {
                             window.renderAdminManagement();
+                        }
+                        if (typeof window.renderTable === 'function') {
+                            window.renderTable();
+                        }
+                        if (targetAgent && typeof window.logDashboardActivity === 'function') {
+                            var isEditAction = (targetEditId !== null && targetEditId !== undefined && String(targetEditId).trim() !== '');
+                            window.logDashboardActivity({
+                                category: 'Specialist Agents',
+                                action: isEditAction ? 'Edit' : 'Add',
+                                target: targetAgent.name || ('Agent #' + targetAgent.id),
+                                details: (targetAgent.ren ? targetAgent.ren + ' • ' : '') + (wasMandatoryOnboarding ? 'Completed first-login onboarding setup' : (isEditAction ? 'Updated agent profile' : 'Created specialist agent profile'))
+                            });
+                        }
+                        if (wasMandatoryOnboarding) {
+                            if (typeof showDensityToast === 'function') {
+                                showDensityToast('Specialist / Agent profile completed and linked to your account!');
+                            } else {
+                                alert('Your Specialist / Agent profile has been created and linked to your account.');
+                            }
                         }
                     } catch (err) {
                         console.error('Error saving agent:', err);

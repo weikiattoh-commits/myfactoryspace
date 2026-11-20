@@ -42,6 +42,11 @@ window.switchView = function switchView(viewName, subtab = 'general') {
     const settingsSubmenu = document.getElementById('settings-submenu');
     const settingsArrow = document.getElementById('settings-arrow');
 
+    const canAccessLanding = typeof window.canAccessLandingPage === 'function' ? window.canAccessLandingPage() : true;
+    if (viewName === 'landing-page' && !canAccessLanding) {
+        viewName = 'overview';
+    }
+
     document.querySelectorAll('.sidebar-link').forEach(link => link.classList.remove('active'));
     document.querySelectorAll('.mobile-bottom-nav-item').forEach(item => {
         item.classList.toggle('active', item.getAttribute('data-view') === viewName);
@@ -177,9 +182,14 @@ window.switchPropertiesTab = function(tab, citySlug) {
     }
 
     if (tab === 'locations') {
-        window.switchView('landing-page', citySlug);
-        return;
-    } else if (tab === 'unassigned') {
+        if (typeof window.canAccessLandingPage === 'function' && !window.canAccessLandingPage()) {
+            tab = 'assigned';
+        } else {
+            window.switchView('landing-page', citySlug);
+            return;
+        }
+    }
+    if (tab === 'unassigned') {
         if (tabAssignedBtn) tabAssignedBtn.classList.remove('active');
         if (tabUnassignedBtn) tabUnassignedBtn.classList.add('active');
         if (tabLocationsBtn) tabLocationsBtn.classList.remove('active');
@@ -715,13 +725,272 @@ function initDashboardApp() {
         addPropertyBtn.style.display = 'none';
     }
 
-    const isCurrentAdminRole = String(currentUserRole || '').trim().toLowerCase() === 'administrator';
-    const initNavSettingsGeneral = document.getElementById('nav-settings-general');
-    const initNavSettingsServer = document.getElementById('nav-settings-server');
-    const initNavSettingsCosting = document.getElementById('nav-settings-costing');
-    if (initNavSettingsGeneral) initNavSettingsGeneral.style.display = isCurrentAdminRole ? '' : 'none';
-    if (initNavSettingsServer) initNavSettingsServer.style.display = isCurrentAdminRole ? '' : 'none';
-    if (initNavSettingsCosting) initNavSettingsCosting.style.display = isCurrentAdminRole ? '' : 'none';
+    window.canAccessLandingPage = function() {
+        const activeRole = (typeof resolveCurrentUserRole === 'function' ? resolveCurrentUserRole() : null) ||
+                           sessionStorage.getItem('currentUserRole') ||
+                           localStorage.getItem('currentUserRole') ||
+                           (typeof currentUserRole !== 'undefined' ? currentUserRole : null) ||
+                           'Administrator';
+        const roleLower = String(activeRole).trim().toLowerCase();
+        return roleLower === 'administrator' || roleLower === 'supervisor';
+    };
+
+    window.applyRoleNavVisibility = function() {
+        const activeRole = (typeof resolveCurrentUserRole === 'function' ? resolveCurrentUserRole() : null) ||
+                           sessionStorage.getItem('currentUserRole') ||
+                           localStorage.getItem('currentUserRole') ||
+                           (typeof currentUserRole !== 'undefined' ? currentUserRole : null) ||
+                           'Administrator';
+        const isCurrentAdminRole = String(activeRole).trim().toLowerCase() === 'administrator';
+        const canLanding = window.canAccessLandingPage();
+
+        const navLanding = document.getElementById('nav-landing-page');
+        const initNavSettingsGeneral = document.getElementById('nav-settings-general');
+        const initNavSettingsTimezone = document.getElementById('nav-settings-timezone');
+        const initNavSettingsServer = document.getElementById('nav-settings-server');
+        const initNavSettingsCosting = document.getElementById('nav-settings-costing');
+        const initNavSettingsActivity = document.getElementById('nav-settings-activity');
+        if (navLanding) navLanding.style.display = canLanding ? '' : 'none';
+        if (initNavSettingsGeneral) initNavSettingsGeneral.style.display = isCurrentAdminRole ? '' : 'none';
+        if (initNavSettingsTimezone) initNavSettingsTimezone.style.display = isCurrentAdminRole ? '' : 'none';
+        if (initNavSettingsServer) initNavSettingsServer.style.display = isCurrentAdminRole ? '' : 'none';
+        if (initNavSettingsCosting) initNavSettingsCosting.style.display = isCurrentAdminRole ? '' : 'none';
+        if (initNavSettingsActivity) initNavSettingsActivity.style.display = isCurrentAdminRole ? '' : 'none';
+    };
+    window.applyRoleNavVisibility();
+
+    const ACTIVITY_LOGS_KEY = 'industria_activity_logs';
+    let activityTableMissingOnSupabase = false;
+
+    function getLocalActivityLogs() {
+        try {
+            const raw = localStorage.getItem(ACTIVITY_LOGS_KEY);
+            const parsed = raw ? JSON.parse(raw) : [];
+            return Array.isArray(parsed) ? parsed : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    function saveLocalActivityLogs(list) {
+        try {
+            const trimmed = Array.isArray(list) ? list.slice(0, 300) : [];
+            localStorage.setItem(ACTIVITY_LOGS_KEY, JSON.stringify(trimmed));
+        } catch (e) {}
+    }
+
+    window.logDashboardActivity = function({ category = 'System', action = 'Update', target = '', details = '', actorUsername = null, actorRole = null } = {}) {
+        const resolvedActor = actorUsername || sessionStorage.getItem('loggedInUser') || localStorage.getItem('loggedInUser') || 'admin';
+        const resolvedRole = actorRole || (typeof resolveCurrentUserRole === 'function' ? resolveCurrentUserRole() : null) || sessionStorage.getItem('currentUserRole') || localStorage.getItem('currentUserRole') || 'Administrator';
+        const entry = {
+            id: `act_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+            createdAt: new Date().toISOString(),
+            actorUsername: String(resolvedActor),
+            actorRole: String(resolvedRole),
+            category: String(category),
+            action: String(action),
+            target: String(target || ''),
+            details: String(details || '')
+        };
+
+        const logs = getLocalActivityLogs();
+        logs.unshift(entry);
+        saveLocalActivityLogs(logs);
+
+        if (window.IndustraSupabase && typeof window.IndustraSupabase.insertActivityLog === 'function') {
+            window.IndustraSupabase.insertActivityLog(entry).then(res => {
+                if (res && res.tableMissing) {
+                    activityTableMissingOnSupabase = true;
+                }
+            }).catch(() => {});
+        }
+
+        const subtabAct = document.getElementById('settings-subtab-activity');
+        if (subtabAct && subtabAct.style.display !== 'none' && typeof window.renderActivityLog === 'function') {
+            window.renderActivityLog();
+        }
+        return entry;
+    };
+
+    // Flush login event recorded in login.js to Supabase activity_logs
+    (function flushPendingLoginActivity() {
+        try {
+            const rawPending = sessionStorage.getItem('__pending_login_activity');
+            if (!rawPending) return;
+            sessionStorage.removeItem('__pending_login_activity');
+            const parsed = JSON.parse(rawPending);
+            if (parsed && window.IndustraSupabase && typeof window.IndustraSupabase.insertActivityLog === 'function') {
+                setTimeout(() => {
+                    window.IndustraSupabase.insertActivityLog(parsed).then(res => {
+                        if (res && res.tableMissing) activityTableMissingOnSupabase = true;
+                    }).catch(() => {});
+                }, 400);
+            }
+        } catch (e) {}
+    })();
+
+    function formatActivityDateTime(isoStr) {
+        if (!isoStr) return '-';
+        if (typeof window.formatDateTimeWithTimezone === 'function') {
+            return window.formatDateTimeWithTimezone(isoStr);
+        }
+        const d = new Date(isoStr);
+        return isNaN(d.getTime()) ? String(isoStr) : d.toLocaleString();
+    }
+
+    function getActionBadgeStyle(actionStr) {
+        const a = String(actionStr || '').toLowerCase();
+        if (a.includes('delete') || a.includes('remove') || a.includes('reject')) {
+            return 'background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca;';
+        }
+        if (a.includes('add') || a.includes('create') || a.includes('approve')) {
+            return 'background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;';
+        }
+        if (a.includes('login')) {
+            return 'background: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe;';
+        }
+        return 'background: #fef3c7; color: #b45309; border: 1px solid #fde68a;';
+    }
+
+    window.renderActivityLog = function() {
+        const tbody = document.getElementById('activity-log-table-body');
+        const totalEl = document.getElementById('activity-stat-total');
+        const todayEl = document.getElementById('activity-stat-today');
+        const usersEl = document.getElementById('activity-stat-users');
+        const syncEl = document.getElementById('activity-sync-status-badge');
+        const sqlBanner = document.getElementById('activity-sql-setup-banner');
+        const showingBadge = document.getElementById('activity-log-showing-badge');
+        const searchVal = (document.getElementById('activity-log-search')?.value || '').trim().toLowerCase();
+        const catVal = document.getElementById('activity-log-category')?.value || 'All';
+        const actVal = document.getElementById('activity-log-action')?.value || 'All';
+
+        const logs = getLocalActivityLogs();
+        const todayPrefix = new Date().toISOString().split('T')[0];
+
+        if (totalEl) totalEl.textContent = logs.length;
+        if (todayEl) todayEl.textContent = logs.filter(l => String(l.createdAt || '').startsWith(todayPrefix)).length;
+        if (usersEl) usersEl.textContent = logs.filter(l => l.category === 'Admin Users').length;
+
+        if (sqlBanner) sqlBanner.style.display = activityTableMissingOnSupabase ? 'block' : 'none';
+        if (syncEl) {
+            if (activityTableMissingOnSupabase) {
+                syncEl.innerHTML = '<span style="color:#b45309;"><i class="fa-solid fa-hard-drive"></i> Local Cache (SQL Needed)</span>';
+            } else if (window.IndustraSupabase && window.IndustraSupabase.getClient && window.IndustraSupabase.getClient()) {
+                syncEl.innerHTML = '<span style="color:#059669;"><i class="fa-solid fa-cloud-check"></i> Supabase + Local Sync</span>';
+            } else {
+                syncEl.innerHTML = '<span style="color:#475569;"><i class="fa-solid fa-hard-drive"></i> Local Storage Cache</span>';
+            }
+        }
+
+        const filtered = logs.filter(item => {
+            if (catVal !== 'All' && String(item.category || '').toLowerCase() !== catVal.toLowerCase()) return false;
+            if (actVal !== 'All' && !String(item.action || '').toLowerCase().includes(actVal.toLowerCase())) return false;
+            if (searchVal) {
+                const hay = [item.actorUsername, item.actorRole, item.category, item.action, item.target, item.details].filter(Boolean).join(' ').toLowerCase();
+                if (!hay.includes(searchVal)) return false;
+            }
+            return true;
+        });
+
+        if (showingBadge) showingBadge.textContent = `${filtered.length} ${filtered.length === 1 ? 'Entry' : 'Entries'}`;
+        if (!tbody) return;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 2.25rem; color: #94a3b8;"><i class="fa-solid fa-clock-rotate-left" style="font-size: 1.6rem; margin-bottom: 0.4rem; display: block; color: #cbd5e1;"></i>No matching dashboard activity logs found.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = filtered.slice(0, 250).map(item => `
+            <tr>
+                <td style="font-size: 0.8rem; color: var(--text-dark); white-space: nowrap;">${escapeHtml(formatActivityDateTime(item.createdAt))}</td>
+                <td>
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                        <strong style="font-size: 0.85rem; color: var(--text-dark);">${escapeHtml(item.actorUsername)}</strong>
+                        <span style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(item.actorRole)}</span>
+                    </div>
+                </td>
+                <td><span class="badge-pill" style="background: #f1f5f9; color: #334155; font-size: 0.75rem; font-weight: 600; padding: 3px 9px;">${escapeHtml(item.category)}</span></td>
+                <td><span class="status-badge" style="${getActionBadgeStyle(item.action)} font-size: 0.72rem; font-weight: 700; padding: 3px 8px;">${escapeHtml(item.action)}</span></td>
+                <td style="font-size: 0.83rem; color: var(--text-dark); line-height: 1.4;">
+                    ${item.target ? `<strong>${escapeHtml(item.target)}</strong>` : ''}
+                    ${item.details ? `<div style="color: var(--text-muted); font-size: 0.78rem; margin-top: 2px;">${escapeHtml(item.details)}</div>` : ''}
+                </td>
+            </tr>
+        `).join('');
+    };
+
+    window.loadActivityLogsFromSupabase = async function(showFeedback = false) {
+        if (window.IndustraSupabase && typeof window.IndustraSupabase.fetchActivityLogs === 'function') {
+            const res = await window.IndustraSupabase.fetchActivityLogs(250);
+            if (res && res.tableMissing) {
+                activityTableMissingOnSupabase = true;
+            } else if (res && Array.isArray(res.rows)) {
+                activityTableMissingOnSupabase = false;
+                const localLogs = getLocalActivityLogs();
+                const mergedMap = new Map();
+                res.rows.forEach(r => {
+                    const specs = (r.specs && typeof r.specs === 'object') ? r.specs : {};
+                    const norm = {
+                        id: String(r.id),
+                        createdAt: r.created_at || specs.createdAt || '',
+                        actorUsername: r.actor_username || specs.actorUsername || 'admin',
+                        actorRole: r.actor_role || specs.actorRole || 'Administrator',
+                        category: r.category || specs.category || 'System',
+                        action: r.action || specs.action || 'Update',
+                        target: r.target || specs.target || '',
+                        details: r.details || specs.details || ''
+                    };
+                    mergedMap.set(norm.id, norm);
+                });
+                localLogs.forEach(l => {
+                    if (l && l.id && !mergedMap.has(String(l.id))) {
+                        mergedMap.set(String(l.id), l);
+                    }
+                });
+                const merged = Array.from(mergedMap.values()).sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+                saveLocalActivityLogs(merged);
+            }
+        }
+        window.renderActivityLog();
+        if (showFeedback && typeof showDensityToast === 'function') {
+            showDensityToast('Activity log refreshed.');
+        }
+    };
+
+    window.copyActivitySqlSnippet = async function() {
+        const pre = document.getElementById('activity-sql-snippet');
+        const txt = pre ? pre.textContent : '';
+        if (!txt) return;
+        try {
+            await navigator.clipboard.writeText(txt);
+            if (typeof showDensityToast === 'function') showDensityToast('SQL copied! Paste it into Supabase > SQL Editor.');
+            else alert('SQL copied to clipboard!');
+        } catch (e) {
+            prompt('Copy this SQL to Supabase SQL Editor:', txt);
+        }
+    };
+
+    window.exportActivityLogsCsv = function() {
+        const logs = getLocalActivityLogs();
+        if (!logs.length) {
+            alert('No activity logs available to export.');
+            return;
+        }
+        const esc = v => '"' + String(v || '').replace(/"/g, '""') + '"';
+        const rows = [['Date & Time', 'Username', 'Role', 'Category', 'Action', 'Target', 'Details'].map(esc).join(',')];
+        logs.forEach(l => {
+            rows.push([formatActivityDateTime(l.createdAt), l.actorUsername, l.actorRole, l.category, l.action, l.target, l.details].map(esc).join(','));
+        });
+        const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `myfactoryspace-activity-log-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
 
     function escapeHtml(str) {
         return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -788,6 +1057,7 @@ function initDashboardApp() {
         localStorage.removeItem('loggedInUser');
         localStorage.removeItem('currentUserRole');
         localStorage.removeItem('login_session_time');
+        localStorage.removeItem('requiresAgentProfileSetup');
         window.location.href = 'login.html';
     };
 
@@ -1836,9 +2106,14 @@ function initDashboardApp() {
         }
 
         if (tab === 'locations') {
-            window.switchView('landing-page', citySlug);
-            return;
-        } else if (tab === 'unassigned') {
+            if (typeof window.canAccessLandingPage === 'function' && !window.canAccessLandingPage()) {
+                tab = 'assigned';
+            } else {
+                window.switchView('landing-page', citySlug);
+                return;
+            }
+        }
+        if (tab === 'unassigned') {
             if (tabAssignedBtn) tabAssignedBtn.classList.remove('active');
             if (tabUnassignedBtn) tabUnassignedBtn.classList.add('active');
             if (tabLocationsBtn) tabLocationsBtn.classList.remove('active');
@@ -2552,11 +2827,21 @@ function initDashboardApp() {
         }
 
         if(confirm('Are you sure you want to delete this property?')) {
+            const propTitle = prop.title || ('Property #' + id);
+            const propPark = prop.park || prop.location || '';
             properties = properties.filter(p => String(p.id) !== String(id));
             safeLocalStorageSet('industria_properties', properties);
             syncPropertyDeleteToSupabase(id);
             window.dispatchEvent(new Event('storage'));
             renderTable();
+            if (typeof window.logDashboardActivity === 'function') {
+                window.logDashboardActivity({
+                    category: 'Properties',
+                    action: 'Delete',
+                    target: propTitle,
+                    details: `Deleted listing #${id}${propPark ? ' (' + propPark + ')' : ''}`
+                });
+            }
         }
     };
 
@@ -3943,6 +4228,14 @@ function initDashboardApp() {
                 window.dispatchEvent(new Event('storage'));
                 renderTable();
                 closeModal();
+                if (savedProp && typeof window.logDashboardActivity === 'function') {
+                    window.logDashboardActivity({
+                        category: 'Properties',
+                        action: editingPropertyId ? 'Edit' : 'Add',
+                        target: savedProp.title || ('Property #' + savedProp.id),
+                        details: `${savedProp.intent || 'Sale'} • ${savedProp.type || ''} • ${savedProp.location || ''}${savedProp.park ? ' (' + savedProp.park + ')' : ''}`
+                    });
+                }
                 const wasEditing = isEditing;
                 const newPropId = (savedProp && savedProp.id) ? savedProp.id : (targetPropIndex > -1 && properties[targetPropIndex] ? properties[targetPropIndex].id : null);
                 editingPropertyId = null;
@@ -4084,6 +4377,12 @@ function initDashboardApp() {
                 if (typeof window.renderAdminManagement === 'function') {
                     window.renderAdminManagement();
                 }
+                if (typeof window.applyRoleNavVisibility === 'function') {
+                    window.applyRoleNavVisibility();
+                }
+                if (typeof window.checkMandatoryAgentOnboarding === 'function') {
+                    window.checkMandatoryAgentOnboarding();
+                }
             } else if (sbUsers && Array.isArray(sbUsers) && sbUsers.length === 0) {
                 const defaultUsers = [{ username: 'admin', password: 'admin123', role: 'Administrator', whatsapp: '' }];
                 localStorage.setItem('industria_users', JSON.stringify(defaultUsers));
@@ -4098,6 +4397,64 @@ function initDashboardApp() {
     }
     window.loadUsersFromSupabase = loadUsersFromSupabase;
     loadUsersFromSupabase();
+
+    function checkMandatoryAgentOnboarding() {
+        const loggedUser = sessionStorage.getItem('loggedInUser') || localStorage.getItem('loggedInUser') || '';
+        if (!loggedUser) return;
+
+        const users = getAdminUsers();
+        const userObj = users.find(u => u && u.username && u.username.toLowerCase() === loggedUser.toLowerCase());
+        const effectiveRole = (userObj && userObj.role) ? userObj.role : resolveCurrentUserRole();
+        const roleLower = String(effectiveRole || '').trim().toLowerCase();
+
+        // Entry Support system role is always exempt from completing Specialist / Agent profile
+        if (roleLower === 'entry support') {
+            sessionStorage.setItem('requiresAgentProfileSetup', 'false');
+            localStorage.setItem('requiresAgentProfileSetup', 'false');
+            if (window._mandatoryAgentOnboarding && typeof window.closeAgentModal === 'function') {
+                window._mandatoryAgentOnboarding = false;
+                window.closeAgentModal(true);
+            }
+            return;
+        }
+
+        const hasLinkedAgent = Boolean(userObj && userObj.agentId);
+        const alreadyCompleted = Boolean(userObj && userObj.agentProfileCompleted === true);
+        const isBuiltinAdmin = loggedUser.trim().toLowerCase() === 'admin';
+        const needsSetup = !hasLinkedAgent && !alreadyCompleted && (
+            (userObj && userObj.requiresAgentProfileSetup === true) ||
+            sessionStorage.getItem('requiresAgentProfileSetup') === 'true' ||
+            (!isBuiltinAdmin && Boolean(userObj))
+        );
+
+        if (!needsSetup) {
+            sessionStorage.setItem('requiresAgentProfileSetup', 'false');
+            localStorage.setItem('requiresAgentProfileSetup', 'false');
+            if (window._mandatoryAgentOnboarding && typeof window.closeAgentModal === 'function') {
+                window._mandatoryAgentOnboarding = false;
+                window.closeAgentModal(true);
+            }
+            return;
+        }
+
+        sessionStorage.setItem('requiresAgentProfileSetup', 'true');
+        window._pendingAssignUsername = (userObj && userObj.username) ? userObj.username : loggedUser;
+
+        const modal = document.getElementById('agent-modal');
+        if (window._mandatoryAgentOnboarding && modal && modal.classList.contains('active')) {
+            return;
+        }
+
+        if (typeof window.openAddAgentModal === 'function') {
+            window.openAddAgentModal({
+                mandatoryOnboarding: true,
+                username: window._pendingAssignUsername,
+                role: effectiveRole,
+                whatsapp: (userObj && userObj.whatsapp) ? userObj.whatsapp : ''
+            });
+        }
+    }
+    window.checkMandatoryAgentOnboarding = checkMandatoryAgentOnboarding;
 
     const leadsTableBody = document.getElementById('leads-table-body');
     const leadStatusFilter = document.getElementById('lead-status-filter');
@@ -6407,18 +6764,21 @@ function initDashboardApp() {
         const subtabServer = document.getElementById('settings-subtab-server');
         const subtabCosting = document.getElementById('settings-subtab-costing');
         const subtabAdmin = document.getElementById('settings-subtab-admin');
+        const subtabActivity = document.getElementById('settings-subtab-activity');
 
         const tabBtnGeneral = document.getElementById('tab-btn-general');
         const tabBtnTimezone = document.getElementById('tab-btn-timezone');
         const tabBtnServer = document.getElementById('tab-btn-server');
         const tabBtnCosting = document.getElementById('tab-btn-costing');
         const tabBtnAdmin = document.getElementById('tab-btn-admin');
+        const tabBtnActivity = document.getElementById('tab-btn-activity');
 
         const navSettingsGeneral = document.getElementById('nav-settings-general');
         const navSettingsTimezone = document.getElementById('nav-settings-timezone');
         const navSettingsServer = document.getElementById('nav-settings-server');
         const navSettingsCosting = document.getElementById('nav-settings-costing');
         const navSettingsAdmin = document.getElementById('nav-settings-admin');
+        const navSettingsActivity = document.getElementById('nav-settings-activity');
 
         const settingsPageTitle = document.getElementById('settings-page-title');
 
@@ -6427,7 +6787,7 @@ function initDashboardApp() {
         const isCurrentAdmin = String(userRole).toLowerCase() === 'administrator';
         const canAccessGeneral = isCurrentAdmin;
 
-        // Non-Administrators (Supervisor, Assistant, Entry Support) CANNOT access General Settings, Time Zone, Server Configuration, or Costing
+        // Non-Administrators (Supervisor, Assistant, Entry Support) CANNOT access General Settings, Time Zone, Server Configuration, Costing, or Activity Log
         if (!isCurrentAdmin) {
             subtabName = 'admin';
         }
@@ -6438,6 +6798,7 @@ function initDashboardApp() {
         if (subtabServer) subtabServer.style.display = 'none';
         if (subtabCosting) subtabCosting.style.display = 'none';
         subtabAdmin.style.display = 'none';
+        if (subtabActivity) subtabActivity.style.display = 'none';
 
         // Remove active states
         if (tabBtnGeneral) tabBtnGeneral.classList.remove('active');
@@ -6445,22 +6806,26 @@ function initDashboardApp() {
         if (tabBtnServer) tabBtnServer.classList.remove('active');
         if (tabBtnCosting) tabBtnCosting.classList.remove('active');
         if (tabBtnAdmin) tabBtnAdmin.classList.remove('active');
+        if (tabBtnActivity) tabBtnActivity.classList.remove('active');
 
         if (navSettingsGeneral) navSettingsGeneral.classList.remove('active');
         if (navSettingsTimezone) navSettingsTimezone.classList.remove('active');
         if (navSettingsServer) navSettingsServer.classList.remove('active');
         if (navSettingsCosting) navSettingsCosting.classList.remove('active');
         if (navSettingsAdmin) navSettingsAdmin.classList.remove('active');
+        if (navSettingsActivity) navSettingsActivity.classList.remove('active');
 
-        // Button visibility - strictly isCurrentAdmin for General, Timezone, Server, and Costing
+        // Button visibility - strictly isCurrentAdmin for General, Timezone, Server, Costing, and Activity Log
         if (tabBtnGeneral) tabBtnGeneral.style.display = isCurrentAdmin ? '' : 'none';
         if (tabBtnTimezone) tabBtnTimezone.style.display = isCurrentAdmin ? '' : 'none';
         if (tabBtnServer) tabBtnServer.style.display = isCurrentAdmin ? '' : 'none';
         if (tabBtnCosting) tabBtnCosting.style.display = isCurrentAdmin ? '' : 'none';
+        if (tabBtnActivity) tabBtnActivity.style.display = isCurrentAdmin ? '' : 'none';
         if (navSettingsGeneral) navSettingsGeneral.style.display = isCurrentAdmin ? '' : 'none';
         if (navSettingsTimezone) navSettingsTimezone.style.display = isCurrentAdmin ? '' : 'none';
         if (navSettingsServer) navSettingsServer.style.display = isCurrentAdmin ? '' : 'none';
         if (navSettingsCosting) navSettingsCosting.style.display = isCurrentAdmin ? '' : 'none';
+        if (navSettingsActivity) navSettingsActivity.style.display = isCurrentAdmin ? '' : 'none';
 
         const breadcrumbCurrent = document.getElementById('header-breadcrumb-current');
 
@@ -6486,6 +6851,13 @@ function initDashboardApp() {
             if (settingsPageTitle) settingsPageTitle.innerHTML = 'Settings <span style="font-weight: 400; font-size: 1.2rem; color: var(--text-muted);">&gt; Costing &amp; Agent Fee</span>';
             if (breadcrumbCurrent) breadcrumbCurrent.textContent = 'Settings / Costing & Agent Fee';
             if (typeof window.renderCostingCalculator === 'function') window.renderCostingCalculator();
+        } else if (subtabName === 'activity' && isCurrentAdmin) {
+            if (subtabActivity) subtabActivity.style.display = 'block';
+            if (tabBtnActivity) tabBtnActivity.classList.add('active');
+            if (navSettingsActivity) navSettingsActivity.classList.add('active');
+            if (settingsPageTitle) settingsPageTitle.innerHTML = 'Settings <span style="font-weight: 400; font-size: 1.2rem; color: var(--text-muted);">&gt; Activity Log</span>';
+            if (breadcrumbCurrent) breadcrumbCurrent.textContent = 'Settings / Activity Log';
+            if (typeof window.loadActivityLogsFromSupabase === 'function') window.loadActivityLogsFromSupabase(false);
         } else if (subtabName === 'admin') {
             subtabAdmin.style.display = 'block';
             if (tabBtnAdmin) tabBtnAdmin.classList.add('active');
@@ -6748,7 +7120,7 @@ function initDashboardApp() {
     if (paramView) {
         switchView(paramView, paramTab || (paramView === 'properties' ? 'assigned' : 'general'));
     } else if (hashVal === 'landing-page' || hashVal === 'locations') {
-        switchView('properties', 'locations');
+        switchView((typeof window.canAccessLandingPage === 'function' && !window.canAccessLandingPage()) ? 'overview' : 'landing-page');
     } else if (hashVal === 'properties') {
         switchView('properties', paramTab || 'assigned');
     } else if (hashVal) {
@@ -7190,6 +7562,15 @@ function initDashboardApp() {
         req.reviewedAt = new Date().toISOString();
         saveParkRequests(reqs);
 
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Parks',
+                action: 'Approve',
+                target: req.name,
+                details: `Approved park proposal in ${req.city}${req.agentName && req.agentName !== 'Unassigned' ? ' • Assigned: ' + req.agentName : ''}`
+            });
+        }
+
         alert(`✅ Park Approved!\n\n"${req.name}" is now active in ${req.city}${req.agentName && req.agentName !== 'Unassigned' ? ` and assigned to specialist agent ${req.agentName}` : ''}.`);
         renderParkRequestsTable();
         renderParksTable();
@@ -7227,6 +7608,15 @@ function initDashboardApp() {
         req.reviewedAt = new Date().toISOString();
         req.rejectionReason = (reason || '').trim();
         saveParkRequests(reqs);
+
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Parks',
+                action: 'Reject',
+                target: req.name,
+                details: `Rejected park proposal in ${req.city}${req.rejectionReason ? ' • Reason: ' + req.rejectionReason : ''}`
+            });
+        }
 
         alert(`Park proposal "${req.name}" has been marked as Rejected.`);
         renderParkRequestsTable();
@@ -7326,6 +7716,15 @@ function initDashboardApp() {
                     renderAgentsTable();
                 }
             }
+        }
+
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Parks',
+                action: 'Delete',
+                target: req.name,
+                details: `${isApproved ? 'Removed approved park request & active park' : 'Removed rejected park request'} in ${req.city}`
+            });
         }
 
         const updatedReqs = reqs.filter(r => String(r.id) !== String(requestId));
@@ -7776,6 +8175,14 @@ function initDashboardApp() {
                 } else if (typeof renderAgentsTable === 'function') {
                     renderAgentsTable();
                 }
+            }
+            if (typeof window.logDashboardActivity === 'function') {
+                window.logDashboardActivity({
+                    category: 'Parks',
+                    action: 'Delete',
+                    target: name,
+                    details: `Deleted industrial park in ${city}`
+                });
             }
             
             // Clean up corresponding approved request if exists
@@ -8267,6 +8674,14 @@ function initDashboardApp() {
             targetParkObj.agentId = selectedAgentId || '';
             targetParkObj.agentName = selectedAgentName || '';
             await syncParkToSupabase(city, targetParkObj);
+            if (typeof window.logDashboardActivity === 'function') {
+                window.logDashboardActivity({
+                    category: 'Parks',
+                    action: originalName ? 'Edit' : 'Add',
+                    target: newName,
+                    details: `${city}${section ? ' • ' + section : ''}${selectedAgentName ? ' • Agent: ' + selectedAgentName : ''}`
+                });
+            }
         }
 
         if (typeof window.syncParkToLocationDirectory === 'function') {
@@ -11143,6 +11558,14 @@ function initDashboardApp() {
             localStorage.setItem('industria_settings', JSON.stringify(settings));
             applyBranding(b);
             await saveGeneralSettingsToSupabase();
+            if (typeof window.logDashboardActivity === 'function') {
+                window.logDashboardActivity({
+                    category: 'Settings & Branding',
+                    action: 'Edit',
+                    target: b.companyName || 'Corporate Branding',
+                    details: `Updated corporate logo, favicon & color theme (${b.primaryColor})`
+                });
+            }
             alert('Corporate UI & Brand Theme saved successfully! Site interface updated.');
         });
     }
@@ -11207,9 +11630,14 @@ function initDashboardApp() {
         const u = users.find(user => user.username.toLowerCase() === username.toLowerCase());
         if (!u) return;
 
+        const oldRole = u.role || 'Administrator';
         u.role = newRole;
-        if (newRole !== 'Supervisor' && newRole !== 'Assistant' && newRole !== 'Agent' && newRole !== 'Administrator') {
+        const newRoleLower = String(newRole || '').trim().toLowerCase();
+        if (newRoleLower === 'entry support') {
             delete u.agentId;
+            u.requiresAgentProfileSetup = false;
+        } else if (!u.agentId && !u.agentProfileCompleted && u.createdAt) {
+            u.requiresAgentProfileSetup = true;
         }
         localStorage.setItem('industria_users', JSON.stringify(users));
         const currentLogged = sessionStorage.getItem('loggedInUser') || '';
@@ -11218,10 +11646,20 @@ function initDashboardApp() {
             localStorage.setItem('currentUserRole', newRole);
             currentUserRole = newRole;
             window.currentUserRole = newRole;
+            if (typeof window.applyRoleNavVisibility === 'function') window.applyRoleNavVisibility();
         }
 
         if (window.IndustraSupabase && typeof window.IndustraSupabase.upsertUser === 'function') {
             await window.IndustraSupabase.upsertUser(u);
+        }
+
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Admin Users',
+                action: 'Edit',
+                target: username,
+                details: `Changed role from "${oldRole}" to "${newRole}"`
+            });
         }
 
         alert(`Role for "${username}" updated to ${newRole}.`);
@@ -11254,6 +11692,10 @@ function initDashboardApp() {
 
         const assignedAgentId = newAgentId ? parseInt(newAgentId, 10) : null;
         u.agentId = assignedAgentId;
+        if (assignedAgentId) {
+            u.requiresAgentProfileSetup = false;
+            u.agentProfileCompleted = true;
+        }
 
         // If an agent is selected, sync phone & whatsapp numbers
         if (assignedAgentId) {
@@ -11293,6 +11735,15 @@ function initDashboardApp() {
 
         if (window.IndustraSupabase && typeof window.IndustraSupabase.upsertUser === 'function') {
             await window.IndustraSupabase.upsertUser(u);
+        }
+
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Admin Users',
+                action: 'Edit',
+                target: username,
+                details: assignedAgentId ? `Assigned specialist Agent #${assignedAgentId}` : 'Unlinked specialist agent'
+            });
         }
 
         renderAdminManagement();
@@ -11336,6 +11787,15 @@ function initDashboardApp() {
 
         if (window.IndustraSupabase && typeof window.IndustraSupabase.upsertUser === 'function') {
             await window.IndustraSupabase.upsertUser(u);
+        }
+
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Admin Users',
+                action: 'Edit',
+                target: username,
+                details: `Updated WhatsApp number to ${cleanVal || '(cleared)'}`
+            });
         }
 
         // If this user has a linked agent, update the agent profile's phone & whatsapp numbers
@@ -11473,6 +11933,15 @@ function initDashboardApp() {
             }
         }
 
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Admin Users',
+                action: 'Edit',
+                target: username,
+                details: `Set as Website Main WhatsApp Contact (${targetUser.whatsapp.trim()})`
+            });
+        }
+
         renderAdminManagement();
         alert(`"${username}" (${targetUser.whatsapp.trim()}) is now set as the Main WhatsApp Contact for the website!`);
     };
@@ -11584,6 +12053,7 @@ function initDashboardApp() {
                 const avatarInitial = (u.username || 'A').charAt(0).toUpperCase();
 
                 // 1. User Cell (Avatar + Username + Status)
+                const isPendingOnboarding = (u.requiresAgentProfileSetup === true && roleLower !== 'entry support' && !u.agentId && !u.agentProfileCompleted);
                 const userCellHtml = `
                     <div class="admin-user-cell">
                         <div class="admin-user-avatar ${avatarClass}" title="${escapeHtml(u.role || 'Administrator')}">
@@ -11595,8 +12065,8 @@ function initDashboardApp() {
                                 ${isSelf ? '<span class="admin-user-self-pill">You</span>' : ''}
                             </div>
                             <div class="admin-user-meta-line">
-                                <span class="admin-user-status-dot"></span>
-                                <span>Active</span>
+                                <span class="admin-user-status-dot" style="${isPendingOnboarding ? 'background:#f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,0.2);' : ''}"></span>
+                                <span style="${isPendingOnboarding ? 'color:#b45309; font-weight:600;' : ''}">${isPendingOnboarding ? 'Pending Agent Setup' : 'Active'}</span>
                             </div>
                         </div>
                     </div>
@@ -11741,6 +12211,15 @@ function initDashboardApp() {
                 await window.IndustraSupabase.deleteUser(username);
             }
 
+            if (typeof window.logDashboardActivity === 'function') {
+                window.logDashboardActivity({
+                    category: 'Admin Users',
+                    action: 'Delete',
+                    target: username,
+                    details: 'Removed user account from Admin Users Directory'
+                });
+            }
+
             renderAdminManagement();
             alert(`User account "${username}" has been removed successfully.`);
         }
@@ -11791,12 +12270,18 @@ function initDashboardApp() {
                 password: newPassword,
                 role: newRole,
                 whatsapp: newWhatsapp,
-                isMainWhatsapp: isMainWa || (!users.some(u => u.isMainWhatsapp))
+                isMainWhatsapp: isMainWa || (!users.some(u => u.isMainWhatsapp)),
+                createdAt: new Date().toISOString()
             };
 
             if ((newRole === 'Supervisor' || newRole === 'Assistant' || newRole === 'Agent' || newRole === 'Administrator') && selectedAgentId && selectedAgentId !== '__new_agent__') {
                 newUserObj.agentId = parseInt(selectedAgentId, 10);
             }
+
+            const newRoleLower = String(newRole || '').trim().toLowerCase();
+            const hasPreLinkedAgent = Boolean(newUserObj.agentId);
+            newUserObj.requiresAgentProfileSetup = (newRoleLower !== 'entry support') && !hasPreLinkedAgent;
+            newUserObj.agentProfileCompleted = hasPreLinkedAgent;
 
             users.push(newUserObj);
             localStorage.setItem('industria_users', JSON.stringify(users));
@@ -11812,7 +12297,19 @@ function initDashboardApp() {
                 await window.IndustraSupabase.upsertUser(newUserObj);
             }
 
-            alert(`New ${newRole} user "${newUsername}" created successfully!`);
+            if (typeof window.logDashboardActivity === 'function') {
+                window.logDashboardActivity({
+                    category: 'Admin Users',
+                    action: 'Add',
+                    target: newUsername,
+                    details: `Created ${newRole} account${newUserObj.agentId ? ' • Linked Agent #' + newUserObj.agentId : (newUserObj.requiresAgentProfileSetup ? ' • Pending first-login Agent setup' : '')}`
+                });
+            }
+
+            const setupNotice = newUserObj.requiresAgentProfileSetup
+                ? '\n\nOn first login, this user will be required to complete the "Add Specialist / Agent" profile form.'
+                : '';
+            alert(`New ${newRole} user "${newUsername}" created successfully!${setupNotice}`);
             addAdminForm.reset();
             populateCreateAdminAgentSelect();
             if (newAdminAgentGroup) newAdminAgentGroup.style.display = 'block';
@@ -11874,6 +12371,15 @@ function initDashboardApp() {
 
                     if (window.IndustraSupabase && typeof window.IndustraSupabase.upsertUser === 'function') {
                         await window.IndustraSupabase.upsertUser(users[userIndex]);
+                    }
+
+                    if (typeof window.logDashboardActivity === 'function') {
+                        window.logDashboardActivity({
+                            category: 'Admin Users',
+                            action: 'Edit',
+                            target: loggedInUser,
+                            details: 'Changed account password'
+                        });
                     }
 
                     alert('Password changed successfully!');
@@ -13526,6 +14032,10 @@ function initDashboardApp() {
     }
 
     window.addLocationPark = function() {
+        if (typeof window.canAccessLandingPage === 'function' && !window.canAccessLandingPage()) {
+            alert('Only Administrators and Supervisors can modify Landing Page settings.');
+            return;
+        }
         const input = document.getElementById('loc-input-add-park');
         if (!input) return;
         const val = input.value.trim();
@@ -13541,6 +14051,14 @@ function initDashboardApp() {
             }
             allData[currentEditingCitySlug] = cityData;
             saveAllLocationSettings(allData);
+            if (typeof window.logDashboardActivity === 'function') {
+                window.logDashboardActivity({
+                    category: 'Landing Page',
+                    action: 'Add',
+                    target: cityData.city,
+                    details: `Added "${val}" to city industrial parks directory`
+                });
+            }
             renderLocationParksChips(cityData.industrialParks);
             input.value = '';
             if (typeof showToast === 'function') showToast(`Added "${val}" to ${cityData.city}`, 'success');
@@ -13550,6 +14068,10 @@ function initDashboardApp() {
     };
 
     window.removeLocationPark = function(parkName) {
+        if (typeof window.canAccessLandingPage === 'function' && !window.canAccessLandingPage()) {
+            alert('Only Administrators and Supervisors can modify Landing Page settings.');
+            return;
+        }
         const allData = getAllLocationSettings();
         const cityData = allData[currentEditingCitySlug] || DEFAULT_LOCATION_DATA[currentEditingCitySlug];
         cityData.industrialParks = (cityData.industrialParks || []).filter(p => (typeof p === 'string' ? p : (p && p.name ? p.name : '')).toLowerCase() !== parkName.toLowerCase());
@@ -13559,6 +14081,14 @@ function initDashboardApp() {
         }
         allData[currentEditingCitySlug] = cityData;
         saveAllLocationSettings(allData);
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Landing Page',
+                action: 'Delete',
+                target: cityData.city,
+                details: `Removed "${parkName}" from city industrial parks directory`
+            });
+        }
         renderLocationParksChips(cityData.industrialParks);
         if (typeof showToast === 'function') showToast(`Removed "${parkName}"`, 'info');
     };
@@ -13581,6 +14111,14 @@ function initDashboardApp() {
         cityData.heroImage = selectedDrone;
         allData[currentEditingCitySlug] = cityData;
         saveAllLocationSettings(allData);
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Landing Page',
+                action: 'Edit',
+                target: cityData.city,
+                details: `Updated city hero image to ${selectedDrone}`
+            });
+        }
 
         if (typeof showToast === 'function') {
             showToast(`Generated AI Drone Earth View for ${cityData.city} (1920 × 800 px)`, 'success');
@@ -13696,6 +14234,10 @@ function initDashboardApp() {
     };
 
     window.saveLocationPageData = function() {
+        if (typeof window.canAccessLandingPage === 'function' && !window.canAccessLandingPage()) {
+            alert('Only Administrators and Supervisors can modify Landing Page settings.');
+            return;
+        }
         const allData = getAllLocationSettings();
         const cityData = allData[currentEditingCitySlug] || DEFAULT_LOCATION_DATA[currentEditingCitySlug];
 
@@ -13718,6 +14260,14 @@ function initDashboardApp() {
 
         allData[currentEditingCitySlug] = cityData;
         saveAllLocationSettings(allData);
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Landing Page',
+                action: 'Edit',
+                target: cityData.city,
+                details: `Saved SEO meta, hero & headlines for /location.html?city=${cityData.slug}`
+            });
+        }
 
         if (typeof showToast === 'function') {
             showToast(`Landing page for ${cityData.city} saved successfully!`, 'success');
@@ -13740,6 +14290,7 @@ function initDashboardApp() {
         if (typeof window.renderOverviewCharts === 'function') window.renderOverviewCharts();
         if (typeof window.renderOverviewSummaries === 'function') window.renderOverviewSummaries();
         if (typeof window.updateActivePropertiesMetric === 'function') window.updateActivePropertiesMetric();
+        if (typeof window.checkMandatoryAgentOnboarding === 'function') window.checkMandatoryAgentOnboarding();
     }, 0);
 
     // Cross-tab real-time sync for properties and overview active count
