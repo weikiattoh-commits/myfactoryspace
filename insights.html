@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta id="insights-meta-desc" name="description" content="Industrial real estate market intelligence, Selangor factory & warehouse guides, BOMBA/DOE compliance checklists, and Klang Valley industrial park reports by MyFactorySpace.">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="theme-color" content="#0f172a">
+    <title id="insights-page-title">Industrial Property Insights &amp; Market Intelligence | MyFactorySpace</title>
+
+    <!-- Favicon & Site Icons -->
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon.png">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="48x48" href="/assets/icons/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/android-chrome-192x192.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/assets/icons/site.webmanifest">
+
+    <!-- Canonical & Open Graph -->
+    <link id="insights-canonical" rel="canonical" href="https://www.myfactoryspace.com/insights.html">
+    <meta property="og:type" content="website" id="insights-og-type">
+    <meta property="og:site_name" content="MyFactorySpace">
+    <meta property="og:title" id="insights-og-title" content="Industrial Property Insights &amp; Market Intelligence | MyFactorySpace">
+    <meta property="og:description" id="insights-og-desc" content="Market guides, sector analysis, legal compliance, and Klang Valley industrial park intelligence by MyFactorySpace.">
+    <meta property="og:url" id="insights-og-url" content="https://www.myfactoryspace.com/insights.html">
+    <meta property="og:image" id="insights-og-image" content="https://www.myfactoryspace.com/assets/images/drone_all.jpg">
+
+    <!-- Fonts & Icons -->
+    <link rel="preconnect" href="https://vnsinkesbbikeqbywxfd.supabase.co" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/styles.css?v=110">
+
+    <!-- Corporate Branding Initializer (Zero-Flicker Synchronous Engine) -->
+    <script>
+    (function() {
+        try {
+            var s = localStorage.getItem('industria_branding_settings');
+            var b = s ? JSON.parse(s) : null;
+            if (!b) {
+                var g = localStorage.getItem('industria_settings');
+                if (g) { var p = JSON.parse(g); b = p ? p.branding : null; }
+            }
+            var root = document.documentElement;
+            var primary = (b && b.primaryColor) ? b.primaryColor : '#059669';
+            var primaryDark = (b && b.primaryDarkColor) ? b.primaryDarkColor : '#064e3b';
+            var accent = (b && b.accentColor) ? b.accentColor : '#dcfce7';
+
+            function toRgba(hex, alpha) {
+                if (!hex) return 'rgba(5, 150, 105, ' + alpha + ')';
+                hex = hex.replace('#', '');
+                if (hex.length === 3) hex = hex.split('').map(function(c) { return c + c; }).join('');
+                if (hex.length !== 6) return 'rgba(5, 150, 105, ' + alpha + ')';
+                var num = parseInt(hex, 16);
+                if (isNaN(num)) return 'rgba(5, 150, 105, ' + alpha + ')';
+                return 'rgba(' + ((num >> 16) & 255) + ',' + ((num >> 8) & 255) + ',' + (num & 255) + ',' + alpha + ')';
+            }
+
+            function esc(str) {
+                if (!str) return '';
+                return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+            }
+
+            root.style.setProperty('--primary', primary);
+            root.style.setProperty('--primary-dark', primaryDark);
+            root.style.setProperty('--accent', accent);
+            root.style.setProperty('--secondary', primary);
+            root.style.setProperty('--primary-light', toRgba(primary, 0.15));
+            root.style.setProperty('--border-light', toRgba(primary, 0.12));
+            root.style.setProperty('--primary-glow', toRgba(primary, 0.35));
+            root.style.setProperty('--hero-gradient-start', toRgba(primaryDark, 0.88));
+            root.style.setProperty('--hero-gradient-end', toRgba(primary, 0.65));
+
+            var logoUrl = (b && b.logoUrl) ? b.logoUrl : '';
+            var brandName = (b && b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : (logoUrl ? '' : 'MyFactorySpace');
+            var logoH = (b && b.logoHeight !== undefined && b.logoHeight !== null && !isNaN(b.logoHeight)) ? parseInt(b.logoHeight, 10) : 32;
+            var navLogoH = Math.round(logoH * 1.58);
+
+            var navHtml = '';
+            if (logoUrl) {
+                var m = brandName ? ' margin-right: 8px;' : '';
+                navHtml += '<img src="' + esc(logoUrl) + '" alt="' + esc(brandName || 'Brand Logo') + '" style="height: ' + navLogoH + 'px; max-width: 310px; object-fit: contain; vertical-align: middle;' + m + '">';
+            } else {
+                var m = brandName ? ' margin-right: 6px;' : '';
+                navHtml += '<i class="fa-solid fa-industry" style="color: var(--primary);' + m + '"></i>';
+            }
+            if (brandName) navHtml += ' <span>' + esc(brandName) + '</span>';
+            window.__initialNavBrandHtml = navHtml;
+
+            var footerHtml = '';
+            if (logoUrl) {
+                var fm = brandName ? ' margin-right: 8px;' : '';
+                footerHtml += '<img src="' + esc(logoUrl) + '" alt="' + esc(brandName || 'Brand Logo') + '" style="height: ' + Math.round(logoH * 1.25) + 'px; max-width: 240px; object-fit: contain; vertical-align: middle; filter: brightness(0) invert(1);' + fm + '">';
+            } else {
+                var fm = brandName ? ' margin-right: 6px;' : '';
+                footerHtml += '<i class="fa-solid fa-industry" style="color: #ffffff;' + fm + '"></i>';
+            }
+            if (brandName) footerHtml += ' <span style="color: var(--white);">' + esc(brandName) + '</span>';
+            window.__initialFooterBrandHtml = footerHtml;
+        } catch (e) {}
+    })();
+    </script>
+
+    <!-- Dynamic SEO Schema.org Container -->
+    <script type="application/ld+json" id="insights-schema-json">{}</script>
+</head>
+<body class="insights-page-body">
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <a href="index.html" class="nav-brand" id="main-nav-brand"></a>
+            <script>
+            (function() {
+                var nb = document.getElementById('main-nav-brand');
+                if (nb && window.__initialNavBrandHtml) nb.innerHTML = window.__initialNavBrandHtml;
+            })();
+            </script>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li class="nav-item-dropdown">
+                    <a href="properties.html" class="nav-dropdown-toggle">
+                        Properties <i class="fa-solid fa-chevron-down nav-dropdown-arrow"></i>
+                    </a>
+                    <div class="nav-dropdown-menu">
+                        <a href="properties.html" class="dropdown-link-main">
+                            <div class="dropdown-icon-box">
+                                <i class="fa-solid fa-warehouse"></i>
+                            </div>
+                            <div class="dropdown-link-text">
+                                <span class="dropdown-link-title">All Properties</span>
+                                <span class="dropdown-link-sub">Browse verified factories &amp; warehouses</span>
+                            </div>
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-section-title">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                            <span>Location</span>
+                        </div>
+                        <div class="dropdown-cities-grid">
+                            <a href="location.html?city=petaling-jaya" class="dropdown-city-item">
+                                <span class="dropdown-city-dot"></span>
+                                <span>Petaling Jaya</span>
+                            </a>
+                            <a href="location.html?city=subang-jaya" class="dropdown-city-item">
+                                <span class="dropdown-city-dot"></span>
+                                <span>Subang Jaya</span>
+                            </a>
+                            <a href="location.html?city=shah-alam" class="dropdown-city-item">
+                                <span class="dropdown-city-dot"></span>
+                                <span>Shah Alam</span>
+                            </a>
+                            <a href="location.html?city=klang" class="dropdown-city-item">
+                                <span class="dropdown-city-dot"></span>
+                                <span>Klang</span>
+                            </a>
+                        </div>
+                        <a href="index.html#properties" class="dropdown-explore-all">
+                            <span>Explore All Locations</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </li>
+                <li><a href="index.html#services">Services</a></li>
+                <li><a href="insights.html" class="active">Insights</a></li>
+                <li><a href="index.html#about">Why Choose Us</a></li>
+                <li><a href="index.html#who-we-are">Who Are We</a></li>
+                <li><a href="index.html#owner-section">Property Owners</a></li>
+                <li><a href="index.html#contact">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="btn nav-cta-btn open-owner-modal-btn">
+                    <i class="fa-solid fa-house-chimney-user"></i> <span>List <strong>Property</strong></span>
+                </button>
+                <button class="mobile-toggle" id="mobile-toggle" aria-label="Toggle menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- =====================================================
+         MODE 1: INSIGHTS HUB (Featured Hero + Categories + Grid)
+         ===================================================== -->
+    <main id="insights-hub-view">
+        <!-- Featured Article Hero Banner -->
+        <section class="insights-hero" id="insights-featured-hero">
+            <div class="insights-hero-bg" id="insights-hero-bg"></div>
+            <div class="insights-hero-overlay"></div>
+            <div class="container insights-hero-inner">
+                <div class="insights-hero-meta-top">
+                    <span class="insights-hero-kicker" id="insights-hero-category">Industry Guide</span>
+                    <span class="insights-hero-featured-tag"><i class="fa-solid fa-bolt"></i> Featured Intelligence</span>
+                </div>
+                <h1 class="insights-hero-title" id="insights-hero-title">Loading Market Intelligence...</h1>
+                <p class="insights-hero-excerpt" id="insights-hero-excerpt"></p>
+                <div class="insights-hero-bottom">
+                    <div class="insights-hero-time" id="insights-hero-meta">
+                        <i class="fa-regular fa-clock"></i> <span>6 min read</span>
+                    </div>
+                    <a href="#insights-grid-section" class="insights-hero-cta" id="insights-hero-cta">
+                        <span>Read Article</span> <i class="fa-solid fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Category Filter Bar -->
+        <section class="insights-filter-bar">
+            <div class="container">
+                <div class="insights-category-pills" id="insights-category-pills" role="group" aria-label="Filter insights by category">
+                    <button type="button" class="insights-cat-pill active" data-category="All">All</button>
+                    <button type="button" class="insights-cat-pill" data-category="Industry Guide">Industry Guide</button>
+                    <button type="button" class="insights-cat-pill" data-category="Sector Analysis">Sector Analysis</button>
+                    <button type="button" class="insights-cat-pill" data-category="Legal &amp; Compliance">Legal &amp; Compliance</button>
+                    <button type="button" class="insights-cat-pill" data-category="Location Focus">Location Focus</button>
+                    <button type="button" class="insights-cat-pill" data-category="Key Industrial Areas">Key Industrial Areas</button>
+                    <button type="button" class="insights-cat-pill" data-category="Case Studies">Case Studies</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Article Grid & Pagination -->
+        <section class="section insights-grid-section" id="insights-grid-section">
+            <div class="container">
+                <div class="insights-grid-header">
+                    <div>
+                        <span class="insights-eyebrow">MARKET INTELLIGENCE</span>
+                        <h2 id="insights-grid-heading">All Insights</h2>
+                    </div>
+                    <div class="insights-grid-controls">
+                        <div class="insights-search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="search" id="insights-search-input" placeholder="Search topic, city, or spec..." aria-label="Search market insights">
+                        </div>
+                        <span class="insights-count-badge" id="insights-total-count">0 articles</span>
+                    </div>
+                </div>
+
+                <div class="insights-card-grid" id="insights-card-grid">
+                    <!-- Dynamically populated by js/insights.js -->
+                </div>
+
+                <div class="insights-pagination" id="insights-pagination" aria-label="Insights pagination"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- =====================================================
+         MODE 2: SINGLE ARTICLE READER VIEW (?article=slug)
+         ===================================================== -->
+    <main id="insights-article-view" style="display: none;">
+        <div class="insights-article-shell">
+            <div class="container">
+                <nav class="insights-breadcrumb" aria-label="Breadcrumb" id="insights-breadcrumb">
+                    <a href="index.html">Home</a>
+                    <i class="fa-solid fa-chevron-right"></i>
+                    <a href="insights.html">Insights</a>
+                    <i class="fa-solid fa-chevron-right"></i>
+                    <a href="insights.html" id="article-breadcrumb-cat">Industry Guide</a>
+                    <i class="fa-solid fa-chevron-right"></i>
+                    <span id="article-breadcrumb-title">Article</span>
+                </nav>
+
+                <article class="insights-article-container">
+                    <header class="insights-article-header">
+                        <span class="insights-article-kicker" id="article-kicker">INDUSTRY GUIDE</span>
+                        <h1 class="insights-article-title" id="article-title">Article Title</h1>
+                        <p class="insights-article-standfirst" id="article-standfirst"></p>
+
+                        <div class="insights-byline-bar">
+                            <div class="insights-byline-author">
+                                <img id="article-author-avatar" src="assets/images/agent_marcus.jpg" alt="Author">
+                                <div>
+                                    <strong id="article-author-name">MyFactorySpace Editorial</strong>
+                                    <span id="article-date-meta">21 November 2026 · 6 min read</span>
+                                </div>
+                            </div>
+                            <div class="insights-byline-actions">
+                                <button type="button" class="btn btn-outline insights-share-btn" id="article-share-btn">
+                                    <i class="fa-solid fa-share-nodes"></i> <span>Share</span>
+                                </button>
+                                <a href="insights.html" class="btn btn-outline insights-back-btn">
+                                    <i class="fa-solid fa-arrow-left"></i> <span>All Insights</span>
+                                </a>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div class="insights-article-cover">
+                        <img id="article-cover-img" src="assets/images/drone_all.jpg" alt="Insight Cover">
+                    </div>
+
+                    <!-- Key Takeaways Box -->
+                    <section class="insights-takeaways-box" id="article-takeaways-box" style="display: none;">
+                        <h2><i class="fa-solid fa-lightbulb"></i> Key Takeaways</h2>
+                        <ul id="article-takeaways-list"></ul>
+                    </section>
+
+                    <!-- Section A: Standalone Interactive Executive Mind Map -->
+                    <section class="insights-mindmap-section" id="article-mindmap-section" style="display: none;"></section>
+
+                    <!-- Editorial Body -->
+                    <div class="insights-article-body" id="article-body-content"></div>
+
+                    <!-- Section B: Standalone HD Enhanced Infographic Photo -->
+                    <section class="insights-infographic-section" id="article-infographic-section" style="display: none;"></section>
+
+                    <!-- Contextual Property Search Strip -->
+                    <div class="insights-context-cta" id="article-inventory-cta" style="display: none;">
+                        <div>
+                            <strong id="article-inventory-cta-title">Explore Verified Klang Valley Listings</strong>
+                            <p id="article-inventory-cta-desc">Browse available factories, warehouses, and industrial land matching this market guide.</p>
+                        </div>
+                        <a href="properties.html" class="btn btn-primary" id="article-inventory-cta-link">
+                            <span>View Matching Properties</span> <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <!-- FAQs -->
+                    <section class="insights-article-faqs" id="article-faqs-section" style="display: none;">
+                        <h2>Frequently Asked Questions</h2>
+                        <div class="insights-faq-list" id="article-faqs-list"></div>
+                    </section>
+                </article>
+            </div>
+
+            <!-- Speak With a Specialist Band -->
+            <section class="insights-specialist-band" id="article-specialist-band">
+                <div class="container">
+                    <div class="insights-specialist-grid">
+                        <div class="insights-specialist-copy">
+                            <span class="insights-eyebrow">SPEAK WITH A SPECIALIST</span>
+                            <h2>Need Tailored Advice on Klang Valley Industrial Space?</h2>
+                            <p id="article-specialist-pitch">Our industrial real estate specialists verify floor loading, power capacity, BOMBA/DOE zoning, and rental benchmarks directly with owners.</p>
+                        </div>
+                        <div class="insights-specialist-card" id="article-specialist-card">
+                            <img id="specialist-card-avatar" src="assets/images/agent_marcus.jpg" alt="Industrial Specialist" loading="lazy" decoding="async">
+                            <div class="insights-specialist-info">
+                                <span class="insights-specialist-loc" id="specialist-card-loc">KLANG VALLEY</span>
+                                <h3 id="specialist-card-name">Marcus Chen</h3>
+                                <p id="specialist-card-role">REN 44824 · MyFactorySpace Specialist</p>
+                                <div class="insights-specialist-actions">
+                                    <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp" id="specialist-wa-btn">
+                                        <i class="fa-brands fa-whatsapp"></i> WhatsApp
+                                    </a>
+                                    <a href="#" class="btn btn-outline" id="specialist-call-btn">
+                                        <i class="fa-solid fa-phone"></i> Call
+                                    </a>
+                                    <a href="#" class="btn btn-outline" id="specialist-email-btn">
+                                        <i class="fa-solid fa-envelope"></i> Email
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Related Reading -->
+            <section class="section insights-related-section" id="article-related-section">
+                <div class="container">
+                    <div class="insights-grid-header" style="margin-bottom: 1.5rem;">
+                        <div>
+                            <span class="insights-eyebrow">CONTINUE READING</span>
+                            <h2>Related Reading</h2>
+                        </div>
+                        <a href="insights.html" class="btn btn-outline">Browse All Insights <i class="fa-solid fa-arrow-right"></i></a>
+                    </div>
+                    <div class="insights-card-grid" id="article-related-grid"></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer" id="contact">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <h3 id="main-footer-brand" class="footer-brand-title" style="margin-bottom: 1rem;"></h3>
+                    <script>
+                    (function() {
+                        var fb = document.getElementById('main-footer-brand');
+                        if (fb && window.__initialFooterBrandHtml) fb.innerHTML = window.__initialFooterBrandHtml;
+                    })();
+                    </script>
+                    <p>Your trusted partner for industrial real estate solutions in the Klang Valley.</p>
+                </div>
+                <div class="footer-links">
+                    <h4>Coverage Areas</h4>
+                    <ul>
+                        <li><a href="location.html?city=petaling-jaya">Petaling Jaya</a></li>
+                        <li><a href="location.html?city=subang-jaya">Subang Jaya</a></li>
+                        <li><a href="location.html?city=shah-alam">Shah Alam</a></li>
+                        <li><a href="location.html?city=klang">Klang</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="index.html">Home</a></li>
+                        <li><a href="properties.html">Properties</a></li>
+                        <li><a href="insights.html">Market Insights</a></li>
+                        <li><a href="index.html#about">About Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-links">
+                    <h4>Contact Us</h4>
+                    <ul>
+                        <li><a href="mailto:info@MyFactorySpace.com" id="front-contact-email"><i class="fa-solid fa-envelope" style="margin-right:8px;"></i> info@MyFactorySpace.com</a></li>
+                        <li><a href="tel:+60390548582" id="front-contact-phone"><i class="fa-solid fa-phone" style="margin-right:8px;"></i> +60 3-9054 8582</a></li>
+                        <li id="front-contact-address"><i class="fa-solid fa-location-dot" style="margin-right:8px; color:var(--accent);"></i> No. 2-3, Jalan Radin Anum 2, Bandar Baru Sri Petaling, 57000 Kuala Lumpur</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">&copy; 2026 MyFactorySpace Real Estate. All rights reserved.</div>
+        </div>
+    </footer>
+
+    <!-- Quick Property Owner Listing Modal -->
+    <div id="ownerModal" class="modal owner-modal" style="display: none;">
+        <div class="owner-modal-dialog">
+            <button class="modal-close-btn owner-modal-close" id="close-owner-modal" aria-label="Close modal">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div class="owner-modal-header">
+                <div class="owner-modal-icon"><i class="fa-solid fa-house-chimney-user"></i></div>
+                <h3>List Your Property With Us</h3>
+                <p>Submit your warehouse, factory, or land details. Your listing request will be immediately sent to our specialist in charge.</p>
+            </div>
+            <form id="modal-owner-form">
+                <div class="form-group owner-form-group">
+                    <label for="modalOwnerName">Full Name / Company Name <span class="req-star">*</span></label>
+                    <div class="lead-input-wrap">
+                        <span class="lead-input-icon"><i class="fa-solid fa-building-user"></i></span>
+                        <input type="text" id="modalOwnerName" class="form-control" required placeholder="e.g. Tan Sri Lee / Apex Logistics" autocomplete="name">
+                    </div>
+                </div>
+                <div class="owner-form-row col-2">
+                    <div class="form-group">
+                        <label for="modalOwnerPhone">Phone Number <span class="req-star">*</span></label>
+                        <div class="lead-input-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-phone"></i></span>
+                            <input type="tel" id="modalOwnerPhone" class="form-control" required placeholder="+60 12-345 6789" inputmode="tel" autocomplete="tel">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modalOwnerEmail">Email Address <span class="req-star">*</span></label>
+                        <div class="lead-input-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-envelope"></i></span>
+                            <input type="email" id="modalOwnerEmail" class="form-control" required placeholder="name@company.com" inputmode="email" autocomplete="email" autocapitalize="off">
+                        </div>
+                    </div>
+                </div>
+                <div class="owner-form-row col-3">
+                    <div class="form-group">
+                        <label for="modalOwnerLocation">Location <span class="req-star">*</span></label>
+                        <div class="lead-input-wrap lead-select-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-location-dot"></i></span>
+                            <select id="modalOwnerLocation" class="form-control" required>
+                                <option value="">Select Location</option>
+                                <option value="Petaling Jaya">Petaling Jaya</option>
+                                <option value="Subang Jaya">Subang Jaya</option>
+                                <option value="Shah Alam">Shah Alam</option>
+                                <option value="Klang">Klang</option>
+                                <option value="Other Selangor Area">Other Selangor Area</option>
+                            </select>
+                            <span class="lead-select-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modalOwnerPark">Industrial Park</label>
+                        <div class="lead-input-wrap lead-select-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-industry"></i></span>
+                            <select id="modalOwnerPark" class="form-control">
+                                <option value="">Select Location First...</option>
+                            </select>
+                            <span class="lead-select-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modalOwnerType">Property Type <span class="req-star">*</span></label>
+                        <div class="lead-input-wrap lead-select-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-warehouse"></i></span>
+                            <select id="modalOwnerType" class="form-control" required>
+                                <option value="">Select Type</option>
+                                <optgroup label="Factory">
+                                    <option value="Detached Factory">Detached Factory</option>
+                                    <option value="Semi-Detached Factory">Semi-Detached Factory</option>
+                                    <option value="Terrace Factory">Terrace Factory</option>
+                                    <option value="Cluster Factory">Cluster Factory</option>
+                                </optgroup>
+                                <optgroup label="Warehouse">
+                                    <option value="Detached Warehouse">Detached Warehouse</option>
+                                    <option value="Semi-Detached Warehouse">Semi-Detached Warehouse</option>
+                                    <option value="Shared Warehouse">Shared Warehouse</option>
+                                    <option value="Multi-Storey Warehouse">Multi-Storey Warehouse</option>
+                                </optgroup>
+                                <optgroup label="Land">
+                                    <option value="Industrial Land">Industrial Land</option>
+                                    <option value="Commercial Land">Commercial Land</option>
+                                    <option value="Agricultural Land">Agricultural Land</option>
+                                </optgroup>
+                                <optgroup label="Shoplot">
+                                    <option value="Shoplot (Near Factory)">Shoplot (Near Factory)</option>
+                                </optgroup>
+                            </select>
+                            <span class="lead-select-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="owner-form-row col-2">
+                    <div class="form-group">
+                        <label for="modalOwnerIntent">Intent <span class="req-star">*</span></label>
+                        <div class="lead-input-wrap lead-select-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-tag"></i></span>
+                            <select id="modalOwnerIntent" class="form-control" required>
+                                <option value="Rent">For Rent</option>
+                                <option value="Sale">For Sale</option>
+                                <option value="Both Rent & Sale">Both Rent &amp; Sale</option>
+                            </select>
+                            <span class="lead-select-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modalOwnerSize">Built-Up / Land Size</label>
+                        <div class="lead-input-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-ruler-combined"></i></span>
+                            <input type="text" id="modalOwnerSize" class="form-control" placeholder="e.g. 25,000 sqft / 1.5 Acres">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group owner-form-group">
+                    <label for="modalOwnerNotes">Address &amp; Property Notes</label>
+                    <div class="lead-input-wrap lead-textarea-wrap">
+                        <span class="lead-input-icon"><i class="fa-solid fa-clipboard-list"></i></span>
+                        <textarea id="modalOwnerNotes" class="form-control" rows="3" placeholder="Provide property address, floor area, ceiling height, power supply..."></textarea>
+                    </div>
+                </div>
+                <div id="modal-owner-form-success" style="display:none; color: #065f46; background-color: #d1fae5; border: 1px solid #a7f3d0; padding: 0.85rem 1rem; border-radius: 10px; margin-bottom: 0.75rem; text-align: center; font-size: 0.85rem; font-weight: 600;">
+                    <i class="fa-solid fa-circle-check" style="color: #059669; margin-right: 6px;"></i> Thank you! Property request submitted and added to Dashboard &gt; Owner List.
+                </div>
+                <button type="submit" class="btn btn-primary owner-submit-btn">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Property Details
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js?v=40"></script>
+    <script src="js/scripts.js?v=89"></script>
+    <script src="js/insights-visuals.js?v=3"></script>
+    <script src="js/insights.js?v=4"></script>
+    <script src="js/visit-tracker.js?v=2"></script>
+    <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

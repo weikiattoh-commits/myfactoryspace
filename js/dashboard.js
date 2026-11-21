@@ -38,12 +38,17 @@ window.switchView = function switchView(viewName, subtab = 'general') {
     const navOwnerList = document.getElementById('nav-owner-list');
     const navAgents = document.getElementById('nav-agents');
     const navLandingPage = document.getElementById('nav-landing-page');
+    const navInsights = document.getElementById('nav-insights');
     const navSettings = document.getElementById('nav-settings');
     const settingsSubmenu = document.getElementById('settings-submenu');
     const settingsArrow = document.getElementById('settings-arrow');
 
     const canAccessLanding = typeof window.canAccessLandingPage === 'function' ? window.canAccessLandingPage() : true;
+    const canAccessInsightsView = typeof window.canAccessInsights === 'function' ? window.canAccessInsights() : canAccessLanding;
     if (viewName === 'landing-page' && !canAccessLanding) {
+        viewName = 'overview';
+    }
+    if (viewName === 'insights' && !canAccessInsightsView) {
         viewName = 'overview';
     }
 
@@ -59,6 +64,8 @@ window.switchView = function switchView(viewName, subtab = 'general') {
     if (agentsView) agentsView.style.display = 'none';
     const landingPageView = document.getElementById('landing-page-view');
     if (landingPageView) landingPageView.style.display = 'none';
+    const insightsView = document.getElementById('insights-view');
+    if (insightsView) insightsView.style.display = 'none';
     if (settingsView) settingsView.style.display = 'none';
 
     const breadcrumbCurrent = document.getElementById('header-breadcrumb-current');
@@ -70,6 +77,7 @@ window.switchView = function switchView(viewName, subtab = 'general') {
         'owner-list': 'Owner List',
         'agents': 'Specialist Agents',
         'landing-page': 'Landing Page',
+        'insights': 'Market Insights',
         'settings': 'Settings'
     };
     if (breadcrumbCurrent && viewLabels[viewName]) {
@@ -96,6 +104,12 @@ window.switchView = function switchView(viewName, subtab = 'general') {
         const citySlug = (subtab && subtab !== 'general') ? subtab : null;
         if (typeof window.initLandingPageView === 'function') {
             window.initLandingPageView(citySlug);
+        }
+    } else if (viewName === 'insights') {
+        if (navInsights) navInsights.classList.add('active');
+        if (insightsView) insightsView.style.display = 'block';
+        if (typeof window.initInsightsAdminView === 'function') {
+            window.initInsightsAdminView();
         }
     } else if (viewName === 'properties') {
         if (navProperties) navProperties.classList.add('active');
@@ -419,6 +433,7 @@ function initDashboardApp() {
         address: "No. 2-3, Jalan Radin Anum 2, Bandar Baru Sri Petaling, 57000 Kuala Lumpur",
         phone: "+60 3-9054 8582",
         email: "info@MyFactorySpace.com",
+        googleMapsApiKey: "",
 
         // Property Features & Listing Badges Toggles
         showFeaturedBadge: true,
@@ -725,6 +740,15 @@ function initDashboardApp() {
         addPropertyBtn.style.display = 'none';
     }
 
+    window.isCurrentAdministrator = function() {
+        const activeRole = (typeof resolveCurrentUserRole === 'function' ? resolveCurrentUserRole() : null) ||
+                           sessionStorage.getItem('currentUserRole') ||
+                           localStorage.getItem('currentUserRole') ||
+                           (typeof currentUserRole !== 'undefined' ? currentUserRole : null) ||
+                           '';
+        return String(activeRole).trim().toLowerCase() === 'administrator';
+    };
+
     window.canAccessLandingPage = function() {
         const activeRole = (typeof resolveCurrentUserRole === 'function' ? resolveCurrentUserRole() : null) ||
                            sessionStorage.getItem('currentUserRole') ||
@@ -735,6 +759,78 @@ function initDashboardApp() {
         return roleLower === 'administrator' || roleLower === 'supervisor';
     };
 
+    const INSIGHTS_ACCESS_STORAGE_KEY = 'industria_insights_access';
+
+    function getInsightsAccessControl() {
+        try {
+            const raw = localStorage.getItem(INSIGHTS_ACCESS_STORAGE_KEY);
+            const parsed = raw ? JSON.parse(raw) : {};
+            const allowedUsernames = Array.isArray(parsed && parsed.allowedUsernames)
+                ? parsed.allowedUsernames.map(u => String(u || '').trim().toLowerCase()).filter(Boolean)
+                : [];
+            const allowedAgentIds = Array.isArray(parsed && parsed.allowedAgentIds)
+                ? parsed.allowedAgentIds.map(id => String(id || '').trim()).filter(Boolean)
+                : [];
+            return {
+                allowedUsernames: [...new Set(allowedUsernames)],
+                allowedAgentIds: [...new Set(allowedAgentIds)]
+            };
+        } catch (e) {
+            return { allowedUsernames: [], allowedAgentIds: [] };
+        }
+    }
+
+    function saveInsightsAccessControl(cfg) {
+        const clean = {
+            allowedUsernames: [...new Set((cfg && cfg.allowedUsernames || []).map(u => String(u || '').trim().toLowerCase()).filter(Boolean))],
+            allowedAgentIds: [...new Set((cfg && cfg.allowedAgentIds || []).map(id => String(id || '').trim()).filter(Boolean))]
+        };
+        try {
+            localStorage.setItem(INSIGHTS_ACCESS_STORAGE_KEY, JSON.stringify(clean));
+        } catch (e) {}
+        if (window.IndustraSupabase && typeof window.IndustraSupabase.upsertSiteSetting === 'function') {
+            window.IndustraSupabase.upsertSiteSetting('insights_access_control', clean).catch(err => {
+                console.warn('Supabase insights_access_control sync failed:', err);
+            });
+        }
+        return clean;
+    }
+
+    function userHasInsightsAccess(userObj, cfg) {
+        if (!userObj) return false;
+        const roleLower = String(userObj.role || '').trim().toLowerCase();
+        if (roleLower === 'administrator') return true;
+        const accessCfg = cfg || getInsightsAccessControl();
+        const uname = String(userObj.username || '').trim().toLowerCase();
+        if (uname && accessCfg.allowedUsernames.includes(uname)) return true;
+        if (userObj.agentId !== undefined && userObj.agentId !== null && String(userObj.agentId).trim() !== '') {
+            if (accessCfg.allowedAgentIds.includes(String(userObj.agentId).trim())) return true;
+        }
+        return false;
+    }
+
+    window.canAccessInsights = function() {
+        const activeRole = (typeof resolveCurrentUserRole === 'function' ? resolveCurrentUserRole() : null) ||
+                           sessionStorage.getItem('currentUserRole') ||
+                           localStorage.getItem('currentUserRole') ||
+                           (typeof currentUserRole !== 'undefined' ? currentUserRole : null) ||
+                           'Administrator';
+        if (String(activeRole).trim().toLowerCase() === 'administrator') return true;
+
+        const cfg = getInsightsAccessControl();
+        const userObj = (typeof getCurrentUserObj === 'function') ? getCurrentUserObj() : {
+            username: sessionStorage.getItem('loggedInUser') || localStorage.getItem('loggedInUser') || '',
+            role: activeRole
+        };
+        if (userHasInsightsAccess(userObj, cfg)) return true;
+
+        const linkedAgent = (typeof getCurrentAgent === 'function') ? getCurrentAgent() : null;
+        if (linkedAgent && linkedAgent.id !== undefined && linkedAgent.id !== null) {
+            if (cfg.allowedAgentIds.includes(String(linkedAgent.id).trim())) return true;
+        }
+        return false;
+    };
+
     window.applyRoleNavVisibility = function() {
         const activeRole = (typeof resolveCurrentUserRole === 'function' ? resolveCurrentUserRole() : null) ||
                            sessionStorage.getItem('currentUserRole') ||
@@ -743,19 +839,29 @@ function initDashboardApp() {
                            'Administrator';
         const isCurrentAdminRole = String(activeRole).trim().toLowerCase() === 'administrator';
         const canLanding = window.canAccessLandingPage();
+        const canInsights = window.canAccessInsights();
 
         const navLanding = document.getElementById('nav-landing-page');
+        const navInsights = document.getElementById('nav-insights');
+        const insightsAccessCard = document.getElementById('insights-access-card');
         const initNavSettingsGeneral = document.getElementById('nav-settings-general');
         const initNavSettingsTimezone = document.getElementById('nav-settings-timezone');
         const initNavSettingsServer = document.getElementById('nav-settings-server');
         const initNavSettingsCosting = document.getElementById('nav-settings-costing');
         const initNavSettingsActivity = document.getElementById('nav-settings-activity');
         if (navLanding) navLanding.style.display = canLanding ? '' : 'none';
+        if (navInsights) navInsights.style.display = canInsights ? '' : 'none';
+        if (insightsAccessCard) insightsAccessCard.style.display = isCurrentAdminRole ? '' : 'none';
         if (initNavSettingsGeneral) initNavSettingsGeneral.style.display = isCurrentAdminRole ? '' : 'none';
         if (initNavSettingsTimezone) initNavSettingsTimezone.style.display = isCurrentAdminRole ? '' : 'none';
         if (initNavSettingsServer) initNavSettingsServer.style.display = isCurrentAdminRole ? '' : 'none';
         if (initNavSettingsCosting) initNavSettingsCosting.style.display = isCurrentAdminRole ? '' : 'none';
         if (initNavSettingsActivity) initNavSettingsActivity.style.display = isCurrentAdminRole ? '' : 'none';
+
+        const adminLocToolbar = document.getElementById('admin-locations-toolbar');
+        if (adminLocToolbar) {
+            adminLocToolbar.style.display = isCurrentAdminRole ? 'flex' : 'none';
+        }
     };
     window.applyRoleNavVisibility();
 
@@ -1219,6 +1325,44 @@ function initDashboardApp() {
         });
     }
 
+    const DEFAULT_PROPERTY_TYPE_GROUPS = [
+        { category: 'Factory', subtypes: ['Detached Factory', 'Semi-Detached Factory', 'Terrace Factory', 'Cluster Factory'] },
+        { category: 'Warehouse', subtypes: ['Detached Warehouse', 'Semi-Detached Warehouse', 'Shared Warehouse', 'Multi-Storey Warehouse'] },
+        { category: 'Land', subtypes: ['Industrial Land', 'Commercial Land', 'Agricultural Land'] },
+        { category: 'Shoplot', subtypes: ['Shoplot (Near Factory)'] }
+    ];
+
+    function matchesDashboardPropertyType(propType, filterVal) {
+        const typeValLower = String(filterVal || 'All').trim().toLowerCase();
+        if (!typeValLower || typeValLower === 'all') return true;
+        const propTypeLower = String(propType || '').trim().toLowerCase();
+        if (!propTypeLower) return false;
+        if (propTypeLower === typeValLower) return true;
+        if (typeValLower === 'factory') return propTypeLower.includes('factory') && !propTypeLower.includes('shoplot');
+        if (typeValLower === 'land') return propTypeLower === 'land' || propTypeLower.endsWith(' land');
+        if (typeValLower === 'warehouse') return propTypeLower.includes('warehouse');
+        if (typeValLower.startsWith('shoplot')) return propTypeLower.includes('shoplot');
+        return false;
+    }
+
+    async function syncPropertyTypesWithSupabase(retryCount = 0) {
+        if (!window.IndustraSupabase || typeof window.IndustraSupabase.fetchSiteSetting !== 'function') {
+            if (retryCount < 8) setTimeout(() => syncPropertyTypesWithSupabase(retryCount + 1), 400);
+            return;
+        }
+        try {
+            const existing = await window.IndustraSupabase.fetchSiteSetting('property_types_settings');
+            const matchesCurrent = Array.isArray(existing) && JSON.stringify(existing) === JSON.stringify(DEFAULT_PROPERTY_TYPE_GROUPS);
+            if (!matchesCurrent && typeof window.IndustraSupabase.upsertSiteSetting === 'function') {
+                await window.IndustraSupabase.upsertSiteSetting('property_types_settings', DEFAULT_PROPERTY_TYPE_GROUPS);
+            }
+            localStorage.setItem('industria_property_types', JSON.stringify(DEFAULT_PROPERTY_TYPE_GROUPS));
+        } catch (err) {
+            console.warn('Could not sync property_types_settings to Supabase:', err);
+        }
+    }
+    syncPropertyTypesWithSupabase();
+
     // Direct Supabase Primary Data Sync
     async function loadPropertiesFromSupabase(retryCount = 0) {
         if (!window.IndustraSupabase) {
@@ -1290,6 +1434,8 @@ function initDashboardApp() {
                         lastUpdated: sp.last_updated || sp.updated_at || base.lastUpdated || base.updatedAt || sp.date_created || sp.created_at || base.dateCreated || (defaultDatesMap[sp.id] || ''),
                         featured: isFeat,
                         showOnMainpage: isFeat,
+                        lat: (sp.lat !== undefined && sp.lat !== null && sp.lat !== '') ? Number(sp.lat) : (base.lat !== undefined && base.lat !== null && base.lat !== '' ? Number(base.lat) : null),
+                        lng: (sp.lng !== undefined && sp.lng !== null && sp.lng !== '') ? Number(sp.lng) : (base.lng !== undefined && base.lng !== null && base.lng !== '' ? Number(base.lng) : null),
                         images: propImages,
                         image: firstImg,
                         rawImages: rawImgs,
@@ -1351,7 +1497,9 @@ function initDashboardApp() {
                         id: sp.id,
                         name: sp.name,
                         section: sp.section || specs.section || '',
-                        hidden: sp.hidden !== undefined && sp.hidden !== null ? !!sp.hidden : !!specs.hidden
+                        hidden: sp.hidden !== undefined && sp.hidden !== null ? !!sp.hidden : !!specs.hidden,
+                        lat: (sp.lat !== undefined && sp.lat !== null && sp.lat !== '') ? Number(sp.lat) : (specs.lat !== undefined && specs.lat !== null && specs.lat !== '' ? Number(specs.lat) : null),
+                        lng: (sp.lng !== undefined && sp.lng !== null && sp.lng !== '') ? Number(sp.lng) : (specs.lng !== undefined && specs.lng !== null && specs.lng !== '' ? Number(specs.lng) : null)
                     });
                 });
                 parks = parksObj;
@@ -1387,6 +1535,9 @@ function initDashboardApp() {
         }
         const parkId = typeof parkObj === 'object' && parkObj.id ? String(parkObj.id) : `park_${city.toLowerCase().replace(/\s+/g, '_')}_${parkName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`;
 
+        const parkLat = typeof parkObj === 'object' && parkObj.lat !== undefined && parkObj.lat !== null && parkObj.lat !== '' ? Number(parkObj.lat) : null;
+        const parkLng = typeof parkObj === 'object' && parkObj.lng !== undefined && parkObj.lng !== null && parkObj.lng !== '' ? Number(parkObj.lng) : null;
+
         await window.IndustraSupabase.upsertIndustrialPark({
             id: parkId,
             name: parkName,
@@ -1396,7 +1547,7 @@ function initDashboardApp() {
             hidden: hidden,
             agent_id: agentId || null,
             agent_name: agentName || null,
-            specs: { section: section, hidden: hidden, agentId: agentId, agentName: agentName }
+            specs: { section: section, hidden: hidden, agentId: agentId, agentName: agentName, lat: parkLat, lng: parkLng }
         });
     }
 
@@ -1475,6 +1626,10 @@ function initDashboardApp() {
             propModal.style.display = 'none';
         }
         if (propForm) propForm.reset();
+        const propTypeEl = document.getElementById('propType');
+        if (propTypeEl) {
+            propTypeEl.querySelectorAll('option[data-legacy-temp="true"]').forEach(opt => opt.remove());
+        }
         editingPropertyId = null;
         croppedImageResult = null;
         currentPropertyImages = [];
@@ -1880,8 +2035,8 @@ function initDashboardApp() {
         const intentValFilter = propIntentFilter ? propIntentFilter.value : 'All';
 
         propertiesToRender = propertiesToRender.filter(prop => {
-            const matchesCity = (cityVal === 'All') || (prop.location === cityVal);
-            const matchesType = (typeVal === 'All') || (prop.type === typeVal) || (typeVal === 'Factory' && prop.type && prop.type.toLowerCase().includes('factory'));
+            const matchesCity = (cityVal === 'All') || ((prop.location || '').trim().toLowerCase() === cityVal.trim().toLowerCase());
+            const matchesType = matchesDashboardPropertyType(prop.type, typeVal);
             const propIntent = (prop.intent || (prop.price && prop.price.toLowerCase().includes('mo') ? 'Rent' : 'Sale'));
             const matchesIntent = (intentValFilter === 'All') || (propIntent.toLowerCase() === intentValFilter.toLowerCase());
 
@@ -2192,8 +2347,8 @@ function initDashboardApp() {
         });
 
         filteredList = filteredList.filter(prop => {
-            const matchesCity = (cityVal === 'All') || (prop.location === cityVal);
-            const matchesType = (typeVal === 'All') || (prop.type === typeVal) || (typeVal === 'Factory' && prop.type && prop.type.toLowerCase().includes('factory'));
+            const matchesCity = (cityVal === 'All') || ((prop.location || '').trim().toLowerCase() === cityVal.trim().toLowerCase());
+            const matchesType = matchesDashboardPropertyType(prop.type, typeVal);
             const propIntent = (prop.intent || (prop.price && prop.price.toLowerCase().includes('mo') ? 'Rent' : 'Sale'));
             const matchesIntent = (intentVal === 'All') || (propIntent.toLowerCase() === intentVal.toLowerCase());
 
@@ -2902,6 +3057,21 @@ function initDashboardApp() {
         if (propRoad) propRoad.value = prop.road || '';
         const propMapUrl = document.getElementById('propMapUrl');
         if (propMapUrl) propMapUrl.value = prop.mapUrl || prop.googleMapUrl || prop.googleEarthUrl || '';
+        const propLat = document.getElementById('propLat');
+        const hasSavedLat = prop.lat !== undefined && prop.lat !== null && prop.lat !== '';
+        if (propLat) {
+            propLat.value = hasSavedLat ? String(prop.lat) : '';
+            delete propLat.dataset.fromRoad;
+        }
+        const propLng = document.getElementById('propLng');
+        const hasSavedLng = prop.lng !== undefined && prop.lng !== null && prop.lng !== '';
+        if (propLng) {
+            propLng.value = hasSavedLng ? String(prop.lng) : '';
+            delete propLng.dataset.fromRoad;
+        }
+        if (typeof syncPrimaryRoadForMapPin === 'function') {
+            syncPrimaryRoadForMapPin({ autoFillCoords: !(hasSavedLat && hasSavedLng) });
+        }
         
         const propSaleRent = document.getElementById('propSaleRent');
         if (propSaleRent) {
@@ -2919,7 +3089,18 @@ function initDashboardApp() {
         const propLeaseType = document.getElementById('propLeaseType');
         if (propLeaseType) propLeaseType.value = prop.tenure || prop.leaseType || 'Freehold';
 
-        document.getElementById('propType').value = prop.type || 'Warehouse';
+        const propTypeEl = document.getElementById('propType');
+        if (propTypeEl) {
+            const targetType = prop.type || 'Detached Factory';
+            if (!Array.from(propTypeEl.options).some(o => o.value === targetType)) {
+                const legacyOpt = document.createElement('option');
+                legacyOpt.value = targetType;
+                legacyOpt.textContent = `${targetType} (Legacy)`;
+                legacyOpt.dataset.legacyTemp = 'true';
+                propTypeEl.appendChild(legacyOpt);
+            }
+            propTypeEl.value = targetType;
+        }
         document.getElementById('propPrice').value = prop.price || '';
 
         const propLandArea = document.getElementById('propLandArea');
@@ -3871,6 +4052,13 @@ function initDashboardApp() {
         if (propUsage) {
             propUsage.value = 'Not Applicable';
         }
+        const propLatEl = document.getElementById('propLat');
+        const propLngEl = document.getElementById('propLng');
+        if (propLatEl) delete propLatEl.dataset.fromRoad;
+        if (propLngEl) delete propLngEl.dataset.fromRoad;
+        if (typeof syncPrimaryRoadForMapPin === 'function') {
+            syncPrimaryRoadForMapPin({ autoFillCoords: false });
+        }
         openModal();
     };
 
@@ -3992,7 +4180,7 @@ function initDashboardApp() {
             const locationVal = document.getElementById('propLocation') ? document.getElementById('propLocation').value : '';
             const intentVal = document.getElementById('propSaleRent') ? document.getElementById('propSaleRent').value : 'Sale';
             const leaseTypeVal = document.getElementById('propLeaseType') ? document.getElementById('propLeaseType').value : 'Freehold';
-            const typeVal = document.getElementById('propType') ? document.getElementById('propType').value : 'Warehouse';
+            const typeVal = document.getElementById('propType') ? document.getElementById('propType').value : 'Detached Factory';
             const parkVal = document.getElementById('propPark') ? document.getElementById('propPark').value : '';
 
             const allowedParks = getAgentAssignedParks();
@@ -4015,6 +4203,21 @@ function initDashboardApp() {
             }
             const roadVal = document.getElementById('propRoad') ? document.getElementById('propRoad').value : '';
             const mapUrlVal = document.getElementById('propMapUrl') ? document.getElementById('propMapUrl').value.trim() : '';
+            const rawPropLat = document.getElementById('propLat') ? parseFloat(document.getElementById('propLat').value.trim()) : NaN;
+            const rawPropLng = document.getElementById('propLng') ? parseFloat(document.getElementById('propLng').value.trim()) : NaN;
+            const parsedFromUrl = (!Number.isFinite(rawPropLat) || !Number.isFinite(rawPropLng)) && mapUrlVal && window.IndustraMap
+                ? window.IndustraMap.parseCoordsFromUrl(mapUrlVal)
+                : null;
+            const resolvedFromFirstRoad = (!Number.isFinite(rawPropLat) || !Number.isFinite(rawPropLng)) && !parsedFromUrl && window.IndustraMap && typeof window.IndustraMap.resolvePropertyCoordinates === 'function'
+                ? window.IndustraMap.resolvePropertyCoordinates({
+                    location: locationVal,
+                    park: parkVal,
+                    road: roadVal,
+                    mapUrl: mapUrlVal
+                }, parks)
+                : null;
+            const latVal = Number.isFinite(rawPropLat) ? rawPropLat : (parsedFromUrl ? parsedFromUrl.lat : (resolvedFromFirstRoad ? resolvedFromFirstRoad.lat : null));
+            const lngVal = Number.isFinite(rawPropLng) ? rawPropLng : (parsedFromUrl ? parsedFromUrl.lng : (resolvedFromFirstRoad ? resolvedFromFirstRoad.lng : null));
             const priceVal = document.getElementById('propPrice') ? document.getElementById('propPrice').value : '';
             
             const rawSizeVal = document.getElementById('propSize') ? document.getElementById('propSize').value.trim() : '';
@@ -4109,6 +4312,8 @@ function initDashboardApp() {
                 properties[targetPropIndex].park = parkVal;
                 properties[targetPropIndex].road = roadVal;
                 properties[targetPropIndex].mapUrl = mapUrlVal;
+                properties[targetPropIndex].lat = latVal;
+                properties[targetPropIndex].lng = lngVal;
                 properties[targetPropIndex].price = priceVal;
                 properties[targetPropIndex].size = sizeVal;
                 properties[targetPropIndex].landArea = landAreaVal;
@@ -4169,6 +4374,8 @@ function initDashboardApp() {
                     park: parkVal,
                     road: roadVal,
                     mapUrl: mapUrlVal,
+                    lat: latVal,
+                    lng: lngVal,
                     price: priceVal,
                     size: sizeVal,
                     landArea: landAreaVal,
@@ -4256,6 +4463,229 @@ function initDashboardApp() {
                 }
             }
         });
+    }
+
+    function bindDashboardCoordPicker(config) {
+        const btn = document.getElementById(config.buttonId);
+        const latInput = document.getElementById(config.latId);
+        const lngInput = document.getElementById(config.lngId);
+        if (!btn || !latInput || !lngInput) return;
+
+        [latInput, lngInput].forEach(inp => {
+            inp.addEventListener('input', () => {
+                delete inp.dataset.fromUrl;
+                delete inp.dataset.fromRoad;
+            });
+        });
+
+        btn.addEventListener('click', () => {
+            if (!window.IndustraMap || typeof window.IndustraMap.openCoordinatePickerModal !== 'function') {
+                alert('Interactive map library is still loading. Please try again.');
+                return;
+            }
+            const fb = typeof config.getFallback === 'function' ? config.getFallback() : null;
+            const ctx = typeof config.getContext === 'function' ? config.getContext() : {};
+            const hasManualPin = latInput.value.trim() && lngInput.value.trim() && latInput.dataset.fromRoad !== '1';
+            window.IndustraMap.openCoordinatePickerModal({
+                title: typeof config.getTitle === 'function' ? config.getTitle() : 'Pin Exact Location on Map',
+                lat: hasManualPin ? latInput.value.trim() : ((fb && fb.lat) ? String(fb.lat) : latInput.value.trim()),
+                lng: hasManualPin ? lngInput.value.trim() : ((fb && fb.lng) ? String(fb.lng) : lngInput.value.trim()),
+                fallbackLat: fb && fb.lat ? fb.lat : undefined,
+                fallbackLng: fb && fb.lng ? fb.lng : undefined,
+                primaryRoad: (fb && fb.primaryRoad) || ctx.primaryRoad || '',
+                road: ctx.road || '',
+                park: ctx.park || '',
+                location: ctx.location || '',
+                onApply: (newLat, newLng) => {
+                    latInput.value = newLat;
+                    lngInput.value = newLng;
+                    delete latInput.dataset.fromUrl;
+                    delete lngInput.dataset.fromUrl;
+                    delete latInput.dataset.fromRoad;
+                    delete lngInput.dataset.fromRoad;
+                }
+            });
+        });
+    }
+
+    function extractFirstRoadForPin(rawRoad) {
+        if (window.IndustraMap && typeof window.IndustraMap.extractPrimaryRoad === 'function') {
+            return window.IndustraMap.extractPrimaryRoad(rawRoad);
+        }
+        return String(rawRoad || '').split(/\s*[,;|]\s*/)[0].trim();
+    }
+
+    let roadGeocodeTimer = null;
+    function syncPrimaryRoadForMapPin(opts = {}) {
+        const autoFillCoords = opts.autoFillCoords !== false;
+        const roadEl = document.getElementById('propRoad');
+        const locEl = document.getElementById('propLocation');
+        const parkEl = document.getElementById('propPark');
+        const urlEl = document.getElementById('propMapUrl');
+        const latInput = document.getElementById('propLat');
+        const lngInput = document.getElementById('propLng');
+        const badgeEl = document.getElementById('prop-primary-road-pin-badge');
+
+        const rawRoad = roadEl ? roadEl.value.trim() : '';
+        const primaryRoad = extractFirstRoadForPin(rawRoad);
+
+        if (badgeEl) {
+            if (primaryRoad) {
+                badgeEl.style.display = 'inline-flex';
+                badgeEl.style.alignItems = 'center';
+                badgeEl.style.gap = '4px';
+                badgeEl.innerHTML = `<i class="fa-solid fa-map-pin"></i> 1st Road: ${escapeHtml(primaryRoad)}`;
+                badgeEl.title = `Captured 1st road "${primaryRoad}" for Map Pin Coordinates`;
+            } else {
+                badgeEl.style.display = 'none';
+                badgeEl.textContent = '';
+            }
+        }
+
+        if (!autoFillCoords || !latInput || !lngInput || !window.IndustraMap) return;
+
+        const isEmpty = !latInput.value.trim() && !lngInput.value.trim();
+        const isAutoRoad = latInput.dataset.fromRoad === '1' && lngInput.dataset.fromRoad === '1';
+        if (!isEmpty && !isAutoRoad) return;
+
+        const locVal = locEl ? locEl.value : '';
+        const parkVal = parkEl ? parkEl.value : '';
+        const urlVal = urlEl ? urlEl.value.trim() : '';
+
+        // 1. Immediate synchronous resolution (prefers 1st road -> map URL -> park -> city)
+        if (primaryRoad || parkVal || locVal) {
+            const resolved = window.IndustraMap.resolvePropertyCoordinates({
+                location: locVal,
+                park: parkVal,
+                road: primaryRoad,
+                mapUrl: urlVal,
+                googleMapUrl: urlVal
+            }, parks);
+
+            if (resolved && Number.isFinite(resolved.lat) && Number.isFinite(resolved.lng)) {
+                latInput.value = Number(resolved.lat).toFixed(6);
+                lngInput.value = Number(resolved.lng).toFixed(6);
+                latInput.dataset.fromRoad = '1';
+                lngInput.dataset.fromRoad = '1';
+            }
+        }
+
+        // 2. If 1st road is provided, also run live geocoding (if not already in built-in ROAD_COORDS) to snap to exact street
+        if (primaryRoad && typeof window.IndustraMap.geocodePrimaryRoad === 'function') {
+            clearTimeout(roadGeocodeTimer);
+            roadGeocodeTimer = setTimeout(() => {
+                window.IndustraMap.geocodePrimaryRoad({
+                    road: primaryRoad,
+                    park: parkVal,
+                    location: locVal
+                }).then(geo => {
+                    if (!geo || !Number.isFinite(geo.lat) || !Number.isFinite(geo.lng)) return;
+                    const stillAuto = (!latInput.value.trim() && !lngInput.value.trim()) ||
+                                      (latInput.dataset.fromRoad === '1' && lngInput.dataset.fromRoad === '1');
+                    if (stillAuto) {
+                        latInput.value = Number(geo.lat).toFixed(6);
+                        lngInput.value = Number(geo.lng).toFixed(6);
+                        latInput.dataset.fromRoad = '1';
+                        lngInput.dataset.fromRoad = '1';
+                    }
+                }).catch(() => {});
+            }, 320);
+        }
+    }
+
+    const propRoadInputEl = document.getElementById('propRoad');
+    if (propRoadInputEl) {
+        propRoadInputEl.addEventListener('input', () => syncPrimaryRoadForMapPin({ autoFillCoords: true }));
+        propRoadInputEl.addEventListener('change', () => syncPrimaryRoadForMapPin({ autoFillCoords: true }));
+    }
+    if (propPark) {
+        propPark.addEventListener('change', () => syncPrimaryRoadForMapPin({ autoFillCoords: true }));
+    }
+    if (propLocation) {
+        propLocation.addEventListener('change', () => syncPrimaryRoadForMapPin({ autoFillCoords: true }));
+    }
+
+    bindDashboardCoordPicker({
+        buttonId: 'btn-pick-prop-coords',
+        latId: 'propLat',
+        lngId: 'propLng',
+        getTitle: () => {
+            const roadVal = (document.getElementById('propRoad') || {}).value || '';
+            const firstRoad = extractFirstRoadForPin(roadVal);
+            const titleVal = (document.getElementById('propTitle') || {}).value || '';
+            if (firstRoad) return `Pin 1st Road: ${firstRoad}`;
+            return titleVal.trim() ? `Pin Location: ${titleVal.trim()}` : 'Pin Property Location on Map';
+        },
+        getContext: () => {
+            const locEl = document.getElementById('propLocation');
+            const parkEl = document.getElementById('propPark');
+            const roadEl = document.getElementById('propRoad');
+            const rawRoad = roadEl ? roadEl.value : '';
+            return {
+                location: locEl ? locEl.value : '',
+                park: parkEl ? parkEl.value : '',
+                road: rawRoad,
+                primaryRoad: extractFirstRoadForPin(rawRoad)
+            };
+        },
+        getFallback: () => {
+            if (!window.IndustraMap) return null;
+            const locEl = document.getElementById('propLocation');
+            const parkEl = document.getElementById('propPark');
+            const roadEl = document.getElementById('propRoad');
+            const urlEl = document.getElementById('propMapUrl');
+            const firstRoad = extractFirstRoadForPin(roadEl ? roadEl.value : '');
+            return window.IndustraMap.resolvePropertyCoordinates({
+                location: locEl ? locEl.value : '',
+                park: parkEl ? parkEl.value : '',
+                road: firstRoad,
+                mapUrl: urlEl ? urlEl.value : '',
+                googleMapUrl: urlEl ? urlEl.value : ''
+            }, parks);
+        }
+    });
+
+    bindDashboardCoordPicker({
+        buttonId: 'btn-pick-park-coords',
+        latId: 'parkLat',
+        lngId: 'parkLng',
+        getTitle: () => {
+            const nameVal = (document.getElementById('parkName') || {}).value || '';
+            return nameVal.trim() ? `Pin Park: ${nameVal.trim()}` : 'Pin Industrial Park on Map';
+        },
+        getFallback: () => {
+            if (!window.IndustraMap) return null;
+            const cityEl = document.getElementById('parkCity');
+            const nameEl = document.getElementById('parkName');
+            const secEl = document.getElementById('parkSection');
+            return window.IndustraMap.resolveParkCoordinates(
+                cityEl ? cityEl.value : '',
+                nameEl ? nameEl.value : '',
+                secEl ? secEl.value : '',
+                parks
+            );
+        }
+    });
+
+    const propMapUrlInput = document.getElementById('propMapUrl');
+    if (propMapUrlInput) {
+        const tryAutoFillCoordsFromUrl = () => {
+            if (!window.IndustraMap || typeof window.IndustraMap.parseCoordsFromUrl !== 'function') return;
+            const parsed = window.IndustraMap.parseCoordsFromUrl(propMapUrlInput.value.trim());
+            if (!parsed) return;
+            const latInput = document.getElementById('propLat');
+            const lngInput = document.getElementById('propLng');
+            if (!latInput || !lngInput) return;
+            const isEmpty = !latInput.value.trim() && !lngInput.value.trim();
+            if (isEmpty || (latInput.dataset.fromUrl === '1' && lngInput.dataset.fromUrl === '1')) {
+                latInput.value = parsed.lat;
+                lngInput.value = parsed.lng;
+                latInput.dataset.fromUrl = '1';
+                lngInput.dataset.fromUrl = '1';
+            }
+        };
+        propMapUrlInput.addEventListener('change', tryAutoFillCoordsFromUrl);
+        propMapUrlInput.addEventListener('input', tryAutoFillCoordsFromUrl);
     }
 
     // --- LEADS MANAGEMENT ---
@@ -5028,11 +5458,11 @@ function initDashboardApp() {
                         <option value="Archived" ${item.status === 'Archived' ? 'selected' : ''}>Archived</option>
                     </select>
                 </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <a href="https://wa.me/${cleanPhone.replace(/[^0-9]/g,'')}?text=Hello%20${encodeURIComponent(leadName)}%2C%20this%20is%20MyFactorySpace%20Real%20Estate%20regarding%20your%20inquiry%20for%20${encodeURIComponent(leadInterest)}." target="_blank" class="btn" style="background: #25D366; color: white; padding: 0.5rem 1rem; font-size: 0.88rem; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <a href="https://wa.me/${cleanPhone.replace(/[^0-9]/g,'')}?text=Hello%20${encodeURIComponent(leadName)}%2C%20this%20is%20MyFactorySpace%20Real%20Estate%20regarding%20your%20inquiry%20for%20${encodeURIComponent(leadInterest)}." target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp">
                         <i class="fa-brands fa-whatsapp"></i> WhatsApp Lead
                     </a>
-                    <button class="btn btn-primary" onclick="saveLeadModalStatus('${item.id}')" style="padding: 0.5rem 1.25rem; font-size: 0.88rem; border-radius: 8px;">Save Changes</button>
+                    <button type="button" class="btn btn-primary" onclick="saveLeadModalStatus('${item.id}')">Save Changes</button>
                 </div>
             </div>
         `;
@@ -5718,11 +6148,11 @@ function initDashboardApp() {
                         <option value="Archived" ${item.status === 'Archived' ? 'selected' : ''}>Archived</option>
                     </select>
                 </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <a href="https://wa.me/${cleanPhone.replace(/[^0-9]/g,'')}?text=Hello%20${encodeURIComponent(item.name)}%2C%20this%20is%20MyFactorySpace%20Real%20Estate%20regarding%20your%20property%20listing%20request." target="_blank" class="btn" style="background: #25D366; color: white; padding: 0.5rem 1rem; font-size: 0.88rem; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; text-decoration: none;">
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <a href="https://wa.me/${cleanPhone.replace(/[^0-9]/g,'')}?text=Hello%20${encodeURIComponent(item.name)}%2C%20this%20is%20MyFactorySpace%20Real%20Estate%20regarding%20your%20property%20listing%20request." target="_blank" rel="noopener noreferrer" class="btn btn-whatsapp">
                         <i class="fa-brands fa-whatsapp"></i> WhatsApp Owner
                     </a>
-                    <button class="btn btn-primary" onclick="saveModalStatus('${item.id}')" style="padding: 0.5rem 1.25rem; font-size: 0.88rem; border-radius: 8px;">Save Changes</button>
+                    <button type="button" class="btn btn-primary" onclick="saveModalStatus('${item.id}')">Save Changes</button>
                 </div>
             </div>
         `;
@@ -7358,10 +7788,10 @@ function initDashboardApp() {
                 if (canApproveThis) {
                     adminActionsHtml = `
                         <div style="display: flex; gap: 6px; align-items: center;">
-                            <button class="btn btn-sm btn-primary" onclick="approveParkRequest('${req.id}')" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 6px;">
+                            <button type="button" class="btn btn-sm btn-primary" onclick="approveParkRequest('${req.id}')">
                                 <i class="fa-solid fa-check"></i> Approve
                             </button>
-                            <button class="btn btn-sm btn-outline delete" onclick="rejectParkRequest('${req.id}')" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 6px; color: #dc2626; border-color: #fca5a5;">
+                            <button type="button" class="btn btn-sm btn-danger-outline" onclick="rejectParkRequest('${req.id}')">
                                 <i class="fa-solid fa-xmark"></i> Reject
                             </button>
                         </div>
@@ -7378,7 +7808,7 @@ function initDashboardApp() {
                 const canDelete = isAdministrator && (req.status === 'Rejected' || req.status === 'Approved');
                 const deleteTitle = req.status === 'Approved' ? 'Remove approved park proposal' : 'Remove rejected proposal request';
                 const deleteBtnHtml = canDelete
-                    ? `<button class="btn btn-sm btn-outline delete" onclick="deleteParkRequest('${req.id}')" title="${deleteTitle}" style="padding: 0.28rem 0.65rem; font-size: 0.78rem; border-radius: 6px; color: #dc2626; border-color: #fca5a5; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; white-space: nowrap;">
+                    ? `<button type="button" class="btn btn-sm btn-danger-outline" onclick="deleteParkRequest('${req.id}')" title="${deleteTitle}">
                         <i class="fa-solid fa-trash-can"></i> Remove
                        </button>`
                     : '';
@@ -7986,7 +8416,7 @@ function initDashboardApp() {
             `;
 
             const propCountDisplay = assignedCount > 0 
-                ? `<button type="button" class="btn btn-sm btn-outline" onclick="viewUnassignedParkProperties('${encodeURIComponent(park.name)}')" style="font-size:0.75rem; padding:2px 8px; border-radius:6px; font-weight:600; cursor:pointer;" title="Click to view ${assignedCount} unassigned properties in this park"><i class="fa-solid fa-building" style="margin-right:3px;"></i> ${assignedCount} properties &rarr;</button>`
+                ? `<button type="button" class="btn btn-xs btn-outline" onclick="viewUnassignedParkProperties('${encodeURIComponent(park.name)}')" title="Click to view ${assignedCount} unassigned properties in this park"><i class="fa-solid fa-building"></i> ${assignedCount} properties &rarr;</button>`
                 : `<span style="color: #94a3b8; font-size: 0.82rem;">0 properties</span>`;
 
             const tr = document.createElement('tr');
@@ -8223,6 +8653,10 @@ function initDashboardApp() {
         document.getElementById('parkSection').value = park.section || '';
         document.getElementById('parkName').value = park.name;
         document.getElementById('parkStatus').value = park.hidden ? 'hidden' : 'active';
+        const parkLatEl = document.getElementById('parkLat');
+        const parkLngEl = document.getElementById('parkLng');
+        if (parkLatEl) parkLatEl.value = (park.lat !== undefined && park.lat !== null && park.lat !== '') ? String(park.lat) : '';
+        if (parkLngEl) parkLngEl.value = (park.lng !== undefined && park.lng !== null && park.lng !== '') ? String(park.lng) : '';
         
         const roleBadge = document.getElementById('park-modal-role-badge');
         if (roleBadge) roleBadge.style.display = 'none';
@@ -8302,6 +8736,10 @@ function initDashboardApp() {
 
         parkForm.reset();
         document.getElementById('parkSection').value = '';
+        const pLat = document.getElementById('parkLat');
+        const pLng = document.getElementById('parkLng');
+        if (pLat) pLat.value = '';
+        if (pLng) pLng.value = '';
         document.getElementById('park-properties-container').innerHTML = '<p style="color: var(--text-muted); font-size: 0.9rem;">Select a city to view available properties.</p>';
         
         const roleBadge = document.getElementById('park-modal-role-badge');
@@ -8564,6 +9002,10 @@ function initDashboardApp() {
         const newName = document.getElementById('parkName').value.trim();
         const originalName = document.getElementById('editParkOriginalName').value;
         const isHidden = document.getElementById('parkStatus').value === 'hidden';
+        const rawParkLat = document.getElementById('parkLat') ? parseFloat(document.getElementById('parkLat').value.trim()) : NaN;
+        const rawParkLng = document.getElementById('parkLng') ? parseFloat(document.getElementById('parkLng').value.trim()) : NaN;
+        const parkLatVal = Number.isFinite(rawParkLat) ? rawParkLat : null;
+        const parkLngVal = Number.isFinite(rawParkLng) ? rawParkLng : null;
         
         if (!city) {
             alert('Please select a city.');
@@ -8657,6 +9099,8 @@ function initDashboardApp() {
                 parks[city][parkIndex].name = newName;
                 parks[city][parkIndex].section = section;
                 parks[city][parkIndex].hidden = isHidden;
+                parks[city][parkIndex].lat = parkLatVal;
+                parks[city][parkIndex].lng = parkLngVal;
                 targetParkObj = parks[city][parkIndex];
             }
         } else {
@@ -8664,7 +9108,9 @@ function initDashboardApp() {
                 id: `park_${city.toLowerCase().replace(/\s+/g, '_')}_${newName.toLowerCase().replace(/[^a-z0-9]/g, '_')}`,
                 name: newName,
                 section: section,
-                hidden: isHidden
+                hidden: isHidden,
+                lat: parkLatVal,
+                lng: parkLngVal
             };
             parks[city].push(targetParkObj);
         }
@@ -9654,6 +10100,12 @@ function initDashboardApp() {
                 if (typeof window.loadSettings === 'function') {
                     window.loadSettings();
                 }
+                if (typeof window.syncDashboardLocationSelects === 'function') {
+                    window.syncDashboardLocationSelects();
+                }
+                if (typeof window.renderLocationCitySubtabs === 'function') {
+                    window.renderLocationCitySubtabs();
+                }
                 if (typeof syncPropertyFeaturesUI === 'function') {
                     syncPropertyFeaturesUI(settings);
                 } else if (typeof window.syncPropertyFeaturesUI === 'function') {
@@ -9734,6 +10186,10 @@ function initDashboardApp() {
         setVal('setting-tiktok', settings.tiktok);
         setVal('setting-rednote', settings.rednote);
         setVal('setting-copyright', settings.copyright || '© 2026 MyFactorySpace Real Estate. All rights reserved.');
+        setVal('setting-google-maps-api-key', settings.googleMapsApiKey || '');
+        if (typeof updateGoogleMapsStatusPill === 'function') {
+            updateGoogleMapsStatusPill(settings.googleMapsApiKey || '');
+        }
 
         // Corporate UI & Brand Theme
         const b = getBrandingSettings();
@@ -9906,6 +10362,17 @@ function initDashboardApp() {
             if (!knownLocsMap.has(key)) knownLocsMap.set(key, clean);
         };
         defaultLocs.forEach(addLoc);
+        try {
+            const rawLocSettings = localStorage.getItem('industria_location_settings');
+            if (rawLocSettings) {
+                const parsedLocs = JSON.parse(rawLocSettings);
+                if (parsedLocs && typeof parsedLocs === 'object') {
+                    Object.values(parsedLocs).forEach(entry => {
+                        if (entry && entry.city) addLoc(entry.city);
+                    });
+                }
+            }
+        } catch (e) {}
         Object.keys(activeParksObj).forEach(addLoc);
 
         const knownSectionsMap = new Map(); // lower -> { name, cities: Set, totalCount, featuredCount }
@@ -10953,6 +11420,68 @@ function initDashboardApp() {
             localStorage.setItem('industria_settings', JSON.stringify(settings));
             await saveGeneralSettingsToSupabase();
             alert('Contact Information saved successfully! Main page updated.');
+        });
+    }
+
+    function updateGoogleMapsStatusPill(apiKeyVal) {
+        const pill = document.getElementById('setting-gmaps-status-pill');
+        if (!pill) return;
+        const hasKey = !!(apiKeyVal && String(apiKeyVal).trim());
+        if (hasKey) {
+            pill.textContent = 'Google Maps Key Configured';
+            pill.style.background = '#dbeafe';
+            pill.style.color = '#1d4ed8';
+            pill.style.borderColor = '#93c5fd';
+        } else {
+            pill.textContent = 'Free Map Active';
+            pill.style.background = '#ecfdf5';
+            pill.style.color = '#047857';
+            pill.style.borderColor = '#a7f3d0';
+        }
+    }
+
+    const toggleGmapsVisBtn = document.getElementById('toggle-gmaps-key-vis');
+    const gmapsKeyInput = document.getElementById('setting-google-maps-api-key');
+    if (toggleGmapsVisBtn && gmapsKeyInput) {
+        toggleGmapsVisBtn.addEventListener('click', () => {
+            const isMasked = gmapsKeyInput.type === 'password';
+            gmapsKeyInput.type = isMasked ? 'text' : 'password';
+            toggleGmapsVisBtn.innerHTML = isMasked ? '<i class="fa-regular fa-eye-slash"></i>' : '<i class="fa-regular fa-eye"></i>';
+        });
+    }
+
+    const clearGmapsKeyBtn = document.getElementById('btn-clear-gmaps-key');
+    if (clearGmapsKeyBtn && gmapsKeyInput) {
+        clearGmapsKeyBtn.addEventListener('click', () => {
+            gmapsKeyInput.value = '';
+            updateGoogleMapsStatusPill('');
+        });
+    }
+
+    const mapsSettingsForm = document.getElementById('settings-maps-form');
+    if (mapsSettingsForm) {
+        mapsSettingsForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const keyVal = gmapsKeyInput ? gmapsKeyInput.value.trim() : '';
+            settings.googleMapsApiKey = keyVal;
+            localStorage.setItem('industria_settings', JSON.stringify(settings));
+            updateGoogleMapsStatusPill(keyVal);
+            if (window.IndustraMap && typeof window.IndustraMap.setGoogleMapsApiKey === 'function') {
+                window.IndustraMap.setGoogleMapsApiKey(keyVal);
+            }
+            window.dispatchEvent(new Event('storage'));
+            await saveGeneralSettingsToSupabase();
+            if (typeof window.logDashboardActivity === 'function') {
+                window.logDashboardActivity({
+                    category: 'Settings',
+                    action: 'Update',
+                    target: 'Interactive Map Settings',
+                    details: keyVal ? 'Configured Google Maps API Key' : 'Cleared Google Maps API Key (Free Map Active)'
+                });
+            }
+            alert(keyVal
+                ? 'Google Maps API Key saved! Public maps will load Google Maps data ("Map data ©2026 Google") automatically when the key and billing are valid.'
+                : 'Map settings saved! Free keyless Esri Street & Satellite maps are active.');
         });
     }
 
@@ -12034,9 +12563,10 @@ function initDashboardApp() {
         if (tbody) {
             tbody.innerHTML = '';
             if (users.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8;"><i class="fa-solid fa-users-slash" style="font-size: 2rem; margin-bottom: 0.5rem; display: block; color: #cbd5e1;"></i>No user accounts found</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8;"><i class="fa-solid fa-users-slash" style="font-size: 2rem; margin-bottom: 0.5rem; display: block; color: #cbd5e1;"></i>No user accounts found</td></tr>`;
                 return;
             }
+            const insightsAccessCfg = getInsightsAccessControl();
 
             users.forEach(u => {
                 const tr = document.createElement('tr');
@@ -12152,7 +12682,30 @@ function initDashboardApp() {
                         : `<span style="color:#cbd5e1; font-size:0.85rem;">—</span>`;
                 }
 
-                // 6. Actions Cell (Delete button or protected session badge)
+                // 6. Insights Access Cell
+                const isAdminAcc = roleLower === 'administrator';
+                const hasInsightsPerm = userHasInsightsAccess(u, insightsAccessCfg);
+                let insightsColHtml = '';
+                if (isAdminAcc) {
+                    insightsColHtml = `
+                        <span class="admin-insights-admin-lock" title="Administrators always have Insights access">
+                            <i class="fa-solid fa-shield-halved"></i> Always On
+                        </span>
+                    `;
+                } else if (isCurrentAdmin) {
+                    insightsColHtml = `
+                        <button type="button" class="admin-insights-pill-btn ${hasInsightsPerm ? 'is-allowed' : ''}" onclick="toggleUserInsightsAccess('${safeUName}')" title="${hasInsightsPerm ? 'Click to revoke Dashboard > Insights access' : 'Click to grant Dashboard > Insights access'}">
+                            <i class="fa-solid ${hasInsightsPerm ? 'fa-circle-check' : 'fa-lock'}"></i>
+                            ${hasInsightsPerm ? 'Allowed' : 'Restricted'}
+                        </button>
+                    `;
+                } else {
+                    insightsColHtml = hasInsightsPerm
+                        ? `<span class="admin-insights-pill-btn is-allowed" style="cursor:default;"><i class="fa-solid fa-circle-check"></i> Allowed</span>`
+                        : `<span class="admin-insights-pill-btn" style="cursor:default;"><i class="fa-solid fa-lock"></i> Restricted</span>`;
+                }
+
+                // 7. Actions Cell (Delete button or protected session badge)
                 let actionHtml = '';
                 if (!isSelf && users.length > 1 && isCurrentAdmin) {
                     actionHtml = `
@@ -12180,6 +12733,7 @@ function initDashboardApp() {
                     <td>${agentCellHtml}</td>
                     <td>${waHtml}</td>
                     <td style="text-align: center;">${mainColHtml}</td>
+                    <td style="text-align: center;">${insightsColHtml}</td>
                     <td style="text-align: right;">${actionHtml}</td>
                 `;
                 tbody.appendChild(tr);
@@ -13676,10 +14230,13 @@ function initDashboardApp() {
     const DEFAULT_LOCATION_DATA = {
         'petaling-jaya': {
             city: 'Petaling Jaya',
+            shortLabel: 'PJ',
             slug: 'petaling-jaya',
             state: 'Selangor',
+            showOnMainpage: true,
             headline: 'Petaling Jaya Industrial Properties & Warehouses For Sale & Rent',
             tagline: "Selangor's premier mature industrial and corporate commercial hub. Anchored directly by Federal Highway, NPE, and LDP with 15-minute connectivity to KL City Centre.",
+            cardImage: 'assets/images/drone_pj.jpg',
             heroImage: 'assets/images/drone_pj.jpg',
             suggestedDimensions: '1920 × 800 px (16:9 ratio, min 1200 × 630 px, max 5MB)',
             metaTitle: 'Petaling Jaya Industrial Properties, Factories & Warehouses | MyFactorySpace',
@@ -13702,10 +14259,13 @@ function initDashboardApp() {
         },
         'subang-jaya': {
             city: 'Subang Jaya',
+            shortLabel: 'Subang',
             slug: 'subang-jaya',
             state: 'Selangor',
+            showOnMainpage: true,
             headline: 'Subang Jaya High-Tech Warehouses & Industrial Facilities',
             tagline: "The central urban logistics and advanced engineering epicenter. Directly connected via KESAS, ELITE & Federal Highway with 10-minute access to Subang Airport.",
+            cardImage: 'assets/images/drone_subang.jpg',
             heroImage: 'assets/images/drone_subang.jpg',
             suggestedDimensions: '1920 × 800 px (16:9 ratio, min 1200 × 630 px, max 5MB)',
             metaTitle: 'Subang Jaya Industrial Properties, Warehouses & Factories | MyFactorySpace',
@@ -13727,10 +14287,13 @@ function initDashboardApp() {
         },
         'shah-alam': {
             city: 'Shah Alam',
+            shortLabel: 'Shah Alam',
             slug: 'shah-alam',
             state: 'Selangor',
+            showOnMainpage: true,
             headline: 'Shah Alam Industrial Hub — Factories, Warehouses & Land',
             tagline: "The industrial powerhouse of Selangor. Malaysia's premier automotive, multinational manufacturing, and regional supply chain corridor.",
+            cardImage: 'assets/images/drone_shahalam.jpg',
             heroImage: 'assets/images/drone_shahalam.jpg',
             suggestedDimensions: '1920 × 800 px (16:9 ratio, min 1200 × 630 px, max 5MB)',
             metaTitle: 'Shah Alam Industrial Properties, Factories & Warehouses | MyFactorySpace',
@@ -13756,10 +14319,13 @@ function initDashboardApp() {
         },
         'klang': {
             city: 'Klang',
+            shortLabel: 'Klang',
             slug: 'klang',
             state: 'Selangor',
+            showOnMainpage: true,
             headline: 'Klang Port-Adjacent Logistics Warehouses & Industrial Land',
             tagline: "Malaysia's global maritime gateway. Direct haulage to Port Klang (Northport & Westport) with seamless West Coast Expressway (WCE) connectivity.",
+            cardImage: 'assets/images/drone_klang.jpg',
             heroImage: 'assets/images/drone_klang.jpg',
             suggestedDimensions: '1920 × 800 px (16:9 ratio, min 1200 × 630 px, max 5MB)',
             metaTitle: 'Klang Industrial Properties, Port Warehouses & Land | MyFactorySpace',
@@ -13782,22 +14348,133 @@ function initDashboardApp() {
         }
     };
 
+    function mergeLocationSettingsMap(rawMap) {
+        const merged = {};
+        Object.keys(DEFAULT_LOCATION_DATA).forEach(slug => {
+            merged[slug] = JSON.parse(JSON.stringify(DEFAULT_LOCATION_DATA[slug]));
+        });
+        if (rawMap && typeof rawMap === 'object') {
+            Object.keys(rawMap).forEach(slug => {
+                const item = rawMap[slug];
+                if (!item || typeof item !== 'object') return;
+                const base = merged[slug] || {};
+                merged[slug] = Object.assign({}, base, item, {
+                    slug: item.slug || base.slug || slug,
+                    shortLabel: item.shortLabel || base.shortLabel || item.city || base.city || slug,
+                    showOnMainpage: item.showOnMainpage !== false && String(item.showOnMainpage) !== 'false',
+                    cardImage: item.cardImage || base.cardImage || item.heroImage || base.heroImage || 'assets/images/drone_all.jpg',
+                    heroImage: item.heroImage || base.heroImage || item.cardImage || base.cardImage || 'assets/images/drone_all.jpg',
+                    stats: Object.assign({}, base.stats || {}, item.stats || {})
+                });
+            });
+        }
+        return merged;
+    }
+
     function getAllLocationSettings() {
         try {
             const raw = localStorage.getItem(LOCATION_SETTINGS_KEY);
-            if (raw) return Object.assign({}, DEFAULT_LOCATION_DATA, JSON.parse(raw));
+            if (raw) return mergeLocationSettingsMap(JSON.parse(raw));
         } catch (e) {}
-        return Object.assign({}, DEFAULT_LOCATION_DATA);
+        return mergeLocationSettingsMap(null);
     }
 
     function saveAllLocationSettings(data) {
         try {
             localStorage.setItem(LOCATION_SETTINGS_KEY, JSON.stringify(data));
-            if (window.IndustraSupabase && typeof window.IndustraSupabase.saveSiteSetting === 'function') {
-                window.IndustraSupabase.saveSiteSetting('location_landing_settings', data).catch(e => console.warn('Supabase location sync:', e));
+            if (window.IndustraSupabase && typeof window.IndustraSupabase.upsertSiteSetting === 'function') {
+                window.IndustraSupabase.upsertSiteSetting('location_landing_settings', data).catch(e => console.warn('Supabase location sync:', e));
             }
         } catch (e) {}
     }
+
+    function getOrderedLocationsList() {
+        const allMap = getAllLocationSettings();
+        const entries = Object.values(allMap).filter(item => item && item.city);
+        const order = (settings && Array.isArray(settings.locationPriorityOrder)) ? settings.locationPriorityOrder : [];
+        const orderIndex = new Map();
+        order.forEach((name, idx) => {
+            if (name) orderIndex.set(String(name).trim().toLowerCase(), idx);
+        });
+        return entries.sort((a, b) => {
+            const ia = orderIndex.has(a.city.toLowerCase()) ? orderIndex.get(a.city.toLowerCase()) : 9999;
+            const ib = orderIndex.has(b.city.toLowerCase()) ? orderIndex.get(b.city.toLowerCase()) : 9999;
+            if (ia !== ib) return ia - ib;
+            return a.city.localeCompare(b.city);
+        });
+    }
+    window.getOrderedLocationsList = getOrderedLocationsList;
+
+    function syncDashboardLocationSelects() {
+        const orderedLocs = getOrderedLocationsList();
+        const cityNames = orderedLocs.map(l => l.city);
+
+        const selectConfigs = [
+            { id: 'propLocation', emptyVal: '', emptyLabel: 'Select Location' },
+            { id: 'parkCity', emptyVal: '', emptyLabel: 'Select City' },
+            { id: 'property-city-filter', emptyVal: 'All', emptyLabel: 'All Cities' },
+            { id: 'unassigned-property-city-filter', emptyVal: 'All', emptyLabel: 'All Cities' },
+            { id: 'park-city-filter', emptyVal: 'All', emptyLabel: 'All Cities' },
+            { id: 'unassigned-park-city-filter', emptyVal: 'All', emptyLabel: 'All Cities' },
+            { id: 'chart-filter-city', emptyVal: 'all', emptyLabel: 'All Cities' },
+            { id: 'insight-input-city', emptyVal: 'Klang Valley', emptyLabel: 'All Klang Valley' },
+            { id: 'insights-auto-focus-city', emptyVal: '', emptyLabel: 'Auto-Rotate All Cities' },
+            { id: 'insights-public-city', emptyVal: '', emptyLabel: 'All Klang Valley / Malaysia' },
+            { id: 'insights-capture-city', emptyVal: '', emptyLabel: 'Auto-Detect City' }
+        ];
+
+        selectConfigs.forEach(cfg => {
+            const sel = document.getElementById(cfg.id);
+            if (!sel) return;
+            const prevVal = sel.value;
+            const seen = new Set();
+            const opts = [`<option value="${escapeHtml(cfg.emptyVal)}">${escapeHtml(cfg.emptyLabel)}</option>`];
+            cityNames.forEach(c => {
+                const norm = c.trim().toLowerCase();
+                if (!seen.has(norm)) {
+                    seen.add(norm);
+                    opts.push(`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`);
+                }
+            });
+            // Preserve legacy selected property city even if removed from locations
+            if (prevVal && prevVal !== cfg.emptyVal && !seen.has(prevVal.trim().toLowerCase())) {
+                opts.push(`<option value="${escapeHtml(prevVal)}">${escapeHtml(prevVal)}</option>`);
+            }
+            sel.innerHTML = opts.join('');
+            if (prevVal !== undefined && Array.from(sel.options).some(o => o.value === prevVal)) {
+                sel.value = prevVal;
+            } else {
+                sel.value = cfg.emptyVal;
+            }
+        });
+    }
+    window.syncDashboardLocationSelects = syncDashboardLocationSelects;
+
+    async function loadLocationSettingsFromSupabase(retryCount = 0) {
+        if (!window.IndustraSupabase || typeof window.IndustraSupabase.fetchSiteSetting !== 'function') {
+            if (retryCount < 10) {
+                setTimeout(() => loadLocationSettingsFromSupabase(retryCount + 1), 350);
+            }
+            return;
+        }
+        try {
+            const sbLocs = await window.IndustraSupabase.fetchSiteSetting('location_landing_settings');
+            if (sbLocs && typeof sbLocs === 'object') {
+                const merged = mergeLocationSettingsMap(sbLocs);
+                localStorage.setItem(LOCATION_SETTINGS_KEY, JSON.stringify(merged));
+                syncDashboardLocationSelects();
+                if (typeof renderLocationCitySubtabs === 'function') renderLocationCitySubtabs();
+                if (typeof renderFeaturedPrioritySettings === 'function') renderFeaturedPrioritySettings(settings);
+                const landingView = document.getElementById('landing-page-view');
+                if (landingView && landingView.style.display !== 'none' && typeof window.switchLocationCityTab === 'function') {
+                    window.switchLocationCityTab(currentEditingCitySlug);
+                }
+            }
+        } catch (err) {
+            console.warn('Could not load location settings from Supabase:', err);
+        }
+    }
+    window.loadLocationSettingsFromSupabase = loadLocationSettingsFromSupabase;
 
     // Helper to normalize any city name/spelling to matching location slug
     function normalizeCityToSlug(city) {
@@ -13935,33 +14612,56 @@ function initDashboardApp() {
     }
     window.removeParkFromLocationDirectory = removeParkFromLocationDirectory;
 
+    function renderLocationCitySubtabs() {
+        const container = document.getElementById('location-city-subtabs');
+        if (!container) return;
+        const orderedLocs = getOrderedLocationsList();
+        if (orderedLocs.length === 0) return;
+
+        container.innerHTML = orderedLocs.map(loc => {
+            const full = loc.city || loc.slug;
+            const short = loc.shortLabel || full;
+            const isActive = loc.slug === currentEditingCitySlug;
+            const hiddenDot = loc.showOnMainpage === false ? ' <i class="fa-solid fa-eye-slash" title="Hidden from Mainpage" style="font-size: 0.72em; opacity: 0.75;"></i>' : '';
+            return `<button type="button" class="loc-city-pill${isActive ? ' active' : ''}" data-loc-slug="${escapeHtml(loc.slug)}" onclick="switchLocationCityTab('${escapeHtml(loc.slug)}')">` +
+                `<span class="city-name-full">${escapeHtml(full)}${hiddenDot}</span>` +
+                `<span class="city-name-short">${escapeHtml(short)}${hiddenDot}</span>` +
+                `</button>`;
+        }).join('');
+    }
+    window.renderLocationCitySubtabs = renderLocationCitySubtabs;
+
     window.initLandingPageView = function(citySlug) {
-        const targetSlug = citySlug || currentEditingCitySlug || 'petaling-jaya';
+        if (typeof window.applyRoleNavVisibility === 'function') window.applyRoleNavVisibility();
+        renderLocationCitySubtabs();
+        const ordered = getOrderedLocationsList();
+        const fallbackSlug = (ordered[0] && ordered[0].slug) || 'petaling-jaya';
+        const targetSlug = citySlug || currentEditingCitySlug || fallbackSlug;
         window.switchLocationCityTab(targetSlug);
     };
 
     window.switchLocationCityTab = function(slug) {
-        currentEditingCitySlug = slug;
         const allData = getAllLocationSettings();
-        const cityData = allData[slug] || DEFAULT_LOCATION_DATA[slug] || DEFAULT_LOCATION_DATA['petaling-jaya'];
+        const resolvedSlug = allData[slug] ? slug : (Object.keys(allData)[0] || 'petaling-jaya');
+        currentEditingCitySlug = resolvedSlug;
+        const cityData = allData[resolvedSlug] || DEFAULT_LOCATION_DATA[resolvedSlug] || DEFAULT_LOCATION_DATA['petaling-jaya'];
 
-        // Update active tab button
-        const tabBtns = {
-            'petaling-jaya': 'loc-tab-btn-pj',
-            'subang-jaya': 'loc-tab-btn-subang',
-            'shah-alam': 'loc-tab-btn-shahalam',
-            'klang': 'loc-tab-btn-klang'
-        };
-        Object.keys(tabBtns).forEach(k => {
-            const btn = document.getElementById(tabBtns[k]);
-            if (btn) btn.classList.toggle('active', k === slug);
-        });
+        renderLocationCitySubtabs();
 
         // Update header & live preview links
         const cityTitleEl = document.getElementById('loc-editor-city-title');
         if (cityTitleEl) cityTitleEl.textContent = `${cityData.city} Landing Page Settings`;
         const liveUrlEl = document.getElementById('loc-editor-live-url');
         if (liveUrlEl) liveUrlEl.textContent = `/location.html?city=${cityData.slug}`;
+
+        const visPill = document.getElementById('loc-mainpage-visibility-pill');
+        if (visPill) {
+            const isVisible = cityData.showOnMainpage !== false;
+            visPill.className = `loc-vis-pill ${isVisible ? 'is-visible' : 'is-hidden'}`;
+            visPill.innerHTML = isVisible
+                ? '<i class="fa-solid fa-eye"></i> Shown on Mainpage'
+                : '<i class="fa-solid fa-eye-slash"></i> Hidden from Mainpage';
+        }
 
         const previewBtns = [document.getElementById('btn-preview-location-live'), document.getElementById('btn-preview-location-live-top'), document.getElementById('loc-btn-view-live-bottom')];
         previewBtns.forEach(btn => {
@@ -14093,6 +14793,55 @@ function initDashboardApp() {
         if (typeof showToast === 'function') showToast(`Removed "${parkName}"`, 'info');
     };
 
+    // Compress image file client-side before uploading to Supabase Storage
+    async function compressLocationImageFile(file, maxWidth = 1280, quality = 0.82) {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                const img = new Image();
+                img.onload = () => {
+                    const scale = Math.min(1, maxWidth / (img.width || maxWidth));
+                    const w = Math.max(1, Math.round((img.width || maxWidth) * scale));
+                    const h = Math.max(1, Math.round((img.height || 720) * scale));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w;
+                    canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    if (ctx) {
+                        ctx.drawImage(img, 0, 0, w, h);
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                resolve({ blob, dataUrl: canvas.toDataURL('image/jpeg', quality) });
+                            } else {
+                                resolve({ blob: file, dataUrl: ev.target.result });
+                            }
+                        }, 'image/jpeg', quality);
+                    } else {
+                        resolve({ blob: file, dataUrl: ev.target.result });
+                    }
+                };
+                img.onerror = () => resolve({ blob: file, dataUrl: ev.target.result });
+                img.src = ev.target.result;
+            };
+            reader.onerror = () => resolve(null);
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function uploadLocationPhotoToCloud(file, slugPrefix) {
+        const compressed = await compressLocationImageFile(file);
+        if (!compressed) return null;
+        if (window.IndustraSupabase && typeof window.IndustraSupabase.uploadImage === 'function') {
+            const safeSlug = String(slugPrefix || 'loc').replace(/[^a-z0-9_-]/gi, '_');
+            const filename = `location_${safeSlug}_${Date.now()}.jpg`;
+            const res = await window.IndustraSupabase.uploadImage(compressed.blob || compressed.dataUrl, filename);
+            if (res && res.success && res.url) {
+                return res.url;
+            }
+        }
+        return compressed.dataUrl;
+    }
+
     // AI Aerial Drone Earth View Generator
     window.generateAiDroneView = function() {
         const presetDrones = {
@@ -14101,14 +14850,15 @@ function initDashboardApp() {
             'shah-alam': 'assets/images/drone_shahalam.jpg',
             'klang': 'assets/images/drone_klang.jpg'
         };
-        const selectedDrone = presetDrones[currentEditingCitySlug] || 'assets/images/drone_pj.jpg';
+        const selectedDrone = presetDrones[currentEditingCitySlug] || 'assets/images/drone_all.jpg';
         const heroInput = document.getElementById('loc-input-hero-image');
         if (heroInput) heroInput.value = selectedDrone;
         updateLocationHeroPreview(selectedDrone);
 
         const allData = getAllLocationSettings();
-        const cityData = allData[currentEditingCitySlug] || DEFAULT_LOCATION_DATA[currentEditingCitySlug];
+        const cityData = allData[currentEditingCitySlug] || DEFAULT_LOCATION_DATA[currentEditingCitySlug] || { city: currentEditingCitySlug, slug: currentEditingCitySlug };
         cityData.heroImage = selectedDrone;
+        if (!cityData.cardImage) cityData.cardImage = selectedDrone;
         allData[currentEditingCitySlug] = cityData;
         saveAllLocationSettings(allData);
         if (typeof window.logDashboardActivity === 'function') {
@@ -14125,28 +14875,377 @@ function initDashboardApp() {
         }
     };
 
-    // Custom Photo Upload
-    window.handleLocationImageFile = function(fileInput) {
+    // Custom Hero Photo Upload (compressed + uploaded to Supabase Storage when available)
+    window.handleLocationImageFile = async function(fileInput) {
         if (!fileInput || !fileInput.files || !fileInput.files[0]) return;
         const file = fileInput.files[0];
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const dataUrl = e.target.result;
-            const heroInput = document.getElementById('loc-input-hero-image');
-            if (heroInput) heroInput.value = dataUrl;
-            updateLocationHeroPreview(dataUrl);
+        const uploadedUrl = await uploadLocationPhotoToCloud(file, `${currentEditingCitySlug}_hero`);
+        if (!uploadedUrl) return;
 
-            const allData = getAllLocationSettings();
-            const cityData = allData[currentEditingCitySlug] || DEFAULT_LOCATION_DATA[currentEditingCitySlug];
-            cityData.heroImage = dataUrl;
-            allData[currentEditingCitySlug] = cityData;
-            saveAllLocationSettings(allData);
+        const heroInput = document.getElementById('loc-input-hero-image');
+        if (heroInput) heroInput.value = uploadedUrl;
+        updateLocationHeroPreview(uploadedUrl);
 
-            if (typeof showToast === 'function') {
-                showToast(`Custom photo uploaded for ${cityData.city} (Saved to layout)`, 'success');
-            }
+        const allData = getAllLocationSettings();
+        const cityData = allData[currentEditingCitySlug] || DEFAULT_LOCATION_DATA[currentEditingCitySlug] || { city: currentEditingCitySlug, slug: currentEditingCitySlug };
+        cityData.heroImage = uploadedUrl;
+        allData[currentEditingCitySlug] = cityData;
+        saveAllLocationSettings(allData);
+
+        if (typeof showToast === 'function') {
+            showToast(`Custom hero photo uploaded for ${cityData.city}`, 'success');
+        }
+    };
+
+    // ========================================================
+    // ADMINISTRATOR-ONLY LOCATION & MAINPAGE CARD MANAGER
+    // ========================================================
+    const CORE_LOCATION_SLUGS = new Set(['petaling-jaya', 'subang-jaya', 'shah-alam', 'klang']);
+
+    function getManagedLocationFallbackImage(cityName, slug) {
+        const allProps = (typeof properties !== 'undefined' && Array.isArray(properties)) ? properties : safeJsonParse('industria_properties', []);
+        const normCity = String(cityName || '').trim().toLowerCase();
+        const match = allProps.find(p => p && p.status !== 'Inactive' && p.status !== 'Pending' && String(p.location || '').trim().toLowerCase() === normCity && (p.image || (Array.isArray(p.images) && p.images[0])));
+        if (match) {
+            return match.image || match.images[0];
+        }
+        const presetBySlug = {
+            'petaling-jaya': 'assets/images/drone_pj.jpg',
+            'subang-jaya': 'assets/images/drone_subang.jpg',
+            'shah-alam': 'assets/images/drone_shahalam.jpg',
+            'klang': 'assets/images/drone_klang.jpg'
         };
-        reader.readAsDataURL(file);
+        return presetBySlug[slug] || 'assets/images/drone_all.jpg';
+    }
+
+    function renderManagedLocationListingPhotos(cityName, selectedImgUrl) {
+        const wrap = document.getElementById('manage-loc-listing-photos-wrap');
+        const grid = document.getElementById('manage-loc-listing-photos-grid');
+        if (!wrap || !grid) return;
+
+        const normCity = String(cityName || '').trim().toLowerCase();
+        if (!normCity) {
+            wrap.style.display = 'none';
+            grid.innerHTML = '';
+            return;
+        }
+        const allProps = (typeof properties !== 'undefined' && Array.isArray(properties)) ? properties : safeJsonParse('industria_properties', []);
+        const candidates = [];
+        const seenUrls = new Set();
+        allProps.forEach(p => {
+            if (!p || String(p.location || '').trim().toLowerCase() !== normCity) return;
+            const imgs = Array.isArray(p.images) && p.images.length > 0 ? p.images : (p.image ? [p.image] : []);
+            imgs.forEach(url => {
+                if (typeof url === 'string' && url.trim() && !seenUrls.has(url)) {
+                    seenUrls.add(url);
+                    candidates.push({ url, title: p.title || 'Property Photo' });
+                }
+            });
+        });
+
+        if (candidates.length === 0) {
+            wrap.style.display = 'none';
+            grid.innerHTML = '';
+            return;
+        }
+
+        wrap.style.display = 'block';
+        grid.innerHTML = candidates.slice(0, 8).map(item => `
+            <button type="button" class="loc-preset-thumb${selectedImgUrl === item.url ? ' is-selected' : ''}" onclick="selectManagedLocationPreset('${escapeHtml(item.url).replace(/'/g, '&#39;')}')" title="${escapeHtml(item.title)}">
+                <img src="${escapeHtml(item.url)}" alt="${escapeHtml(item.title)}">
+                <span>${escapeHtml(item.title)}</span>
+            </button>
+        `).join('');
+    }
+
+    window.updateManagedLocationPreview = function() {
+        const nameEl = document.getElementById('manage-loc-name');
+        const imgEl = document.getElementById('manage-loc-card-image');
+        const previewImg = document.getElementById('manage-loc-preview-img');
+        const previewTitle = document.getElementById('manage-loc-preview-title');
+
+        const cityName = nameEl ? nameEl.value.trim() : '';
+        const slug = normalizeCityToSlug(cityName);
+        const rawUrl = imgEl ? imgEl.value.trim() : '';
+        const effectiveUrl = rawUrl || getManagedLocationFallbackImage(cityName, slug);
+
+        if (previewTitle) previewTitle.textContent = cityName || 'New Location';
+        if (previewImg) {
+            previewImg.onerror = function() {
+                this.onerror = null;
+                this.src = 'assets/images/drone_all.jpg';
+            };
+            previewImg.src = effectiveUrl;
+        }
+
+        document.querySelectorAll('#manage-loc-presets-grid .loc-preset-thumb, #manage-loc-listing-photos-grid .loc-preset-thumb').forEach(btn => {
+            const img = btn.querySelector('img');
+            const srcAttr = img ? img.getAttribute('src') : '';
+            btn.classList.toggle('is-selected', Boolean(rawUrl && srcAttr === rawUrl));
+        });
+    };
+
+    window.selectManagedLocationPreset = function(url) {
+        if (typeof window.isCurrentAdministrator === 'function' && !window.isCurrentAdministrator()) return;
+        const imgEl = document.getElementById('manage-loc-card-image');
+        if (imgEl) imgEl.value = url || '';
+        window.updateManagedLocationPreview();
+    };
+
+    window.pickBestPropertyPhotoForManagedLocation = function() {
+        if (typeof window.isCurrentAdministrator === 'function' && !window.isCurrentAdministrator()) return;
+        const nameEl = document.getElementById('manage-loc-name');
+        const cityName = nameEl ? nameEl.value.trim() : '';
+        const slug = normalizeCityToSlug(cityName);
+        const picked = getManagedLocationFallbackImage(cityName, slug);
+        const imgEl = document.getElementById('manage-loc-card-image');
+        if (imgEl) imgEl.value = picked;
+        window.updateManagedLocationPreview();
+        if (typeof showToast === 'function') {
+            showToast('Selected best available photo for this location card.', 'info');
+        }
+    };
+
+    window.handleLocationCardImageUpload = async function(fileInput) {
+        if (typeof window.isCurrentAdministrator === 'function' && !window.isCurrentAdministrator()) {
+            alert('Only Administrators can upload Mainpage Location Card photos.');
+            return;
+        }
+        if (!fileInput || !fileInput.files || !fileInput.files[0]) return;
+        const labelEl = document.getElementById('manage-loc-upload-label');
+        if (labelEl) labelEl.textContent = 'Uploading...';
+        try {
+            const nameEl = document.getElementById('manage-loc-name');
+            const slug = normalizeCityToSlug(nameEl ? nameEl.value.trim() : 'location');
+            const url = await uploadLocationPhotoToCloud(fileInput.files[0], `${slug}_card`);
+            if (url) {
+                const imgEl = document.getElementById('manage-loc-card-image');
+                if (imgEl) imgEl.value = url;
+                window.updateManagedLocationPreview();
+                if (typeof showToast === 'function') showToast('Card photo ready!', 'success');
+            }
+        } finally {
+            if (labelEl) labelEl.textContent = 'Upload Photo';
+            fileInput.value = '';
+        }
+    };
+
+    window.openLocationManageModal = function(editSlug = null) {
+        if (typeof window.isCurrentAdministrator === 'function' && !window.isCurrentAdministrator()) {
+            alert('Access Denied: Only Administrators can add or update Locations and Mainpage Card Photos.');
+            return;
+        }
+        const dialog = document.getElementById('manage-location-dialog');
+        if (!dialog) return;
+
+        const allData = getAllLocationSettings();
+        const existing = editSlug ? allData[editSlug] : null;
+        const isEdit = Boolean(existing);
+
+        document.getElementById('manage-loc-editing-slug').value = isEdit ? existing.slug : '';
+        document.getElementById('manage-loc-dialog-title').textContent = isEdit ? `Edit Location — ${existing.city}` : 'Add New Location';
+        document.getElementById('manage-loc-name').value = isEdit ? existing.city : '';
+        document.getElementById('manage-loc-short').value = isEdit ? (existing.shortLabel || '') : '';
+        document.getElementById('manage-loc-state').value = isEdit ? (existing.state || 'Selangor') : 'Selangor';
+        document.getElementById('manage-loc-show-mainpage').checked = isEdit ? (existing.showOnMainpage !== false) : true;
+        document.getElementById('manage-loc-card-image').value = isEdit ? (existing.cardImage || existing.heroImage || '') : 'assets/images/drone_all.jpg';
+        document.getElementById('manage-loc-sync-hero').checked = !isEdit || (existing.cardImage === existing.heroImage);
+
+        const delBtn = document.getElementById('btn-delete-managed-loc');
+        if (delBtn) {
+            delBtn.style.display = (isEdit && !CORE_LOCATION_SLUGS.has(existing.slug)) ? 'inline-flex' : 'none';
+        }
+
+        renderManagedLocationListingPhotos(isEdit ? existing.city : '', document.getElementById('manage-loc-card-image').value);
+        window.updateManagedLocationPreview();
+
+        if (typeof dialog.showModal === 'function') {
+            dialog.showModal();
+        } else {
+            dialog.setAttribute('open', 'true');
+        }
+    };
+
+    window.closeLocationManageModal = function() {
+        const dialog = document.getElementById('manage-location-dialog');
+        if (!dialog) return;
+        if (typeof dialog.close === 'function') dialog.close();
+        else dialog.removeAttribute('open');
+    };
+
+    // Bind native <dialog> close reset & Safari light-dismiss fallback
+    (function setupManageLocationDialog() {
+        const dialog = document.getElementById('manage-location-dialog');
+        if (!dialog) return;
+        dialog.addEventListener('close', () => {
+            dialog.returnValue = '';
+        });
+        if (!('closedBy' in HTMLDialogElement.prototype)) {
+            const isOutside = (e) => {
+                const r = dialog.getBoundingClientRect();
+                return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+            };
+            let pressedOutside = false;
+            dialog.addEventListener('pointerdown', (e) => { pressedOutside = isOutside(e); });
+            dialog.addEventListener('pointerup', (e) => { if (pressedOutside && isOutside(e)) dialog.close(); });
+        }
+    })();
+
+    window.saveManagedLocation = async function(e) {
+        if (e) e.preventDefault();
+        if (typeof window.isCurrentAdministrator === 'function' && !window.isCurrentAdministrator()) {
+            alert('Access Denied: Only Administrators can add or update Locations.');
+            return;
+        }
+
+        const editingSlug = (document.getElementById('manage-loc-editing-slug').value || '').trim();
+        const cityName = (document.getElementById('manage-loc-name').value || '').trim();
+        const shortLabel = (document.getElementById('manage-loc-short').value || '').trim() || cityName;
+        const stateName = (document.getElementById('manage-loc-state').value || '').trim() || 'Selangor';
+        const showOnMainpage = Boolean(document.getElementById('manage-loc-show-mainpage').checked);
+        const syncHero = Boolean(document.getElementById('manage-loc-sync-hero').checked);
+        const cardImageInput = (document.getElementById('manage-loc-card-image').value || '').trim();
+
+        if (!cityName) {
+            alert('Please enter a Location / City Name.');
+            return;
+        }
+
+        const allData = getAllLocationSettings();
+        const newSlug = editingSlug || normalizeCityToSlug(cityName);
+        if (!newSlug) {
+            alert('Please enter a valid location name.');
+            return;
+        }
+
+        // Prevent duplicate location names under different slugs
+        const duplicate = Object.values(allData).find(loc =>
+            loc && loc.slug !== editingSlug && String(loc.city || '').trim().toLowerCase() === cityName.toLowerCase()
+        );
+        if (duplicate) {
+            alert(`Location "${cityName}" already exists.`);
+            return;
+        }
+
+        const existing = allData[newSlug] || {};
+        const oldCityName = existing.city || '';
+        const resolvedCardImg = cardImageInput || existing.cardImage || existing.heroImage || getManagedLocationFallbackImage(cityName, newSlug);
+
+        const updatedEntry = Object.assign({}, existing, {
+            city: cityName,
+            shortLabel,
+            slug: newSlug,
+            state: stateName,
+            showOnMainpage,
+            cardImage: resolvedCardImg,
+            heroImage: (syncHero || !existing.heroImage) ? resolvedCardImg : existing.heroImage,
+            suggestedDimensions: existing.suggestedDimensions || '1920 × 800 px (16:9 ratio, min 1200 × 630 px, max 5MB)',
+            headline: existing.headline || `${cityName} Industrial Properties & Warehouses For Sale & Rent`,
+            tagline: existing.tagline || `Verified factories, logistics warehouses, and industrial land across ${cityName}, ${stateName}.`,
+            metaTitle: existing.metaTitle || `${cityName} Industrial Properties, Factories & Warehouses | MyFactorySpace`,
+            metaDescription: existing.metaDescription || `Browse verified industrial factories, warehouses, and industrial land for sale and rent in ${cityName}.`,
+            seoSummary: existing.seoSummary || `${cityName} is a growing industrial and logistics destination in ${stateName}, offering strategic expressway access for manufacturing, warehousing, and corporate operations.`,
+            stats: existing.stats || {
+                highways: 'Major Klang Valley Expressways',
+                portDist: '35 Mins to Port Klang',
+                airportDist: '30 Mins to KLIA / SZB'
+            },
+            industrialParks: Array.isArray(existing.industrialParks) ? existing.industrialParks : []
+        });
+
+        allData[newSlug] = updatedEntry;
+        saveAllLocationSettings(allData);
+
+        // Ensure locationPriorityOrder reflects the new/renamed location
+        const orderArr = Array.isArray(settings.locationPriorityOrder) ? [...settings.locationPriorityOrder] : ['Petaling Jaya', 'Subang Jaya', 'Shah Alam', 'Klang'];
+        if (oldCityName && oldCityName !== cityName) {
+            const oldIdx = orderArr.findIndex(x => String(x).toLowerCase() === oldCityName.toLowerCase());
+            if (oldIdx !== -1) orderArr[oldIdx] = cityName;
+        }
+        if (!orderArr.some(x => String(x).toLowerCase() === cityName.toLowerCase())) {
+            orderArr.push(cityName);
+        }
+        settings.locationPriorityOrder = orderArr;
+        pendingLocationPriorityOrder = [...orderArr];
+        localStorage.setItem('industria_settings', JSON.stringify(settings));
+        await saveGeneralSettingsToSupabase();
+
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Landing Page',
+                action: editingSlug ? 'Edit' : 'Add',
+                target: cityName,
+                details: `${editingSlug ? 'Updated' : 'Added'} location "${cityName}" (Mainpage: ${showOnMainpage ? 'Visible' : 'Hidden'})`
+            });
+        }
+
+        syncDashboardLocationSelects();
+        if (typeof renderFeaturedPrioritySettings === 'function') renderFeaturedPrioritySettings(settings);
+        window.switchLocationCityTab(newSlug);
+        window.closeLocationManageModal();
+
+        if (typeof showToast === 'function') {
+            showToast(`Location "${cityName}" saved and synced across Mainpage & Dashboard!`, 'success');
+        }
+    };
+
+    window.deleteManagedLocation = async function() {
+        if (typeof window.isCurrentAdministrator === 'function' && !window.isCurrentAdministrator()) {
+            alert('Access Denied: Only Administrators can delete Locations.');
+            return;
+        }
+        const slug = (document.getElementById('manage-loc-editing-slug').value || '').trim();
+        if (!slug || CORE_LOCATION_SLUGS.has(slug)) {
+            alert('Core locations cannot be deleted. You can uncheck "Show on Mainpage & Search" instead.');
+            return;
+        }
+
+        const allData = getAllLocationSettings();
+        const target = allData[slug];
+        if (!target) return;
+        const cityLower = String(target.city || '').trim().toLowerCase();
+
+        const allProps = (typeof properties !== 'undefined' && Array.isArray(properties)) ? properties : safeJsonParse('industria_properties', []);
+        const usedByProp = allProps.some(p => p && String(p.location || '').trim().toLowerCase() === cityLower);
+        const activeParksObj = (typeof parks !== 'undefined' && parks && typeof parks === 'object') ? parks : safeJsonParse('industria_industrial_parks', {});
+        const usedByPark = Object.keys(activeParksObj).some(c => c.trim().toLowerCase() === cityLower && Array.isArray(activeParksObj[c]) && activeParksObj[c].length > 0);
+
+        if (usedByProp || usedByPark) {
+            alert(`Cannot delete "${target.city}" while properties or industrial parks are still assigned to it. Reassign them first, or uncheck "Show on Mainpage & Search" to hide it.`);
+            return;
+        }
+
+        if (!confirm(`Delete location "${target.city}"? This removes it from dropdowns, Mainpage cards, and Landing Pages.`)) {
+            return;
+        }
+
+        delete allData[slug];
+        saveAllLocationSettings(allData);
+
+        settings.locationPriorityOrder = (Array.isArray(settings.locationPriorityOrder) ? settings.locationPriorityOrder : []).filter(
+            x => String(x).trim().toLowerCase() !== cityLower
+        );
+        pendingLocationPriorityOrder = [...settings.locationPriorityOrder];
+        localStorage.setItem('industria_settings', JSON.stringify(settings));
+        await saveGeneralSettingsToSupabase();
+
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Landing Page',
+                action: 'Delete',
+                target: target.city,
+                details: `Deleted custom location "${target.city}"`
+            });
+        }
+
+        syncDashboardLocationSelects();
+        if (typeof renderFeaturedPrioritySettings === 'function') renderFeaturedPrioritySettings(settings);
+        window.closeLocationManageModal();
+        window.switchLocationCityTab('petaling-jaya');
+
+        if (typeof showToast === 'function') {
+            showToast(`Deleted location "${target.city}".`, 'info');
+        }
     };
 
     // Generate AI SEO Summary & Meta targeting Google Position #1
@@ -14276,7 +15375,4290 @@ function initDashboardApp() {
         }
     };
 
+    // ========================================================
+    // CRM MARKET INSIGHTS & AUTOMATED ARTICLE ENGINE
+    // ========================================================
+    const INSIGHTS_STORAGE_KEY = 'industria_insights_articles';
+    const INSIGHTS_AUTO_KEY = 'industria_insights_automation';
+
+    const DEFAULT_CRM_INSIGHTS = [
+        {
+            id: 'ins_pj_sec51_guide',
+            slug: 'petaling-jaya-section-51-51a-industrial-transformation',
+            title: 'Petaling Jaya Section 51 & 51A: Why Urban Last-Mile Logistics & Corporate Factories Command Premium Yields',
+            category: 'Key Industrial Areas',
+            targetCity: 'Petaling Jaya',
+            targetType: 'Semi-Detached Factory',
+            coverImage: 'assets/images/drone_pj.jpg',
+            authorName: 'Marcus Chen',
+            authorAvatar: 'assets/images/agent_marcus.jpg',
+            publishedAt: '2026-11-18',
+            readTime: '6 min read',
+            featured: true,
+            status: 'Published',
+            autoGenerated: false,
+            excerpt: 'Strategically straddling the Federal Highway, NPE, and LDP, Petaling Jaya Section 51 and 51A remain Selangor’s highest-demand urban industrial belt for corporate showrooms, MNC headquarters, and same-day KL fulfillment.',
+            keyTakeaways: [
+                'Section 51 & 51A sit 15 minutes from Kuala Lumpur City Centre and 30 minutes from Port Klang via Federal Highway and NPE.',
+                'Modernized 3-storey semi-detached corporate factories typically offer 150–200 Amp 3-phase power and 1-ton cargo lifts.',
+                'Limited new industrial land supply keeps capital appreciation resilient and vacancy rates low for move-in-ready units.'
+            ],
+            body: `## Strategic Urban Positioning in Klang Valley\nPetaling Jaya’s established industrial belt—anchored by **Section 51**, **Section 51A**, **Section 13**, and **PJS 5**—serves as the primary operational bridge between central Kuala Lumpur consumer demand and Port Klang haulage corridors.\n\n## What Corporate Occupiers Should Verify Before Signing\n- Confirm **CCC / CF validity** and whether internal mezzanine extensions are council-approved.\n- Verify **66ft road reserve clearance** if your fleet operates 40ft articulated container trailers.\n- Check incoming **TNB 3-phase amp capacity** against HVAC, cold-room, or CNC machinery peak loads.\n\nExplore active listings in our [Petaling Jaya Industrial Hub](location.html?city=petaling-jaya) or [browse all Semi-Detached Factories](properties.html?location=Petaling+Jaya&type=Semi-Detached+Factory#browse-properties).`,
+            faqs: [
+                {
+                    q: 'Can 40ft container trucks enter PJ Section 51 & 51A?',
+                    a: 'Yes, main arterial roads such as Jalan Tandang and Jalan 51A/225 feature wide carriageways designed for commercial container haulage.'
+                }
+            ]
+        },
+        {
+            id: 'ins_power_floor_spec_guide',
+            slug: 'factory-power-supply-amp-and-floor-loading-guide-selangor',
+            title: 'How to Spec a Malaysian Factory: TNB Power (Amp), Floor Loading (kN/m²) & Ceiling Height Explained',
+            category: 'Industry Guide',
+            targetCity: 'Klang Valley',
+            targetType: 'Detached Factory',
+            coverImage: 'assets/images/drone_factory_estate.jpg',
+            authorName: 'MyFactorySpace Technical Desk',
+            authorAvatar: 'assets/images/agent_david.jpg',
+            publishedAt: '2026-11-15',
+            readTime: '7 min read',
+            featured: false,
+            status: 'Published',
+            autoGenerated: false,
+            excerpt: 'Choosing the wrong slab thickness or electrical substation rating can stall commissioning for months. Use this engineering benchmark table before shortlisting factories or warehouses in Selangor.',
+            keyTakeaways: [
+                'Light assembly and B2B showrooms generally run smoothly on 100–200 Amp 3-phase power and 5–10 kN/m² floor slabs.',
+                'High-bay racking and ASRS automated warehouses require 20–50 kN/m² reinforced slabs and 30–45 ft clear eave height.',
+                'Upgrading TNB power above 300 Amp often requires a dedicated substation room and 4–8 months lead time.'
+            ],
+            body: `## Electrical Power Capacity & Slab Loading\nVerify the **approved incoming TNB supply** and structural slab rating before installing heavy CNC machinery or multi-tier racking.\n\nBrowse verified listings with published power and floor load data on [MyFactorySpace Properties](properties.html#browse-properties).`,
+            faqs: [
+                {
+                    q: 'How long does a TNB power upgrade take in Selangor?',
+                    a: 'Upgrading within existing cable capacity takes 4–8 weeks, while installing a new compact substation typically requires 4 to 9 months.'
+                }
+            ]
+        }
+    ];
+
+    function getAllInsightArticles() {
+        try {
+            const raw = localStorage.getItem(INSIGHTS_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (e) {}
+        return DEFAULT_CRM_INSIGHTS.map(item => JSON.parse(JSON.stringify(item)));
+    }
+
+    function saveAllInsightArticles(list) {
+        const clean = Array.isArray(list) ? list : [];
+        try {
+            localStorage.setItem(INSIGHTS_STORAGE_KEY, JSON.stringify(clean));
+        } catch (e) {}
+        if (window.IndustraSupabase && typeof window.IndustraSupabase.upsertSiteSetting === 'function') {
+            window.IndustraSupabase.upsertSiteSetting('insights_articles', clean).catch(e => console.warn('Supabase insights sync:', e));
+        }
+    }
+
+    function getInsightsAutomationSettings() {
+        const defaults = {
+            cadence: 'weekly',
+            mode: 'Draft',
+            edition: 'specialized',
+            contentSource: 'inventory',
+            includeMindMap: true,
+            includeInfographic: true,
+            focusCity: '',
+            focusTopic: 'auto',
+            publicQuery: 'Malaysia Klang Valley industrial property warehouse factory',
+            publicCity: '',
+            publicAngle: 'executive',
+            defaultWebsiteUrl: '',
+            lastGeneratedAt: null,
+            topicIndex: 0
+        };
+        try {
+            const raw = localStorage.getItem(INSIGHTS_AUTO_KEY);
+            if (raw) return Object.assign({}, defaults, JSON.parse(raw));
+        } catch (e) {}
+        return defaults;
+    }
+
+    function saveInsightsAutomationConfig(cfg) {
+        try {
+            localStorage.setItem(INSIGHTS_AUTO_KEY, JSON.stringify(cfg));
+        } catch (e) {}
+        if (window.IndustraSupabase && typeof window.IndustraSupabase.upsertSiteSetting === 'function') {
+            window.IndustraSupabase.upsertSiteSetting('insights_automation_settings', cfg).catch(e => console.warn('Supabase insights automation sync:', e));
+        }
+    }
+
+    function estimateInsightReadTime(bodyText) {
+        const words = String(bodyText || '').trim().split(/\s+/).filter(Boolean).length;
+        return `${Math.max(3, Math.ceil(words / 180))} min read`;
+    }
+
+    function slugifyInsight(text) {
+        return String(text || '')
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/(^-|-$)/g, '')
+            .slice(0, 88);
+    }
+
+    function parsePriceNumForInsights(priceStr) {
+        const num = parseFloat(String(priceStr || '').replace(/[^0-9.]/g, ''));
+        return isNaN(num) ? 0 : num;
+    }
+
+    function formatShortRm(num) {
+        if (!num || isNaN(num)) return '';
+        if (num >= 1000000) return `RM ${(num / 1000000).toFixed(1).replace(/\.0$/, '')}M`;
+        if (num >= 1000) return `RM ${Math.round(num / 1000)}K`;
+        return `RM ${num.toLocaleString()}`;
+    }
+
+    function getEditionLensCopy(edition, cityName) {
+        const city = cityName || 'Klang Valley';
+        if (edition === 'investor') {
+            return {
+                badge: 'Investor & Yield Playbook',
+                titleTag: 'Yield & Capital Playbook',
+                angleLine: `Built for industrial investors and owner-occupiers benchmarking rental yields, tenure resilience, and long-term appreciation across **${city}**.`,
+                verdictPrefix: 'Investor Verdict'
+            };
+        }
+        if (edition === 'compliance') {
+            return {
+                badge: 'Technical & Compliance Blueprint',
+                titleTag: 'Specs & Compliance Blueprint',
+                angleLine: `Engineered for plant directors, EHS leads, and logistics engineers verifying **TNB 3-phase power, slab loading (kN/m²), BOMBA Fire Certificate, and DOE zoning** in **${city}**.`,
+                verdictPrefix: 'Engineering Verdict'
+            };
+        }
+        return {
+            badge: 'Specialized Executive Brief',
+            titleTag: 'Executive Guide',
+            angleLine: `Clear-cut decision briefing for operations directors and corporate buyers evaluating verified industrial space in **${city}**—structured for a 3-minute executive scan.`,
+            verdictPrefix: 'Bottom-Line Verdict'
+        };
+    }
+
+    function buildAutomatedInsightDraft(options = {}) {
+        const allProps = (typeof properties !== 'undefined' && Array.isArray(properties)) ? properties : safeJsonParse('industria_properties', []);
+        const activeProps = allProps.filter(p => p && p.status !== 'Inactive' && p.status !== 'Pending');
+        const activeParksObj = (typeof parks !== 'undefined' && parks && typeof parks === 'object') ? parks : safeJsonParse('industria_industrial_parks', {});
+        const locSettings = getAllLocationSettings();
+        const locs = Object.values(locSettings).filter(l => l && l.city);
+        const existingArticles = getAllInsightArticles();
+        const existingSlugs = new Set(existingArticles.map(a => String(a.slug || '').toLowerCase()));
+
+        const autoCfg = getInsightsAutomationSettings();
+        const edition = options.edition || autoCfg.edition || 'specialized';
+        const visualStyle = options.visualStyle || autoCfg.visualStyle || 'mindmap-photo';
+        const preferredTopic = options.preferredTopic || 'auto';
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const yearStr = new Date().getFullYear();
+
+        const candidates = [];
+
+        // 1. Live Location Focus Snapshots (Clear-Cut Specialized Format + 4-Pillar Mind Map)
+        locs.forEach(loc => {
+            const cityProps = activeProps.filter(p => String(p.location || '').trim().toLowerCase() === loc.city.toLowerCase());
+            const cityParks = Array.isArray(activeParksObj[loc.city]) ? activeParksObj[loc.city].map(pk => (typeof pk === 'object' ? pk.name : pk)).filter(Boolean) : [];
+            const saleProps = cityProps.filter(p => (p.intent || '').toLowerCase() === 'sale' || (!String(p.price || '').toLowerCase().includes('mo') && String(p.price || '').trim() !== ''));
+            const rentProps = cityProps.filter(p => (p.intent || '').toLowerCase() === 'rent' || String(p.price || '').toLowerCase().includes('mo'));
+            const salePrices = saleProps.map(p => parsePriceNumForInsights(p.price)).filter(v => v > 0);
+            const rentPrices = rentProps.map(p => parsePriceNumForInsights(p.price)).filter(v => v > 0);
+            const minSale = salePrices.length ? `RM ${Math.min(...salePrices).toLocaleString()}` : 'RM 5,500,000+';
+            const maxSale = salePrices.length ? `RM ${Math.max(...salePrices).toLocaleString()}` : 'RM 28,000,000+';
+            const minRent = rentPrices.length ? `RM ${Math.min(...rentPrices).toLocaleString()} / mo` : 'RM 15,000 / mo';
+            const maxRent = rentPrices.length ? `RM ${Math.max(...rentPrices).toLocaleString()} / mo` : 'RM 65,000 / mo';
+            const shortRentMetric = rentPrices.length
+                ? `${formatShortRm(Math.min(...rentPrices))} – ${formatShortRm(Math.max(...rentPrices))}/mo`
+                : 'RM 15K – 65K/mo';
+            const powers = cityProps.map(p => parseInt(String(p.power || '').replace(/[^0-9]/g, ''), 10)).filter(n => !isNaN(n) && n > 0);
+            const powerSummary = powers.length ? `${Math.min(...powers)}–${Math.max(...powers)} Amp` : '150–400 Amp';
+            const topParksArr = cityParks.slice(0, 4);
+            const topParksStr = topParksArr.join(', ') || `${loc.city} Prime Industrial Estates`;
+            const highways = (loc.stats && loc.stats.highways) || 'Federal Highway, KESAS, NKVE';
+            const portDist = (loc.stats && loc.stats.portDist) || '25–35 mins to Port Klang';
+            const lens = getEditionLensCopy(edition, loc.city);
+
+            const title = `${loc.city} Industrial Property ${lens.titleTag} (${yearStr}): Pricing, Power & Top Parks`;
+            const slug = slugifyInsight(`${loc.slug}-industrial-${edition}-guide-${yearStr}`);
+            const cover = loc.cardImage || loc.heroImage || 'assets/images/drone_all.jpg';
+
+            candidates.push({
+                topicKey: 'city-snapshot',
+                slug,
+                title,
+                category: 'Location Focus',
+                targetCity: loc.city,
+                targetType: (cityProps[0] && cityProps[0].type) || 'Semi-Detached Factory',
+                coverImage: cover,
+                edition,
+                visualStyle,
+                excerpt: `Clear-cut ${loc.city} industrial briefing: ${cityProps.length} live verified listings (${saleProps.length} Sale / ${rentProps.length} Rent), ${powerSummary} 3-phase power benchmarks, and top parks including ${topParksStr}.`,
+                keyTakeaways: [
+                    `Active Supply: ${cityProps.length} verified ${loc.city} units tracked live on MyFactorySpace (${saleProps.length} Sale, ${rentProps.length} Rent).`,
+                    `Power & Specs: Standard units deliver ${powerSummary} 3-phase TNB power with fast container access via ${highways}.`,
+                    `Top Industrial Hubs: ${topParksStr} lead demand for logistics, corporate factories, and manufacturing.`
+                ],
+                mindMap: {
+                    centerTitle: `${loc.city} Industrial Hub`,
+                    centerSubtitle: `${lens.badge} · ${yearStr}`,
+                    edition,
+                    branches: [
+                        {
+                            title: 'Pricing & Live Supply',
+                            metric: shortRentMetric,
+                            color: '#059669',
+                            points: [
+                                `${cityProps.length} verified listings (${saleProps.length} Sale / ${rentProps.length} Rent)`,
+                                `Sale benchmark: ${minSale} – ${maxSale}`,
+                                'Direct-owner specs with transparent pricing'
+                            ]
+                        },
+                        {
+                            title: 'Core Tech Specs',
+                            metric: powerSummary,
+                            color: '#2563eb',
+                            points: [
+                                `3-phase TNB incoming power (${powerSummary})`,
+                                `Expressway links: ${highways}`,
+                                `Port connectivity: ${portDist}`
+                            ]
+                        },
+                        {
+                            title: 'Prime Industrial Parks',
+                            metric: `${cityParks.length || 3}+ Covered Parks`,
+                            color: '#7c3aed',
+                            points: topParksArr.length
+                                ? topParksArr.slice(0, 3)
+                                : [`${loc.city} Main Industrial Zone`, 'Corporate Semi-D & Detached Hubs', '40ft container road reserves']
+                        },
+                        {
+                            title: 'Clear-Cut Action Plan',
+                            metric: '3-Step Checklist',
+                            color: '#d97706',
+                            points: [
+                                'Confirm Light/Medium DOE zoning & CCC',
+                                'Match incoming Amp & floor slab kN/m²',
+                                'Schedule walkthrough with area specialist'
+                            ]
+                        }
+                    ]
+                },
+                body: `## At-a-Glance Executive Snapshot\n${lens.angleLine}\n\n${loc.city} sits along ${loc.state || 'Selangor'}’s core industrial corridor—connected directly to **${highways}** and **${portDist}**. Below is the clear-cut snapshot from live MyFactorySpace inventory.\n\n## Quick Decision Matrix (${loc.city})\n| Decision Factor | Verified ${loc.city} Benchmark | Why It Matters |\n| --- | --- | --- |\n| Live Verified Supply | ${cityProps.length} active units (${saleProps.length} Sale / ${rentProps.length} Rent) | Immediate move-in availability |\n| Monthly Rental Range | ${minRent} – ${maxRent} | Predictable operating budget |\n| Purchase Price Range | ${minSale} – ${maxSale} | Long-term capital stability |\n| Incoming TNB Power | ${powerSummary} 3-Phase | Avoids 4–8 month substation delays |\n| Key Industrial Parks | ${topParksStr} | Proven road reserve & truck access |\n\n## 3-Step Buyer & Tenant Action Plan\n1. **Lock Core Specs First:** Define minimum clear height (ft), floor loading (kN/m²), and peak power (Amp) before viewing.\n2. **Shortlist Verified Parks:** Focus on **${topParksStr}** where CCC, 66ft road reserves, and 40ft container turning radii are proven.\n3. **Run Technical Walkthrough:** Verify switchboard amp tags, BOMBA sprinkler certification, and tenancy fit-out periods upfront.\n\n## Essential Red-Flag Checks\n- **Zoning Match:** Verify the unit’s land title (Light, Medium, or Heavy Industrial) aligns with your PBT & DOE licensing.\n- **Approved Extensions:** Confirm mezzanine floors or rear loading canopies carry council approval and valid CCC.\n- **Container Circulation:** Inspect driveway width and dock height during peak daytime traffic.\n\n> **${lens.verdictPrefix}:** Choose **${loc.city}** when fast expressway dispatch (${highways}) and verified **${powerSummary}** move-in-ready factories matter more than greenfield build times.\n\nExplore the [${loc.city} Location Directory](location.html?city=${encodeURIComponent(loc.slug)}) or browse [${loc.city} Industrial Listings](properties.html?location=${encodeURIComponent(loc.city)}#browse-properties).`,
+                faqs: [
+                    { q: `What industrial formats are most active in ${loc.city}?`, a: `${loc.city} offers detached factories, corporate semi-detached units, and logistics warehouses concentrated across ${topParksStr}.` },
+                    { q: `How quickly can we inspect verified units in ${loc.city}?`, a: `Shortlist units directly on MyFactorySpace and message the assigned ${loc.city} specialist via WhatsApp for same-week technical walkthroughs.` }
+                ]
+            });
+        });
+
+        // 2. Industrial Park Deep-Dives for Parks with Active Listings
+        Object.keys(activeParksObj).forEach(cityName => {
+            const arr = Array.isArray(activeParksObj[cityName]) ? activeParksObj[cityName] : [];
+            arr.forEach(pk => {
+                const pkName = typeof pk === 'object' ? pk.name : pk;
+                if (!pkName || (typeof pk === 'object' && pk.hidden)) return;
+                const pkProps = activeProps.filter(p => String(p.park || '').trim().toLowerCase() === pkName.toLowerCase());
+                if (pkProps.length === 0) return;
+                const locObj = locs.find(l => l.city.toLowerCase() === cityName.toLowerCase());
+                const cover = (pkProps[0] && pkProps[0].image) || (locObj && locObj.cardImage) || 'assets/images/drone_factory_estate.jpg';
+                const lens = getEditionLensCopy(edition, `${pkName}, ${cityName}`);
+                const title = `${pkName} (${cityName}): Clear-Cut Industrial Park Guide & Live Units`;
+                const slug = slugifyInsight(`${pkName}-${cityName}-${edition}-park-guide`);
+                const typesStr = pkProps.map(p => p.type).filter(Boolean).filter((v, i, a) => a.indexOf(v) === i).slice(0, 3).join(', ') || 'Industrial Facilities';
+
+                candidates.push({
+                    topicKey: 'park-deepdive',
+                    slug,
+                    title,
+                    category: 'Key Industrial Areas',
+                    targetCity: cityName,
+                    targetType: pkProps[0].type || 'Semi-Detached Factory',
+                    coverImage: cover,
+                    edition,
+                    visualStyle,
+                    excerpt: `Executive park breakdown for ${pkName} in ${cityName}: ${pkProps.length} active verified unit${pkProps.length === 1 ? '' : 's'}, built-up sizes, asking rates, and site due-diligence steps.`,
+                    keyTakeaways: [
+                        `${pkName} sits inside ${cityName}${pkProps[0].section ? ' (' + pkProps[0].section + ')' : ''} with proven commercial truck access.`,
+                        `${pkProps.length} live MyFactorySpace listing${pkProps.length === 1 ? '' : 's'} currently available across ${typesStr}.`,
+                        `Ideal for corporate warehousing, regional distribution, and clean-to-medium manufacturing.`
+                    ],
+                    mindMap: {
+                        centerTitle: pkName,
+                        centerSubtitle: `${cityName} · ${pkProps.length} Live Unit${pkProps.length === 1 ? '' : 's'}`,
+                        edition,
+                        branches: [
+                            {
+                                title: 'Park Profile',
+                                metric: cityName,
+                                color: '#059669',
+                                points: [
+                                    `District: ${cityName}${pkProps[0].section ? ' · ' + pkProps[0].section : ''}`,
+                                    `Active formats: ${typesStr}`,
+                                    'Established industrial ecosystem'
+                                ]
+                            },
+                            {
+                                title: 'Live Unit Specs',
+                                metric: `${pkProps.length} Verified Unit${pkProps.length === 1 ? '' : 's'}`,
+                                color: '#2563eb',
+                                points: pkProps.slice(0, 3).map(p => `${p.type || 'Factory'}: ${p.size || p.builtUp || p.landArea || 'Verified specs'} (${p.price || 'POA'})`)
+                            },
+                            {
+                                title: 'Ideal Operations',
+                                metric: 'Best Fit Uses',
+                                color: '#7c3aed',
+                                points: [
+                                    'Regional 3PL & e-commerce fulfillment',
+                                    'Corporate showroom + assembly HQ',
+                                    'Precision manufacturing & B2B trade'
+                                ]
+                            },
+                            {
+                                title: 'Site Inspection Steps',
+                                metric: 'Pre-Sign Checks',
+                                color: '#d97706',
+                                points: [
+                                    'Confirm CCC & mezzanine approvals',
+                                    'Check incoming TNB amp switchboard',
+                                    'Inspect 40ft container turning bay'
+                                ]
+                            }
+                        ]
+                    },
+                    body: `## At-a-Glance Park Snapshot\n${lens.angleLine}\n\n**${pkName}** in **${cityName}** is a high-demand industrial estate favored by corporate occupiers who need reliable road reserves, verified utility infrastructure, and immediate Klang Valley highway links.\n\n## Live Available Units at ${pkName}\n| Property | Type | Land Area | Built-Up | Asking Rate |\n| --- | --- | --- | --- | --- |\n${pkProps.slice(0, 5).map(p => `| ${p.title} | ${p.type || 'Factory'} | ${p.landArea || 'N/A'} | ${p.size || p.builtUp || 'N/A'} | ${p.price || 'Upon Request'} |`).join('\n')}\n\n## 3-Step Shortlist Action Plan\n1. **Compare Built-Up vs Land Ratio:** Decide whether your fleet needs extra open yard space or maximum covered warehouse floor.\n2. **Verify Utility & Floor Specs:** Cross-check electrical Amp rating and floor slab loading against your racking or machinery layout.\n3. **Book Direct Owner Viewing:** Coordinate directly through our assigned **${cityName}** specialist to negotiate fit-out rent-free terms.\n\n> **${lens.verdictPrefix}:** **${pkName}** delivers turnkey infrastructure in **${cityName}** with ${pkProps.length} active unit${pkProps.length === 1 ? '' : 's'} ready for immediate inspection.\n\nView all matching units in [${pkName} on MyFactorySpace](properties.html?location=${encodeURIComponent(cityName)}&park=${encodeURIComponent(pkName)}#browse-properties).`,
+                    faqs: [
+                        { q: `What property formats are available in ${pkName}?`, a: `${pkName} currently features ${typesStr} verified directly with owners.` },
+                        { q: `Can I request full floor plans and TNB specs for ${pkName}?`, a: `Yes—contact the assigned ${cityName} specialist via WhatsApp to receive the e-brochure and technical spec sheet.` }
+                    ]
+                });
+            });
+        });
+
+        // 3. Specialized Industry, Technical & Compliance Blueprints (All with 4-Pillar Mind Maps)
+        const targetCityFocus = (options.preferredCity && options.preferredCity !== 'All') ? options.preferredCity : 'Klang Valley';
+        const cityLens = getEditionLensCopy(edition, targetCityFocus);
+        const sectorTemplates = [
+            {
+                topicKey: 'warehouse-format',
+                slug: `detached-vs-semi-detached-warehouse-blueprint-${yearStr}`,
+                title: `Detached vs Semi-Detached vs Multi-Storey Warehouses (${yearStr}): Clear-Cut Format Guide`,
+                category: 'Sector Analysis',
+                targetCity: targetCityFocus,
+                targetType: 'Detached Warehouse',
+                coverImage: 'assets/images/drone_logistics_park.jpg',
+                edition,
+                visualStyle,
+                excerpt: 'Stop guessing warehouse formats: compare 360° container yards, clear eave heights, dock levellers, and monthly rent economics across Klang Valley logistics hubs.',
+                keyTakeaways: [
+                    'Detached warehouses deliver private 360° container circulation and highest dock-to-sqft speed for 3PL & cold chain.',
+                    'Semi-detached warehouses cut monthly rent by 20–35% for 10,000–25,000 sqft urban fulfillment hubs.',
+                    'Multi-storey ramp-up facilities solve prime urban scarcity with direct 40ft container bay access.'
+                ],
+                mindMap: {
+                    centerTitle: 'Warehouse Format Matrix',
+                    centerSubtitle: `${targetCityFocus} · 3PL & Logistics`,
+                    edition,
+                    branches: [
+                        {
+                            title: 'Detached Warehouse',
+                            metric: '35–45+ ft Clear',
+                            color: '#059669',
+                            points: ['Private 360° compound & security', 'Multiple hydraulic dock levellers', 'Best for 3PL, FMCG & cold chain']
+                        },
+                        {
+                            title: 'Semi-Detached Unit',
+                            metric: '28–35 ft Clear',
+                            color: '#2563eb',
+                            points: ['20–35% lower fixed occupancy cost', 'Ideal for 10K–25K sqft urban hubs', 'Corporate showroom + storage split']
+                        },
+                        {
+                            title: 'Multi-Storey Ramp-Up',
+                            metric: 'Direct Bay Ramp',
+                            color: '#7c3aed',
+                            points: ['40ft trucks drive straight to dock', 'High cubic pallet density near KL', 'Shared security & ESG solar roofs']
+                        },
+                        {
+                            title: '3-Step Selection Rule',
+                            metric: 'Fast Decision',
+                            color: '#d97706',
+                            points: ['Count daily 40ft truck turns first', 'Check 25–40 kN/m² racking slab', 'Factor drayage time to Port Klang']
+                        }
+                    ]
+                },
+                body: `## At-a-Glance Executive Snapshot\n${cityLens.angleLine}\n\nChoosing the wrong warehouse format creates hidden fleet bottlenecks and wasted vertical cube. Use this side-by-side matrix to match your exact throughput to the right Klang Valley building format.\n\n## Quick Decision Matrix\n| Key Metric | Detached Warehouse | Semi-Detached Warehouse | Multi-Storey Ramp-Up |\n| --- | --- | --- | --- |\n| Truck Circulation | 360° private yard | Front / side driveway | Wide ramp to upper bays |\n| Typical Clear Height | 35 – 45+ ft | 28 – 35 ft | 30 – 40 ft |\n| Floor Slab Rating | 25 – 50 kN/m² | 10 – 25 kN/m² | 20 – 35 kN/m² |\n| Best Fit | Regional 3PL, FMCG, Cold Chain | Urban B2B & 10K–25K sqft hubs | E-commerce & high-bay fulfillment |\n\n## 3-Step Selection Plan\n1. **Map Daily Truck Volume:** More than 8 articulated container movements per day usually justifies a **Detached** or **Ramp-Up** dock bay.\n2. **Calculate Usable Cubic Volume:** Measure height under the lowest sprinkler/beam—a 40ft clear ceiling holds up to 40% more pallets than 25ft.\n3. **Benchmark Total Landed Cost:** Combine monthly rent + container drayage distance from Port Klang and KL customer clusters.\n\n## Essential Red-Flag Checks\n- **Dock Leveller Load:** Confirm hydraulic leveller capacity (6–10 ton) and 1.3m raised floor alignment.\n- **Fire Sprinklers:** Verify ESFR sprinkler readiness if stacking cartons above 4–5 racking tiers.\n- **Traffic Bottlenecks:** Test access road entry during 8am–10am commercial dispatch hours.\n\n> **${cityLens.verdictPrefix}:** Pick **Semi-Detached** for lean urban distribution under 25,000 sqft; upgrade to **Detached** or **Multi-Storey Ramp-Up** once daily 40ft container turnarounds drive your margin.\n\nBrowse [All Warehouse Listings](properties.html?type=Warehouse#browse-properties) on www.myfactoryspace.com.`,
+                faqs: [
+                    { q: 'What floor loading is needed for 6-tier selective pallet racking?', a: 'Plan for at least 25 to 35 kN/m² (2.5 to 3.5 tons/m²) reinforced floor slabs, and verify racking upright baseplate point loads with the structural spec.' },
+                    { q: 'Are multi-storey warehouses accessible by 40ft containers?', a: 'Modern Grade-A ramp-up warehouses in Subang Jaya, Shah Alam, and Klang are specifically engineered for 40ft container trailers to reach upper loading bays.' }
+                ]
+            },
+            {
+                topicKey: 'power-floor',
+                slug: `factory-power-amp-floor-loading-clear-guide-${yearStr}`,
+                title: `Factory Engineering Spec Guide (${yearStr}): TNB Power (Amp), Floor Load (kN/m²) & Ceiling Height`,
+                category: 'Industry Guide',
+                targetCity: targetCityFocus,
+                targetType: 'Detached Factory',
+                coverImage: 'assets/images/drone_factory_estate.jpg',
+                edition,
+                visualStyle,
+                excerpt: 'Easy-to-understand engineering cheat sheet: match your production line or racking system to the exact TNB Amp capacity, slab load (kN/m² vs ton/m²), and clear ceiling height.',
+                keyTakeaways: [
+                    'Rule of thumb: 10 kN/m² equals ~1.0 ton/m² of uniform floor loading.',
+                    'Light assembly runs well on 100–200 Amp; heavy CNC, plastics, or cold storage require 400–1,000+ Amp.',
+                    'Upgrading TNB power above 300 Amp can take 4–9 months—always verify existing incoming amps before signing.'
+                ],
+                mindMap: {
+                    centerTitle: 'Factory Spec Cheat Sheet',
+                    centerSubtitle: 'Power · Slab · Clear Height',
+                    edition,
+                    branches: [
+                        {
+                            title: 'TNB Power (Amp)',
+                            metric: '100A – 1,500A+',
+                            color: '#059669',
+                            points: ['Light assembly: 100–200 Amp', 'CNC / injection: 300–600 Amp', 'Substation upgrade: 4–9 months']
+                        },
+                        {
+                            title: 'Floor Slab Loading',
+                            metric: '10 kN/m² ≈ 1 Ton/m²',
+                            color: '#2563eb',
+                            points: ['Light storage: 5–10 kN/m²', 'High-bay racking: 25–40 kN/m²', 'Verify point loads under uprights']
+                        },
+                        {
+                            title: 'Clear Eave Height',
+                            metric: '25 – 45 ft Usable',
+                            color: '#7c3aed',
+                            points: ['Measure under lowest beam/pipe', 'Ridge peak ≠ usable stacking height', 'Overhead crane needs +6–8 ft margin']
+                        },
+                        {
+                            title: 'Pre-Sign Verification',
+                            metric: 'Zero Delays',
+                            color: '#d97706',
+                            points: ['Inspect live TNB meter & MSB tag', 'Request structural slab certificate', 'Check loading bay 40ft turning']
+                        }
+                    ]
+                },
+                body: `## At-a-Glance Executive Snapshot\n${cityLens.angleLine}\n\nRetrofitting electrical substations or reinforcing concrete floor slabs after signing a lease is slow and costly. Match your exact operations against this plain-English engineering benchmark table first.\n\n## Quick Engineering Spec Matrix\n| Operation Profile | Recommended TNB Power | Floor Slab Loading | Minimum Clear Height |\n| --- | --- | --- | --- |\n| Packaging / Light Assembly | 100 – 200 Amp | 5 – 10 kN/m² (0.5–1.0 ton/m²) | 22 – 28 ft |\n| CNC / Plastic Injection | 300 – 600 Amp | 15 – 25 kN/m² (1.5–2.5 ton/m²) | 28 – 35 ft |\n| High-Bay 3PL Logistics | 200 – 400 Amp | 25 – 40 kN/m² (2.5–4.0 ton/m²) | 35 – 45 ft |\n| Heavy Metal / Cold Chain | 800 – 1,500+ Amp | 30 – 50 kN/m² (3.0–5.0 ton/m²) | 30 – 40 ft |\n\n## 3-Step Technical Audit Before Booking\n1. **Confirm Approved TNB Incoming Amps:** Don’t rely on verbal estimates—check the main switchboard (MSB) breaker rating and latest TNB bill.\n2. **Convert Floor Load Clearly:** Divide **kN/m² by 10** to get approximate **tons/m²** (e.g., 30 kN/m² ≈ 3.0 tons/m²).\n3. **Measure Clear Height Under Sprinklers:** Always verify vertical clearance beneath the lowest roof truss or fire pipe, not the outer roof peak.\n\n## Essential Red-Flag Checks\n- **Hidden Upgrade Lead Times:** Moving from 200A to 600A often triggers a dedicated compact substation room (4–9 months).\n- **Crane Corbels:** If you need a 5–10 ton overhead hoist, confirm column corbels are already cast into the structure.\n- **3-Phase Stability:** Check harmonic/voltage stability if running sensitive automation or medical equipment.\n\n> **${cityLens.verdictPrefix}:** Selecting a factory with **existing excess TNB power and verified slab load** saves 4–9 months of commissioning delay and six figures in retrofit capex.\n\nInspect verified technical specs across [All MyFactorySpace Listings](properties.html#browse-properties).`,
+                faqs: [
+                    { q: 'How do I convert kN/m² to tons per square metre?', a: 'Divide kN/m² by 9.81 (roughly 10). For example, 25 kN/m² equals approximately 2.5 metric tons per square metre.' },
+                    { q: 'How long does a TNB power upgrade take in Selangor?', a: 'Minor cable-capacity upgrades take 4–8 weeks, while new 500A–1,000A compact substations typically take 4–9 months.' }
+                ]
+            },
+            {
+                topicKey: 'bomba-doe',
+                slug: `malaysia-bomba-doe-ccc-compliance-blueprint-${yearStr}`,
+                title: `BOMBA Fire Certificate, DOE Zoning & CCC Compliance (${yearStr}): Clear-Cut Factory Checklist`,
+                category: 'Legal & Compliance',
+                targetCity: targetCityFocus,
+                targetType: 'Detached Factory',
+                coverImage: 'assets/images/drone_shahalam.jpg',
+                edition,
+                visualStyle,
+                excerpt: 'Zero-jargon regulatory checklist for Malaysian factories and warehouses: verify DOE Light/Medium/Heavy zoning, BOMBA sprinkler readiness, and PBT CCC approvals before paying deposit.',
+                keyTakeaways: [
+                    'Match your exact process to the industrial park’s DOE zoning (Light, Medium, or Heavy) before signing.',
+                    'Verify valid CCC/CF and confirm all mezzanines or canopies are PBT-approved to prevent business license blocks.',
+                    'Large warehouses or high-hazard storage require serviced BOMBA fire systems and annual Fire Certificate (FC).'
+                ],
+                mindMap: {
+                    centerTitle: 'Factory Compliance Map',
+                    centerSubtitle: 'DOE · BOMBA · PBT CCC',
+                    edition,
+                    branches: [
+                        {
+                            title: 'DOE Industrial Zoning',
+                            metric: 'Light / Med / Heavy',
+                            color: '#059669',
+                            points: ['Light: assembly, clean storage, R&D', 'Medium: food, plastics, fabrication', 'Heavy: chemical, smelting, wide buffer']
+                        },
+                        {
+                            title: 'BOMBA Fire Safety',
+                            metric: 'Sprinklers & FC',
+                            color: '#2563eb',
+                            points: ['Check hydrants, hose reels & alarms', 'High-bay needs ESFR sprinkler spec', 'Verify annual Fire Certificate status']
+                        },
+                        {
+                            title: 'CCC & PBT Licensing',
+                            metric: 'MBPJ · MBSA · MPK',
+                            color: '#7c3aed',
+                            points: ['Inspect original CCC / CF document', 'Verify mezzanine & canopy permits', 'Required before factory license grant']
+                        },
+                        {
+                            title: 'Deposit Safeguards',
+                            metric: 'Protect Capex',
+                            color: '#d97706',
+                            points: ['Add licensing clause to Letter of Offer', 'Request latest Bomba service log', 'Confirm zero council summon notices']
+                        }
+                    ]
+                },
+                body: `## At-a-Glance Executive Snapshot\n${cityLens.angleLine}\n\nA great rental rate means nothing if local council licensing (**MBPJ, MBSJ, MBSA, MPK**) or **BOMBA** blocks operations after handover. Run this 4-pillar compliance check before releasing your earnest deposit.\n\n## Quick Compliance Matrix\n| Authority | What They Regulate | Must-Check Document |\n| --- | --- | --- |\n| DOE (JAS) | Industrial activity class & emissions buffer | Land title zoning (Light / Medium / Heavy) |\n| BOMBA | Fire suppression, egress & Fire Certificate (FC) | Approved fire plan & annual maintenance log |\n| Local Council (PBT) | Building structure & business operating license | Valid CCC / CF + approved renovation plan |\n| DOSH (JKKP) | Machinery, cargo lifts, pressure vessels & hoists | Active PMT / PMA fitness certificate |\n\n## 3-Step Compliance Verification Plan\n1. **Check Land Title & DOE Class First:** Confirm your manufacturing or storage code is permitted inside that specific industrial park.\n2. **Audit Building Extensions:** Verify that any rear awning, guardhouse, or office mezzanine appears on approved council drawings.\n3. **Protect Your Earnest Deposit:** Include a clear condition precedent in the Letter of Offer subject to clean CCC/zoning verification.\n\n## Essential Red-Flag Checks\n- **Unapproved Mezzanines:** Illegal internal steel decks can stall business license renewal and void fire insurance coverage.\n- **Lapsed Fire Systems:** Confirm landlord responsibility for servicing fire pumps, tanks, and alarm panels prior to handover.\n- **Hazmat / Cold-Room Rules:** Flammable chemicals or ammonia refrigeration require early BOMBA & DOE pre-consultation.\n\n> **${cityLens.verdictPrefix}:** Always verify **CCC, DOE zoning class, and BOMBA readiness** before signing—clean compliance cuts licensing launch time by months.\n\nBrowse compliant listings on [MyFactorySpace Properties](properties.html#browse-properties).`,
+                faqs: [
+                    { q: 'Does every factory in Selangor require an annual BOMBA Fire Certificate (FC)?', a: 'Annual FC requirements depend on designated building class, height, floor area, and hazard profile under the Fire Services Act, though all industrial facilities require compliant fire installations.' },
+                    { q: 'Can unapproved renovations delay my PBT factory license?', a: 'Yes—councils routinely require approved building plans and valid CCC before issuing or renewing manufacturing and warehouse business licenses.' }
+                ]
+            },
+            {
+                topicKey: 'land-vs-factory',
+                slug: `industrial-land-vs-ready-factory-playbook-${yearStr}`,
+                title: `Industrial Land vs Ready Factory in Selangor (${yearStr}): Cost, Timeline & ROI Comparison`,
+                category: 'Industry Guide',
+                targetCity: targetCityFocus,
+                targetType: 'Industrial Land',
+                coverImage: 'assets/images/drone_all.jpg',
+                edition,
+                visualStyle,
+                excerpt: 'Should your group buy converted industrial land for a built-to-suit plant or acquire a ready detached factory? Compare 2-month vs 18-month launch timelines, capex risk, and customization.',
+                keyTakeaways: [
+                    'Ready factories launch in 2–4 months versus 14–24 months for greenfield built-to-suit construction.',
+                    'Industrial land wins when you need bespoke 45ft+ clear height, heavy crane bays, or custom 1,000A+ substations.',
+                    'Always confirm converted industrial title status and infrastructure readiness before acquiring raw plots.'
+                ],
+                mindMap: {
+                    centerTitle: 'Land vs Ready Factory',
+                    centerSubtitle: `${targetCityFocus} · Capex & Launch`,
+                    edition,
+                    branches: [
+                        {
+                            title: 'Ready Detached Factory',
+                            metric: '2–4 Mo Launch',
+                            color: '#059669',
+                            points: ['Immediate cashflow & operations', 'Zero construction cost overrun risk', 'Existing CCC, TNB power & roads']
+                        },
+                        {
+                            title: 'Converted Industrial Land',
+                            metric: '14–24 Mo Build',
+                            color: '#2563eb',
+                            points: ['100% custom ceiling, crane & slab', 'Tailored ESG solar & dock layout', 'Ideal for 10+ year flagship HQ']
+                        },
+                        {
+                            title: 'Title & Zoning Checks',
+                            metric: 'Freehold / Lease',
+                            color: '#7c3aed',
+                            points: ['Verify converted Industrial title', 'Confirm KM / DO & infra utilities', 'Check remaining leasehold balance']
+                        },
+                        {
+                            title: 'Executive Decision Rule',
+                            metric: 'ROI & Speed',
+                            color: '#d97706',
+                            points: ['Need speed <6 mos → Ready Factory', 'Specialized heavy plant → Buy Land', 'Compare total PSF build + carry cost']
+                        }
+                    ]
+                },
+                body: `## At-a-Glance Executive Snapshot\n${cityLens.angleLine}\n\nAcquiring **Industrial Land** unlocks complete engineering freedom, whereas buying a **Ready Detached Factory** eliminates 18 months of approval and construction risk. Compare both paths side by side.\n\n## Quick Decision Matrix\n| Strategic Factor | Ready Detached Factory | Built-to-Suit Industrial Land |\n| --- | --- | --- |\n| Time to Operations | 2 – 4 months | 14 – 24 months (DO + BP + Build + CCC) |\n| Capex Predictability | Fixed acquisition price | Subject to steel/concrete cost swings |\n| Spec Customization | Moderate retrofits | 100% bespoke height, cranes & power |\n| Ideal Horizon | Fast expansion (3–7 years) | Flagship HQ / Heavy plant (10+ years) |\n\n## 3-Step Capital Allocation Plan\n1. **Price the Time-to-Market Gap:** Calculate 15 months of interim warehouse rental if you choose greenfield construction.\n2. **Verify Infrastructure at the Boundary:** Confirm road access, TNB high-tension feed, water mains, and drainage already serve the land plot.\n3. **Benchmark Replacement Cost:** Compare ready-factory asking PSF against land PSF + RM 180–260/sqft modern construction cost.\n\n## Essential Red-Flag Checks\n- **Agricultural Title Trap:** Never assume agricultural land can be used for warehousing without costly conversion premium and KM approval.\n- **Soil & Piling Costs:** Coastal or ex-mining pockets can add significant foundation piling capex—order a soil test early.\n- **Leasehold Expiry:** Factor remaining lease years into bank financing margin (LTV) and future exit liquidity.\n\n> **${cityLens.verdictPrefix}:** Acquire a **Ready Factory** if launch speed under 6 months drives revenue; buy **Converted Industrial Land** only when bespoke cranes, slabs, or long-term expansion justify an 18-month build.\n\nExplore [Industrial Land](properties.html?type=Industrial+Land#browse-properties) and [Detached Factories](properties.html?type=Detached+Factory#browse-properties) on MyFactorySpace.`,
+                faqs: [
+                    { q: 'Can agricultural land be used for warehousing in Selangor?', a: 'No—commercial manufacturing or warehousing requires converted industrial title status with PBT Planning Permission (Kebenaran Merancang).' },
+                    { q: 'How long does it take to construct a factory on industrial land?', a: 'Including DO/BP approvals, piling, construction, and CCC issuance, most Selangor industrial builds take 14 to 24 months.' }
+                ]
+            }
+        ];
+        sectorTemplates.forEach(t => candidates.push(t));
+
+        // Select best matching candidate based on requested topic, city, and category
+        let chosen = null;
+        if (preferredTopic && preferredTopic !== 'auto') {
+            chosen = candidates.find(c =>
+                c.topicKey === preferredTopic &&
+                (!options.preferredCity || options.preferredCity === 'Klang Valley' || c.targetCity.toLowerCase() === options.preferredCity.toLowerCase())
+            ) || candidates.find(c => c.topicKey === preferredTopic);
+        }
+        if (!chosen && (options.preferredCity || options.preferredCategory)) {
+            chosen = candidates.find(c =>
+                (!options.preferredCity || options.preferredCity === 'Klang Valley' || c.targetCity.toLowerCase() === options.preferredCity.toLowerCase()) &&
+                (!options.preferredCategory || c.category.toLowerCase() === options.preferredCategory.toLowerCase())
+            ) || candidates.find(c =>
+                options.preferredCity && options.preferredCity !== 'Klang Valley' && c.targetCity.toLowerCase() === options.preferredCity.toLowerCase()
+            );
+        }
+        if (!chosen) {
+            chosen = candidates.find(c => !existingSlugs.has(c.slug.toLowerCase()));
+        }
+        if (!chosen && candidates.length > 0) {
+            const idx = (autoCfg.topicIndex || 0) % candidates.length;
+            const base = candidates[idx];
+            const stamp = new Date().toISOString().slice(0, 10);
+            chosen = Object.assign({}, base, {
+                slug: `${base.slug}-${Date.now().toString().slice(-4)}`,
+                title: `${base.title} (${stamp})`
+            });
+        }
+
+        if (!chosen) return null;
+
+        const storedAgents = safeJsonParse('industria_agents', []);
+        const agentMatch = Array.isArray(storedAgents) && storedAgents.length > 0 ? storedAgents[0] : null;
+        const cleanChosen = Object.assign({}, chosen);
+        delete cleanChosen.topicKey;
+        delete cleanChosen.visualStyle;
+
+        return Object.assign({}, cleanChosen, {
+            id: `ins_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            authorName: (agentMatch && agentMatch.name) || 'MyFactorySpace Editorial',
+            authorAvatar: (agentMatch && agentMatch.image) || 'assets/images/agent_marcus.jpg',
+            publishedAt: todayIso,
+            readTime: estimateInsightReadTime(chosen.body),
+            featured: false,
+            status: options.status || autoCfg.mode || 'Draft',
+            edition,
+            includeMindMap: options.includeMindMap !== undefined ? Boolean(options.includeMindMap) : (autoCfg.includeMindMap !== false),
+            includeInfographic: options.includeInfographic !== undefined ? Boolean(options.includeInfographic) : (autoCfg.includeInfographic !== false),
+            visualInfographic: '',
+            autoGenerated: true
+        });
+    }
+
+    // Split Visual Studio Helpers inside Insight Editor Dialog (1: Mind Map Studio, 2: HD Infographic Photo Studio)
+    let insightStudioTimer = null;
+
+    function collectCurrentEditorArticleSnapshot() {
+        const takeawaysRaw = (document.getElementById('insight-input-takeaways') || {}).value || '';
+        const faqsRaw = (document.getElementById('insight-input-faqs') || {}).value || '';
+        return {
+            title: ((document.getElementById('insight-input-title') || {}).value || '').trim() || 'Klang Valley Industrial Intelligence',
+            slug: ((document.getElementById('insight-input-slug') || {}).value || '').trim() || 'myfactoryspace-insight',
+            category: ((document.getElementById('insight-input-category') || {}).value || 'Industry Guide').trim(),
+            targetCity: ((document.getElementById('insight-input-city') || {}).value || 'Klang Valley').trim(),
+            targetType: ((document.getElementById('insight-input-type') || {}).value || 'All').trim(),
+            publishedAt: ((document.getElementById('insight-input-date') || {}).value || new Date().toISOString().slice(0, 10)).trim(),
+            coverImage: ((document.getElementById('insight-input-cover') || {}).value || 'assets/images/drone_all.jpg').trim(),
+            excerpt: ((document.getElementById('insight-input-excerpt') || {}).value || '').trim(),
+            edition: ((document.getElementById('insight-input-edition') || {}).value || 'specialized').trim(),
+            includeMindMap: Boolean((document.getElementById('insight-show-mindmap') || { checked: true }).checked),
+            includeInfographic: Boolean((document.getElementById('insight-show-infographic') || { checked: true }).checked),
+            keyTakeaways: takeawaysRaw.split('\n').map(s => s.replace(/^[-•*]\s*/, '').trim()).filter(Boolean),
+            faqs: faqsRaw.split('\n').map(line => {
+                const parts = line.split('|');
+                if (parts.length < 2) return null;
+                return { q: parts[0].replace(/^Q:\s*/i, '').trim(), a: parts.slice(1).join('|').replace(/^A:\s*/i, '').trim() };
+            }).filter(Boolean)
+        };
+    }
+
+    function populateInsightMindMapFields(rawMap, fallbackArticle) {
+        const engine = window.InsightsVisualEngine;
+        const map = engine ? engine.normalizeMindMap(rawMap, fallbackArticle) : rawMap;
+        if (!map) return;
+        const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val || ''; };
+        setVal('insight-mm-center-title', map.centerTitle);
+        setVal('insight-mm-center-sub', map.centerSubtitle);
+        (map.branches || []).slice(0, 4).forEach((b, idx) => {
+            setVal(`insight-mm-b${idx}-title`, b.title);
+            setVal(`insight-mm-b${idx}-metric`, b.metric);
+            setVal(`insight-mm-b${idx}-points`, Array.isArray(b.points) ? b.points.join('\n') : '');
+        });
+    }
+
+    function readInsightMindMapFields(fallbackArticle) {
+        const engine = window.InsightsVisualEngine;
+        const palette = (engine && engine.BRANCH_PALETTE) || [
+            { color: '#059669', soft: '#ecfdf5', border: '#a7f3d0', icon: 'fa-solid fa-sack-dollar' },
+            { color: '#2563eb', soft: '#eff6ff', border: '#bfdbfe', icon: 'fa-solid fa-bolt' },
+            { color: '#7c3aed', soft: '#f5f3ff', border: '#ddd6fe', icon: 'fa-solid fa-industry' },
+            { color: '#d97706', soft: '#fffbeb', border: '#fde68a', icon: 'fa-solid fa-shield-halved' }
+        ];
+        const getVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+        const centerTitle = getVal('insight-mm-center-title');
+        const centerSubtitle = getVal('insight-mm-center-sub');
+        const branches = [0, 1, 2, 3].map(idx => {
+            const pal = palette[idx];
+            const pts = getVal(`insight-mm-b${idx}-points`).split('\n').map(s => s.replace(/^[-•*]\s*/, '').trim()).filter(Boolean).slice(0, 3);
+            return {
+                title: getVal(`insight-mm-b${idx}-title`),
+                metric: getVal(`insight-mm-b${idx}-metric`),
+                color: pal.color,
+                soft: pal.soft,
+                border: pal.border,
+                icon: pal.icon,
+                points: pts
+            };
+        });
+        const hasAnyInput = centerTitle || branches.some(b => b.title || b.points.length > 0);
+        if (!hasAnyInput && engine) {
+            return engine.buildDefaultMindMapFromArticle(fallbackArticle || collectCurrentEditorArticleSnapshot());
+        }
+        const raw = {
+            centerTitle,
+            centerSubtitle,
+            edition: getVal('insight-input-edition') || 'specialized',
+            branches
+        };
+        return engine ? engine.normalizeMindMap(raw, fallbackArticle || collectCurrentEditorArticleSnapshot()) : raw;
+    }
+
+    window.refreshInsightVisualPreviews = function() {
+        clearTimeout(insightStudioTimer);
+        insightStudioTimer = setTimeout(() => {
+            const engine = window.InsightsVisualEngine;
+            if (!engine) return;
+            const snap = collectCurrentEditorArticleSnapshot();
+            const map = readInsightMindMapFields(snap);
+            const mmCanvas = document.getElementById('insight-mindmap-canvas');
+            const igCanvas = document.getElementById('insight-infographic-canvas');
+            if (mmCanvas && typeof engine.renderMindMapCanvas === 'function') {
+                engine.renderMindMapCanvas(mmCanvas, snap, map, { edition: snap.edition });
+            }
+            if (igCanvas && typeof engine.renderInfographicPhotoCanvas === 'function') {
+                engine.renderInfographicPhotoCanvas(igCanvas, snap, map, {
+                    edition: snap.edition,
+                    bgImage: snap.coverImage
+                });
+            }
+        }, 60);
+    };
+    window.refreshInsightMindMapPreview = window.refreshInsightVisualPreviews;
+
+    window.autoRebuildInsightMindMap = function() {
+        const snap = collectCurrentEditorArticleSnapshot();
+        const engine = window.InsightsVisualEngine;
+        if (!engine) return;
+        const freshMap = engine.buildDefaultMindMapFromArticle(snap);
+        populateInsightMindMapFields(freshMap, snap);
+        window.refreshInsightVisualPreviews();
+        if (typeof showToast === 'function') showToast('Executive Mind Map & Infographic KPI strip rebuilt from article details!', 'success');
+    };
+
+    window.saveInsightInfographicPhoto = async function({ asCover = false } = {}) {
+        const canvas = document.getElementById('insight-infographic-canvas');
+        const engine = window.InsightsVisualEngine;
+        if (!canvas || !engine) return null;
+
+        const btn = document.getElementById(asCover ? 'btn-apply-infographic-cover' : 'btn-attach-infographic-photo');
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Uploading…';
+        }
+
+        try {
+            const snap = collectCurrentEditorArticleSnapshot();
+            const map = readInsightMindMapFields(snap);
+            const rendered = await engine.renderInfographicPhotoCanvas(canvas, snap, map, {
+                edition: snap.edition,
+                bgImage: snap.coverImage
+            });
+            if (!rendered || (!rendered.blob && !rendered.dataUrl)) {
+                if (typeof showToast === 'function') showToast('Could not export photo (try choosing a local aerial preset photo first).', 'warning');
+                return null;
+            }
+
+            let finalUrl = '';
+            if (window.IndustraSupabase && typeof window.IndustraSupabase.uploadImage === 'function') {
+                const safeSlug = slugifyInsight(snap.slug || snap.title || 'insight');
+                const filename = `insight_${asCover ? 'cover' : 'infographic'}_${safeSlug}_${Date.now()}.jpg`;
+                const uploadRes = await window.IndustraSupabase.uploadImage(rendered.blob || rendered.dataUrl, filename);
+                if (uploadRes && uploadRes.success && uploadRes.url) {
+                    finalUrl = uploadRes.url;
+                }
+            }
+            if (!finalUrl && rendered.dataUrl && rendered.dataUrl.length < 320000) {
+                finalUrl = rendered.dataUrl;
+            }
+
+            if (finalUrl) {
+                if (asCover) {
+                    window.setInsightCoverPreset(finalUrl);
+                    if (typeof showToast === 'function') showToast('HD Enhanced Infographic Photo set as Article Cover!', 'success');
+                } else {
+                    const visInput = document.getElementById('insight-input-visual-photo');
+                    if (visInput) visInput.value = finalUrl;
+                    if (typeof showToast === 'function') showToast('HD Enhanced Infographic Photo uploaded & attached to article!', 'success');
+                }
+            } else if (typeof showToast === 'function') {
+                showToast('Preview ready — click Infographic PNG to download or verify Supabase Storage connection.', 'info');
+            }
+            return finalUrl;
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
+    };
+    window.saveInsightEnhancedPhoto = window.saveInsightInfographicPhoto;
+
+    window.downloadCurrentInsightMindMapPng = async function() {
+        const engine = window.InsightsVisualEngine;
+        if (!engine) return;
+        const snap = collectCurrentEditorArticleSnapshot();
+        const map = readInsightMindMapFields(snap);
+        const ok = await engine.downloadMindMapPng(snap, map, { edition: snap.edition });
+        if (ok && typeof showToast === 'function') {
+            showToast('Downloaded 1600×900 Executive Mind Map PNG!', 'success');
+        }
+    };
+
+    window.downloadCurrentInsightInfographicPng = async function() {
+        const engine = window.InsightsVisualEngine;
+        if (!engine) return;
+        const snap = collectCurrentEditorArticleSnapshot();
+        const map = readInsightMindMapFields(snap);
+        const ok = await engine.downloadInfographicPhotoPng(snap, map, {
+            edition: snap.edition,
+            bgImage: snap.coverImage
+        });
+        if (ok && typeof showToast === 'function') {
+            showToast('Downloaded 1600×900 HD Enhanced Infographic Photo PNG!', 'success');
+        }
+    };
+
+    let activeInsightsContentSource = 'inventory';
+
+    window.generateAutomatedInsightArticle = async function({ manual = false, useStudioFilters = false, forceSource = '' } = {}) {
+        if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+            if (manual) alert('Only Administrators and authorized agents can generate Market Insights.');
+            return null;
+        }
+        const autoCfg = getInsightsAutomationSettings();
+        const chosenSource = forceSource || (manual ? activeInsightsContentSource : (autoCfg.contentSource || 'inventory'));
+
+        // Option 2: Internet Public News & Market Trends
+        if (chosenSource === 'internet') {
+            return await window.generateFromInternetPublic({ manual });
+        }
+
+        // Option 3: Website Link Given
+        if (chosenSource === 'website') {
+            const inputEl = document.getElementById('insights-capture-url');
+            const candidateUrl = ((inputEl && inputEl.value) || autoCfg.defaultWebsiteUrl || '').trim();
+            const safeUrl = sanitizeHttpUrl(
+                candidateUrl && !/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(candidateUrl) && candidateUrl.includes('.')
+                    ? `https://${candidateUrl}`
+                    : candidateUrl
+            );
+            if (!safeUrl) {
+                if (manual) {
+                    window.focusInsightsUrlCapture();
+                    setInsightsCaptureStatus('warning', 'Paste a website link below (or switch to Paste Text / Notes) to generate from a Website Link Given.');
+                }
+                return null;
+            }
+            if (inputEl && !inputEl.value.trim()) inputEl.value = safeUrl;
+            return await window.generateFromGivenWebsiteUrl({ url: safeUrl, manual });
+        }
+
+        // Option 1: Live Inventory, Specs & Parks
+        const edition = ((document.getElementById('insights-auto-edition') || {}).value) || autoCfg.edition || 'specialized';
+        const mmCb = document.getElementById('insights-auto-include-mindmap');
+        const igCb = document.getElementById('insights-auto-include-infographic');
+        const includeMindMap = mmCb ? Boolean(mmCb.checked) : (autoCfg.includeMindMap !== false);
+        const includeInfographic = igCb ? Boolean(igCb.checked) : (autoCfg.includeInfographic !== false);
+        const focusCity = useStudioFilters
+            ? (((document.getElementById('insights-auto-focus-city') || {}).value) || '')
+            : (autoCfg.focusCity || '');
+        const focusTopic = useStudioFilters
+            ? (((document.getElementById('insights-auto-focus-topic') || {}).value) || 'auto')
+            : (autoCfg.focusTopic || 'auto');
+
+        const draft = buildAutomatedInsightDraft({
+            status: manual ? 'Draft' : (autoCfg.mode || 'Draft'),
+            edition,
+            includeMindMap,
+            includeInfographic,
+            preferredCity: focusCity,
+            preferredTopic: focusTopic
+        });
+        if (!draft) return null;
+
+        const list = getAllInsightArticles();
+        list.unshift(draft);
+        saveAllInsightArticles(list);
+
+        autoCfg.lastGeneratedAt = new Date().toISOString();
+        autoCfg.topicIndex = (autoCfg.topicIndex || 0) + 1;
+        autoCfg.edition = edition;
+        autoCfg.contentSource = 'inventory';
+        autoCfg.includeMindMap = includeMindMap;
+        autoCfg.includeInfographic = includeInfographic;
+        saveInsightsAutomationConfig(autoCfg);
+
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Landing Page',
+                action: 'Add',
+                target: draft.title,
+                details: `${manual ? 'Manual' : 'Scheduled'} Inventory & Parks Insight (${edition}, MindMap=${includeMindMap}, Infographic=${includeInfographic}, ${draft.status})`
+            });
+        }
+
+        if (typeof window.renderInsightsAdminTable === 'function') window.renderInsightsAdminTable();
+        if (typeof window.updateInsightsAutomationUI === 'function') window.updateInsightsAutomationUI();
+
+        if (manual) {
+            if (typeof showToast === 'function') showToast(`Generated from Inventory & Parks with Mind Map & Infographic Photo: "${draft.title}"!`, 'success');
+            window.openInsightEditorModal(draft.id);
+        } else if (typeof showToast === 'function') {
+            showToast(`Scheduled Publisher Engine drafted: "${draft.title}"`, 'info');
+        }
+        return draft;
+    };
+
+    window.autoFillInsightEditorFromInventory = function() {
+        if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+            alert('Only Administrators and authorized agents can generate Market Insights.');
+            return;
+        }
+        const city = (document.getElementById('insight-input-city') || {}).value || '';
+        const cat = (document.getElementById('insight-input-category') || {}).value || '';
+        const edition = (document.getElementById('insight-input-edition') || {}).value || 'specialized';
+        const includeMindMap = Boolean((document.getElementById('insight-show-mindmap') || { checked: true }).checked);
+        const includeInfographic = Boolean((document.getElementById('insight-show-infographic') || { checked: true }).checked);
+        const draft = buildAutomatedInsightDraft({
+            preferredCity: city,
+            preferredCategory: cat,
+            edition,
+            includeMindMap,
+            includeInfographic
+        });
+        if (!draft) return;
+        document.getElementById('insight-input-title').value = draft.title;
+        if (!document.getElementById('insight-edit-id').value) {
+            document.getElementById('insight-input-slug').value = draft.slug;
+        }
+        document.getElementById('insight-input-excerpt').value = draft.excerpt;
+        document.getElementById('insight-input-takeaways').value = (draft.keyTakeaways || []).join('\n');
+        document.getElementById('insight-input-body').value = draft.body;
+        document.getElementById('insight-input-faqs').value = (draft.faqs || []).map(f => `Q: ${f.q} | A: ${f.a}`).join('\n');
+        if (draft.coverImage) window.setInsightCoverPreset(draft.coverImage);
+        populateInsightMindMapFields(draft.mindMap, draft);
+        window.refreshInsightVisualPreviews();
+        if (typeof showToast === 'function') showToast('Drafted Specialized Edition with separate Mind Map & HD Infographic Photo!', 'success');
+    };
+
+    window.saveInsightsAutomationSettings = function() {
+        if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+            alert('Only Administrators and authorized agents can configure Insights automation.');
+            return;
+        }
+        const cfg = getInsightsAutomationSettings();
+        cfg.cadence = (document.getElementById('insights-auto-cadence') || {}).value || 'off';
+        cfg.mode = (document.getElementById('insights-auto-mode') || {}).value || 'Draft';
+        cfg.edition = (document.getElementById('insights-auto-edition') || {}).value || 'specialized';
+        cfg.contentSource = activeInsightsContentSource || 'inventory';
+        cfg.includeMindMap = Boolean((document.getElementById('insights-auto-include-mindmap') || { checked: true }).checked);
+        cfg.includeInfographic = Boolean((document.getElementById('insights-auto-include-infographic') || { checked: true }).checked);
+        cfg.focusCity = (document.getElementById('insights-auto-focus-city') || {}).value || '';
+        cfg.focusTopic = (document.getElementById('insights-auto-focus-topic') || {}).value || 'auto';
+        cfg.publicQuery = ((document.getElementById('insights-public-query') || {}).value || '').trim() || 'Malaysia Klang Valley industrial property warehouse factory';
+        cfg.publicCity = (document.getElementById('insights-public-city') || {}).value || '';
+        cfg.publicAngle = (document.getElementById('insights-public-angle') || {}).value || 'executive';
+        cfg.defaultWebsiteUrl = ((document.getElementById('insights-capture-url') || {}).value || '').trim();
+        saveInsightsAutomationConfig(cfg);
+        window.updateInsightsAutomationUI();
+        if (typeof showToast === 'function') showToast('Smart Editorial Automation settings & content source saved to Supabase!', 'success');
+    };
+
+    window.updateInsightsAutomationUI = function() {
+        const cfg = getInsightsAutomationSettings();
+        const setElVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+        setElVal('insights-auto-cadence', cfg.cadence || 'weekly');
+        setElVal('insights-auto-mode', cfg.mode || 'Draft');
+        setElVal('insights-auto-edition', cfg.edition || 'specialized');
+        setElVal('insights-auto-focus-city', cfg.focusCity || '');
+        setElVal('insights-auto-focus-topic', cfg.focusTopic || 'auto');
+        if (cfg.publicQuery) setElVal('insights-public-query', cfg.publicQuery);
+        setElVal('insights-public-city', cfg.publicCity || '');
+        setElVal('insights-public-angle', cfg.publicAngle || 'executive');
+        const capUrlEl = document.getElementById('insights-capture-url');
+        if (capUrlEl && !capUrlEl.value.trim() && cfg.defaultWebsiteUrl) {
+            capUrlEl.value = cfg.defaultWebsiteUrl;
+        }
+
+        const mmCb = document.getElementById('insights-auto-include-mindmap');
+        if (mmCb) mmCb.checked = cfg.includeMindMap !== false;
+        const igCb = document.getElementById('insights-auto-include-infographic');
+        if (igCb) igCb.checked = cfg.includeInfographic !== false;
+
+        if (typeof window.selectInsightsContentSource === 'function') {
+            window.selectInsightsContentSource(cfg.contentSource || 'inventory', { silentScroll: true, skipMetaUpdate: true });
+        }
+
+        updateInsightsAutomationStatusMeta(cfg);
+    };
+
+    function updateInsightsAutomationStatusMeta(cfgOverride) {
+        const cfg = cfgOverride || getInsightsAutomationSettings();
+        const metaEl = document.getElementById('insights-auto-status-meta');
+        if (!metaEl) return;
+        const lastStr = cfg.lastGeneratedAt ? new Date(cfg.lastGeneratedAt).toLocaleString() : 'Never';
+        const edLabels = { specialized: 'Executive Brief', investor: 'Investor Playbook', compliance: 'Compliance Blueprint' };
+        const srcLabels = {
+            inventory: 'Inventory, Specs & Parks',
+            internet: 'Internet Public News',
+            website: 'Website Link Given'
+        };
+        const activeSrc = activeInsightsContentSource || cfg.contentSource || 'inventory';
+        const visualParts = [];
+        if (cfg.includeMindMap !== false) visualParts.push('Mind Map');
+        if (cfg.includeInfographic !== false) visualParts.push('HD Infographic Photo');
+        const visText = visualParts.length ? visualParts.join(' + ') : 'Text Only';
+        const statusText = cfg.cadence === 'off' ? 'Manual only' : `Scheduled (${cfg.cadence}, saves as ${cfg.mode})`;
+        metaEl.textContent = `Source: ${srcLabels[activeSrc] || 'Inventory, Specs & Parks'} · Schedule: ${statusText} · Edition: ${edLabels[cfg.edition] || 'Executive Brief'} · Visuals: ${visText} · Last generated: ${lastStr}`;
+    }
+
+    function checkAndRunScheduledInsightGeneration() {
+        if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) return;
+        const cfg = getInsightsAutomationSettings();
+        if (!cfg.cadence || cfg.cadence === 'off') return;
+        const daysMap = { weekly: 7, biweekly: 14, monthly: 30 };
+        const intervalMs = (daysMap[cfg.cadence] || 7) * 86400000;
+        const lastMs = cfg.lastGeneratedAt ? new Date(cfg.lastGeneratedAt).getTime() : 0;
+        if (!lastMs || (Date.now() - lastMs) >= intervalMs) {
+            window.generateAutomatedInsightArticle({ manual: false });
+        }
+    }
+
+    window.renderInsightsAdminTable = function() {
+        const list = getAllInsightArticles();
+        const tbody = document.getElementById('insights-table-body');
+        const catFilter = (document.getElementById('insights-category-filter') || {}).value || 'All';
+        const statusFilter = (document.getElementById('insights-status-filter') || {}).value || 'All';
+        const searchQ = ((document.getElementById('insights-admin-search') || {}).value || '').trim().toLowerCase();
+
+        // KPI Counts
+        const kTotal = document.getElementById('insights-kpi-total');
+        const kPub = document.getElementById('insights-kpi-published');
+        const kDraft = document.getElementById('insights-kpi-drafts');
+        const kAuto = document.getElementById('insights-kpi-auto');
+        if (kTotal) kTotal.textContent = String(list.length);
+        if (kPub) kPub.textContent = String(list.filter(a => a.status === 'Published').length);
+        if (kDraft) kDraft.textContent = String(list.filter(a => a.status === 'Draft').length);
+        if (kAuto) kAuto.textContent = String(list.filter(a => a.autoGenerated === true).length);
+
+        if (!tbody) return;
+
+        const filtered = list.filter(a => {
+            if (!a) return false;
+            if (catFilter !== 'All' && String(a.category || '').toLowerCase() !== catFilter.toLowerCase()) return false;
+            if (statusFilter !== 'All' && String(a.status || 'Published').toLowerCase() !== statusFilter.toLowerCase()) return false;
+            if (searchQ) {
+                const hay = [a.title, a.slug, a.category, a.targetCity, a.targetType].filter(Boolean).join(' ').toLowerCase();
+                if (!hay.includes(searchQ)) return false;
+            }
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #64748b;">No insights match this filter. Click <strong>Add Insight</strong> or <strong>Generate Specialized Edition</strong>.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = filtered.map(a => {
+            const isPub = a.status !== 'Draft';
+            const badgeClass = isPub ? 'status-active' : 'status-pending';
+            const starColor = a.featured ? '#f59e0b' : '#cbd5e1';
+            const autoTag = a.autoGenerated ? '<span style="display:inline-block; font-size:0.68rem; background:#f5f3ff; color:#6d28d9; padding:1px 6px; border-radius:999px; font-weight:700; margin-left:4px;">Auto</span>' : '';
+            const mindMapTag = (a.includeMindMap !== false && a.mindMap && Array.isArray(a.mindMap.branches) && a.mindMap.branches.length > 0)
+                ? '<span style="display:inline-block; font-size:0.68rem; background:#ecfdf5; color:#047857; border:1px solid #a7f3d0; padding:1px 6px; border-radius:999px; font-weight:700; margin-left:4px;"><i class="fa-solid fa-diagram-project"></i> Mind Map</span>'
+                : '';
+            const infographicTag = (a.includeInfographic !== false)
+                ? '<span style="display:inline-block; font-size:0.68rem; background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; padding:1px 6px; border-radius:999px; font-weight:700; margin-left:4px;"><i class="fa-solid fa-camera-retro"></i> Infographic</span>'
+                : '';
+            const safeSrcUrl = sanitizeHttpUrl(a.sourceInspirationUrl || '');
+            const origSourceLink = safeSrcUrl
+                ? `<a href="${escapeHtml(safeSrcUrl)}" target="_blank" rel="noopener noreferrer" style="display:inline-flex; align-items:center; gap:3px; font-size:0.7rem; color:#0369a1; font-weight:600; text-decoration:none; margin-left:6px;"><i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.64rem;"></i> Original Link</a>`
+                : '';
+            const previewHref = `insights.html?article=${encodeURIComponent(a.slug)}&id=${encodeURIComponent(a.id)}&preview=1`;
+            const previewTitle = isPub ? 'View Live Published Article' : 'Preview Draft Article on insights.html';
+            return `
+                <tr>
+                    <td>
+                        <img src="${escapeHtml(a.coverImage || 'assets/images/drone_all.jpg')}" alt="${escapeHtml(a.title)}" style="width: 64px; height: 42px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;" onerror="this.onerror=null;this.src='assets/images/drone_all.jpg';">
+                    </td>
+                    <td>
+                        <strong style="display: block; font-size: 0.88rem; color: #0f172a; max-width: 340px;">${escapeHtml(a.title)}${autoTag}${mindMapTag}${infographicTag}</strong>
+                        <a href="${previewHref}" target="_blank" rel="noopener noreferrer" onclick="syncInsightsBeforePreview()" style="text-decoration:none;" title="${previewTitle}"><code style="font-size: 0.72rem; color: #0369a1; cursor: pointer;">/insights.html?article=${escapeHtml(a.slug)}</code></a>${origSourceLink}
+                    </td>
+                    <td><span class="badge-pill" style="background: #f1f5f9; color: #334155; font-size: 0.76rem;">${escapeHtml(a.category || 'Industry Guide')}</span></td>
+                    <td>
+                        <div style="font-size: 0.82rem; font-weight: 600; color: #1e293b;">${escapeHtml(a.targetCity || 'Klang Valley')}</div>
+                        <div style="font-size: 0.74rem; color: #64748b;">${escapeHtml(a.targetType || 'All')}</div>
+                    </td>
+                    <td>
+                        <div style="font-size: 0.82rem; color: #1e293b;">${escapeHtml(a.publishedAt || '')}</div>
+                        <div style="font-size: 0.74rem; color: #64748b;">${escapeHtml(a.readTime || estimateInsightReadTime(a.body))}</div>
+                    </td>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.45rem;">
+                            <button type="button" class="status-badge ${badgeClass}" style="border: none; cursor: pointer;" onclick="toggleInsightStatus('${escapeHtml(a.id)}')" title="Click to toggle Published / Draft">${escapeHtml(a.status || 'Published')}</button>
+                            <button type="button" onclick="toggleInsightFeatured('${escapeHtml(a.id)}')" style="border: none; background: transparent; cursor: pointer; color: ${starColor}; font-size: 0.95rem;" title="Feature in Top Hero Banner"><i class="fa-solid fa-star"></i></button>
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.35rem; align-items: center;">
+                            <a href="${previewHref}" target="_blank" rel="noopener noreferrer" onclick="syncInsightsBeforePreview()" class="action-btn" aria-label="${previewTitle}" title="${previewTitle}"><i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i></a>
+                            <button type="button" class="action-btn" onclick="openInsightEditorModal('${escapeHtml(a.id)}')" aria-label="Edit Article" title="Edit"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></button>
+                            <button type="button" class="action-btn delete" onclick="deleteInsightArticle('${escapeHtml(a.id)}')" aria-label="Delete Article" title="Delete"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    };
+
+    window.syncInsightsBeforePreview = function() {
+        try {
+            const list = getAllInsightArticles();
+            localStorage.setItem(INSIGHTS_STORAGE_KEY, JSON.stringify(list));
+        } catch (e) {}
+    };
+
+    window.autoSlugInsightTitle = function() {
+        if (!document.getElementById('insight-edit-id').value) {
+            const title = (document.getElementById('insight-input-title') || {}).value || '';
+            const slugEl = document.getElementById('insight-input-slug');
+            if (slugEl) slugEl.value = slugifyInsight(title);
+        }
+        if (typeof window.refreshInsightVisualPreviews === 'function') window.refreshInsightVisualPreviews();
+    };
+
+    window.setInsightCoverPreset = function(url) {
+        const inp = document.getElementById('insight-input-cover');
+        const prev = document.getElementById('insight-cover-preview');
+        if (inp) inp.value = url;
+        if (prev) prev.src = url;
+        if (typeof window.refreshInsightVisualPreviews === 'function') window.refreshInsightVisualPreviews();
+    };
+
+    window.handleInsightCoverUpload = async function(fileInput) {
+        if (!fileInput || !fileInput.files || !fileInput.files[0]) return;
+        const lbl = document.getElementById('insight-upload-label');
+        if (lbl) lbl.textContent = 'Uploading...';
+        try {
+            const slug = slugifyInsight((document.getElementById('insight-input-slug') || {}).value || 'insight');
+            const url = await uploadLocationPhotoToCloud(fileInput.files[0], `insight_${slug}`);
+            if (url) window.setInsightCoverPreset(url);
+        } finally {
+            if (lbl) lbl.textContent = 'Upload Cover';
+            fileInput.value = '';
+        }
+    };
+
+    window.openInsightEditorModal = function(editId = null) {
+        if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+            alert('Only Administrators and authorized agents can edit Market Insights.');
+            return;
+        }
+        const dialog = document.getElementById('insight-editor-dialog');
+        if (!dialog) return;
+
+        syncDashboardLocationSelects();
+        const list = getAllInsightArticles();
+        const existing = editId ? list.find(a => String(a.id) === String(editId)) : null;
+        const autoCfg = getInsightsAutomationSettings();
+
+        document.getElementById('insight-edit-id').value = existing ? existing.id : '';
+        document.getElementById('insight-dialog-title').textContent = existing ? 'Edit Market Insight' : 'Add New Market Insight';
+        document.getElementById('insight-input-title').value = existing ? existing.title : '';
+        document.getElementById('insight-input-slug').value = existing ? existing.slug : '';
+        document.getElementById('insight-input-category').value = existing ? (existing.category || 'Industry Guide') : 'Industry Guide';
+        document.getElementById('insight-input-city').value = existing ? (existing.targetCity || 'Klang Valley') : 'Klang Valley';
+        document.getElementById('insight-input-type').value = existing ? (existing.targetType || 'All') : 'All';
+        document.getElementById('insight-input-author').value = existing ? (existing.authorName || 'MyFactorySpace Editorial') : 'MyFactorySpace Editorial';
+        document.getElementById('insight-input-date').value = existing ? (existing.publishedAt || new Date().toISOString().slice(0, 10)) : new Date().toISOString().slice(0, 10);
+        document.getElementById('insight-input-status').value = existing ? (existing.status || 'Published') : 'Published';
+        document.getElementById('insight-input-featured').checked = existing ? Boolean(existing.featured) : false;
+
+        const edEl = document.getElementById('insight-input-edition');
+        if (edEl) edEl.value = existing ? (existing.edition || 'specialized') : (autoCfg.edition || 'specialized');
+        const showMmEl = document.getElementById('insight-show-mindmap');
+        if (showMmEl) showMmEl.checked = existing ? (existing.includeMindMap !== false) : (autoCfg.includeMindMap !== false);
+        const showIgEl = document.getElementById('insight-show-infographic');
+        if (showIgEl) showIgEl.checked = existing ? (existing.includeInfographic !== false) : (autoCfg.includeInfographic !== false);
+        const visPhotoEl = document.getElementById('insight-input-visual-photo');
+        if (visPhotoEl) visPhotoEl.value = existing ? (existing.visualInfographic || '') : '';
+
+        window.setInsightCoverPreset(existing ? (existing.coverImage || 'assets/images/drone_all.jpg') : 'assets/images/drone_all.jpg');
+        document.getElementById('insight-input-excerpt').value = existing ? (existing.excerpt || '') : '';
+        document.getElementById('insight-input-takeaways').value = existing && Array.isArray(existing.keyTakeaways) ? existing.keyTakeaways.join('\n') : '';
+        document.getElementById('insight-input-body').value = existing ? (existing.body || '') : '';
+        document.getElementById('insight-input-faqs').value = existing && Array.isArray(existing.faqs) ? existing.faqs.map(f => `Q: ${f.q} | A: ${f.a}`).join('\n') : '';
+
+        populateInsightMindMapFields(existing ? existing.mindMap : null, existing || collectCurrentEditorArticleSnapshot());
+
+        if (typeof dialog.showModal === 'function') dialog.showModal();
+        else dialog.setAttribute('open', 'true');
+
+        window.refreshInsightVisualPreviews();
+    };
+
+    window.closeInsightEditorModal = function() {
+        const dialog = document.getElementById('insight-editor-dialog');
+        if (!dialog) return;
+        if (typeof dialog.close === 'function') dialog.close();
+        else dialog.removeAttribute('open');
+    };
+
+    (function setupInsightDialogClose() {
+        const dialog = document.getElementById('insight-editor-dialog');
+        if (!dialog) return;
+        dialog.addEventListener('close', () => { dialog.returnValue = ''; });
+        if (!('closedBy' in HTMLDialogElement.prototype)) {
+            const outside = (e) => {
+                const r = dialog.getBoundingClientRect();
+                return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+            };
+            let pressedOutside = false;
+            dialog.addEventListener('pointerdown', (e) => { pressedOutside = outside(e); });
+            dialog.addEventListener('pointerup', (e) => { if (pressedOutside && outside(e)) dialog.close(); });
+        }
+    })();
+
+    window.saveInsightArticle = function(e) {
+        if (e) e.preventDefault();
+        if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+            alert('Only Administrators and authorized agents can save Market Insights.');
+            return;
+        }
+        const editId = (document.getElementById('insight-edit-id').value || '').trim();
+        const title = (document.getElementById('insight-input-title').value || '').trim();
+        const slug = slugifyInsight((document.getElementById('insight-input-slug').value || '').trim() || title);
+        const category = (document.getElementById('insight-input-category').value || 'Industry Guide').trim();
+        const targetCity = (document.getElementById('insight-input-city').value || 'Klang Valley').trim();
+        const targetType = (document.getElementById('insight-input-type').value || 'All').trim();
+        const authorName = (document.getElementById('insight-input-author').value || 'MyFactorySpace Editorial').trim();
+        const publishedAt = (document.getElementById('insight-input-date').value || new Date().toISOString().slice(0, 10)).trim();
+        const status = (document.getElementById('insight-input-status').value || 'Published').trim();
+        const featured = Boolean(document.getElementById('insight-input-featured').checked);
+        const coverImage = (document.getElementById('insight-input-cover').value || 'assets/images/drone_all.jpg').trim();
+        const edition = ((document.getElementById('insight-input-edition') || {}).value || 'specialized').trim();
+        const includeMindMap = Boolean((document.getElementById('insight-show-mindmap') || { checked: true }).checked);
+        const includeInfographic = Boolean((document.getElementById('insight-show-infographic') || { checked: true }).checked);
+        const visualInfographic = ((document.getElementById('insight-input-visual-photo') || {}).value || '').trim();
+        const excerpt = (document.getElementById('insight-input-excerpt').value || '').trim();
+        const takeawaysRaw = (document.getElementById('insight-input-takeaways').value || '').trim();
+        const body = (document.getElementById('insight-input-body').value || '').trim();
+        const faqsRaw = (document.getElementById('insight-input-faqs').value || '').trim();
+
+        const keyTakeaways = takeawaysRaw.split('\n').map(s => s.replace(/^[-•*]\s*/, '').trim()).filter(Boolean);
+        const faqs = faqsRaw.split('\n').map(line => {
+            const parts = line.split('|');
+            if (parts.length < 2) return null;
+            const q = parts[0].replace(/^Q:\s*/i, '').trim();
+            const a = parts.slice(1).join('|').replace(/^A:\s*/i, '').trim();
+            return (q && a) ? { q, a } : null;
+        }).filter(Boolean);
+
+        const mindMap = readInsightMindMapFields({ title, category, targetCity, targetType, keyTakeaways, faqs, edition });
+
+        let list = getAllInsightArticles();
+        if (featured) {
+            list = list.map(item => Object.assign({}, item, { featured: false }));
+        }
+
+        const existingIdx = editId ? list.findIndex(item => String(item.id) === String(editId)) : -1;
+        const entry = {
+            id: existingIdx >= 0 ? list[existingIdx].id : `ins_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            slug,
+            title,
+            category,
+            targetCity,
+            targetType,
+            coverImage,
+            edition,
+            includeMindMap,
+            includeInfographic,
+            visualInfographic,
+            mindMap,
+            authorName,
+            authorAvatar: (existingIdx >= 0 && list[existingIdx].authorAvatar) || 'assets/images/agent_marcus.jpg',
+            publishedAt,
+            readTime: estimateInsightReadTime(body),
+            featured,
+            status,
+            autoGenerated: existingIdx >= 0 ? Boolean(list[existingIdx].autoGenerated) : false,
+            contentSource: existingIdx >= 0 ? (list[existingIdx].contentSource || 'inventory') : 'manual',
+            sourceInspirationUrl: existingIdx >= 0 ? (list[existingIdx].sourceInspirationUrl || '') : '',
+            excerpt,
+            keyTakeaways,
+            body,
+            faqs
+        };
+
+        if (existingIdx >= 0) list[existingIdx] = entry;
+        else list.unshift(entry);
+
+        saveAllInsightArticles(list);
+        window.renderInsightsAdminTable();
+        window.closeInsightEditorModal();
+
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Landing Page',
+                action: existingIdx >= 0 ? 'Edit' : 'Add',
+                target: title,
+                details: `${existingIdx >= 0 ? 'Updated' : 'Published'} Market Insight (${category}, ${edition}, ${status})`
+            });
+        }
+        if (typeof showToast === 'function') showToast(`Saved "${title}" (${status})!`, 'success');
+    };
+
+    window.toggleInsightStatus = function(id) {
+        if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+            alert('Only Administrators and authorized agents can update Market Insights.');
+            return;
+        }
+        const list = getAllInsightArticles();
+        const item = list.find(a => String(a.id) === String(id));
+        if (!item) return;
+        item.status = item.status === 'Draft' ? 'Published' : 'Draft';
+        saveAllInsightArticles(list);
+        window.renderInsightsAdminTable();
+    };
+
+    window.toggleInsightFeatured = function(id) {
+        if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+            alert('Only Administrators and authorized agents can update Market Insights.');
+            return;
+        }
+        const list = getAllInsightArticles();
+        list.forEach(a => { a.featured = String(a.id) === String(id); });
+        saveAllInsightArticles(list);
+        window.renderInsightsAdminTable();
+        if (typeof showToast === 'function') showToast('Updated Featured Hero article on insights.html!', 'success');
+    };
+
+    window.deleteInsightArticle = function(id) {
+        if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+            alert('Only Administrators and authorized agents can delete Market Insights.');
+            return;
+        }
+        const list = getAllInsightArticles();
+        const target = list.find(a => String(a.id) === String(id));
+        if (!target) return;
+        if (!confirm(`Delete Market Insight "${target.title}"?`)) return;
+        const next = list.filter(a => String(a.id) !== String(id));
+        saveAllInsightArticles(next);
+        window.renderInsightsAdminTable();
+    };
+
+    window.renderInsightsAccessPanel = function() {
+        const card = document.getElementById('insights-access-card');
+        const grid = document.getElementById('insights-access-grid');
+        const badge = document.getElementById('insights-access-summary-badge');
+        if (!card || !grid) return;
+
+        const isAdminRole = typeof window.isCurrentAdministrator === 'function'
+            ? window.isCurrentAdministrator()
+            : (String(resolveCurrentUserRole() || '').toLowerCase() === 'administrator');
+        card.style.display = isAdminRole ? '' : 'none';
+        if (!isAdminRole) return;
+
+        const cfg = getInsightsAccessControl();
+        const allAgents = safeJsonParse('industria_agents', typeof defaultAgents !== 'undefined' ? defaultAgents : []);
+        const allUsers = typeof getAdminUsers === 'function' ? getAdminUsers() : [];
+        const nonAdminUsers = allUsers.filter(u => String(u.role || '').trim().toLowerCase() !== 'administrator');
+
+        const cardsHtml = [];
+        const coveredUsernames = new Set();
+        let allowedCount = 0;
+
+        (Array.isArray(allAgents) ? allAgents : []).forEach(agent => {
+            const aid = String(agent.id || '').trim();
+            if (!aid) return;
+            const linkedUsers = nonAdminUsers.filter(u => String(u.agentId || '') === aid);
+            linkedUsers.forEach(u => coveredUsernames.add(String(u.username || '').trim().toLowerCase()));
+
+            // Skip agent card only if linked exclusively to an Administrator account
+            const adminLinkedOnly = allUsers.some(u => String(u.agentId || '') === aid && String(u.role || '').trim().toLowerCase() === 'administrator') && linkedUsers.length === 0;
+            const isAllowed = cfg.allowedAgentIds.includes(aid) || linkedUsers.some(u => cfg.allowedUsernames.includes(String(u.username || '').trim().toLowerCase()));
+            if (isAllowed && !adminLinkedOnly) allowedCount++;
+
+            const roleLabel = linkedUsers.length
+                ? linkedUsers.map(u => `@${u.username} · ${u.role}`).join(', ')
+                : (agent.ren || 'Specialist Agent');
+
+            if (adminLinkedOnly) {
+                cardsHtml.push(`
+                    <div class="insights-access-item is-allowed" style="opacity:0.85; cursor:default;" title="Linked to an Administrator account (Always Enabled)">
+                        <input type="checkbox" checked disabled>
+                        <img class="insights-access-avatar" src="${escapeHtml(agent.image || 'assets/images/agent_marcus.jpg')}" alt="${escapeHtml(agent.name)}" onerror="this.onerror=null;this.src='assets/images/agent_marcus.jpg';">
+                        <span class="insights-access-meta">
+                            <span class="insights-access-name">${escapeHtml(agent.name || 'Agent')}</span>
+                            <span class="insights-access-sub">Administrator · Always On</span>
+                        </span>
+                    </div>
+                `);
+                return;
+            }
+
+            cardsHtml.push(`
+                <label class="insights-access-item ${isAllowed ? 'is-allowed' : ''}">
+                    <input type="checkbox" ${isAllowed ? 'checked' : ''} onchange="toggleAgentInsightsAccess('${escapeHtml(aid)}', this.checked)">
+                    <img class="insights-access-avatar" src="${escapeHtml(agent.image || 'assets/images/agent_marcus.jpg')}" alt="${escapeHtml(agent.name)}" onerror="this.onerror=null;this.src='assets/images/agent_marcus.jpg';">
+                    <span class="insights-access-meta">
+                        <span class="insights-access-name">${escapeHtml(agent.name || 'Specialist Agent')}</span>
+                        <span class="insights-access-sub">${escapeHtml(roleLabel)}</span>
+                    </span>
+                </label>
+            `);
+        });
+
+        // Any non-admin CRM users not yet linked to a specialist agent profile
+        nonAdminUsers.forEach(u => {
+            const unameLower = String(u.username || '').trim().toLowerCase();
+            if (!unameLower || coveredUsernames.has(unameLower)) return;
+            const isAllowed = cfg.allowedUsernames.includes(unameLower);
+            if (isAllowed) allowedCount++;
+            const safeU = encodeURIComponent(u.username);
+            cardsHtml.push(`
+                <label class="insights-access-item ${isAllowed ? 'is-allowed' : ''}">
+                    <input type="checkbox" ${isAllowed ? 'checked' : ''} onchange="toggleUserInsightsAccess('${safeU}')">
+                    <span class="insights-access-avatar" style="display:inline-flex;align-items:center;justify-content:center;background:#e2e8f0;color:#334155;font-weight:700;font-size:0.78rem;">${escapeHtml((u.username || 'U').charAt(0).toUpperCase())}</span>
+                    <span class="insights-access-meta">
+                        <span class="insights-access-name">@${escapeHtml(u.username)}</span>
+                        <span class="insights-access-sub">${escapeHtml(u.role || 'Agent')} · Unlinked Account</span>
+                    </span>
+                </label>
+            `);
+        });
+
+        if (badge) {
+            badge.textContent = `${allowedCount} ${allowedCount === 1 ? 'Agent' : 'Agents'} Selected`;
+        }
+        grid.innerHTML = cardsHtml.length > 0
+            ? cardsHtml.join('')
+            : '<div style="grid-column:1/-1;font-size:0.82rem;color:#64748b;padding:0.5rem 0;">No additional Specialist Agents or non-admin accounts found yet. Add agents in Specialist Agents or users in Settings &gt; Admin Management.</div>';
+    };
+
+    window.toggleAgentInsightsAccess = function(agentId, nextAllowed) {
+        if (typeof window.isCurrentAdministrator === 'function' && !window.isCurrentAdministrator()) {
+            alert('Only Administrators can change Insights permissions.');
+            window.renderInsightsAccessPanel();
+            return;
+        }
+        const aid = String(agentId || '').trim();
+        if (!aid) return;
+        const cfg = getInsightsAccessControl();
+        const users = typeof getAdminUsers === 'function' ? getAdminUsers() : [];
+
+        if (nextAllowed) {
+            if (!cfg.allowedAgentIds.includes(aid)) cfg.allowedAgentIds.push(aid);
+            users.forEach(u => {
+                if (String(u.agentId || '') === aid && u.username) {
+                    const uname = String(u.username).trim().toLowerCase();
+                    if (uname && !cfg.allowedUsernames.includes(uname)) cfg.allowedUsernames.push(uname);
+                }
+            });
+        } else {
+            cfg.allowedAgentIds = cfg.allowedAgentIds.filter(id => id !== aid);
+            users.forEach(u => {
+                if (String(u.agentId || '') === aid && u.username) {
+                    const uname = String(u.username).trim().toLowerCase();
+                    cfg.allowedUsernames = cfg.allowedUsernames.filter(n => n !== uname);
+                }
+            });
+        }
+
+        saveInsightsAccessControl(cfg);
+        window.renderInsightsAccessPanel();
+        if (typeof window.renderAdminManagement === 'function') window.renderAdminManagement();
+        if (typeof window.applyRoleNavVisibility === 'function') window.applyRoleNavVisibility();
+
+        const agents = safeJsonParse('industria_agents', []);
+        const foundAgent = agents.find(a => String(a.id) === aid);
+        const label = foundAgent ? foundAgent.name : `Agent #${aid}`;
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Admin Users',
+                action: 'Permission',
+                target: label,
+                details: `${nextAllowed ? 'Granted' : 'Revoked'} Dashboard > Insights access`
+            });
+        }
+        if (typeof showToast === 'function') showToast(`${nextAllowed ? 'Granted' : 'Revoked'} Insights access for ${label}`, nextAllowed ? 'success' : 'info');
+    };
+
+    window.toggleUserInsightsAccess = function(encUsername) {
+        if (typeof window.isCurrentAdministrator === 'function' && !window.isCurrentAdministrator()) {
+            alert('Only Administrators can change Insights permissions.');
+            return;
+        }
+        const username = decodeURIComponent(encUsername || '').trim();
+        const unameLower = username.toLowerCase();
+        if (!unameLower) return;
+
+        const users = typeof getAdminUsers === 'function' ? getAdminUsers() : [];
+        const targetUser = users.find(u => String(u.username || '').trim().toLowerCase() === unameLower);
+        if (!targetUser) return;
+        if (String(targetUser.role || '').trim().toLowerCase() === 'administrator') {
+            alert('Administrator accounts always have Dashboard > Insights access.');
+            return;
+        }
+
+        const cfg = getInsightsAccessControl();
+        const nextAllowed = !userHasInsightsAccess(targetUser, cfg);
+        const aid = (targetUser.agentId !== undefined && targetUser.agentId !== null && String(targetUser.agentId).trim() !== '')
+            ? String(targetUser.agentId).trim()
+            : '';
+
+        if (nextAllowed) {
+            if (!cfg.allowedUsernames.includes(unameLower)) cfg.allowedUsernames.push(unameLower);
+            if (aid && !cfg.allowedAgentIds.includes(aid)) cfg.allowedAgentIds.push(aid);
+        } else {
+            cfg.allowedUsernames = cfg.allowedUsernames.filter(u => u !== unameLower);
+            if (aid) {
+                const otherAllowedUserSharesAgent = users.some(u =>
+                    String(u.username || '').trim().toLowerCase() !== unameLower &&
+                    String(u.agentId || '').trim() === aid &&
+                    cfg.allowedUsernames.includes(String(u.username || '').trim().toLowerCase())
+                );
+                if (!otherAllowedUserSharesAgent) {
+                    cfg.allowedAgentIds = cfg.allowedAgentIds.filter(id => id !== aid);
+                }
+            }
+        }
+
+        saveInsightsAccessControl(cfg);
+        if (typeof window.renderAdminManagement === 'function') window.renderAdminManagement();
+        window.renderInsightsAccessPanel();
+        if (typeof window.applyRoleNavVisibility === 'function') window.applyRoleNavVisibility();
+
+        if (typeof window.logDashboardActivity === 'function') {
+            window.logDashboardActivity({
+                category: 'Admin Users',
+                action: 'Permission',
+                target: targetUser.username,
+                details: `${nextAllowed ? 'Granted' : 'Revoked'} Dashboard > Insights access`
+            });
+        }
+        if (typeof showToast === 'function') showToast(`${nextAllowed ? 'Granted' : 'Revoked'} Insights access for ${targetUser.username}`, nextAllowed ? 'success' : 'info');
+    };
+
+    window.setAllInsightsAccess = function(enableAll) {
+        if (typeof window.isCurrentAdministrator === 'function' && !window.isCurrentAdministrator()) {
+            alert('Only Administrators can change Insights permissions.');
+            return;
+        }
+        let nextCfg = { allowedUsernames: [], allowedAgentIds: [] };
+        if (enableAll) {
+            const allAgents = safeJsonParse('industria_agents', typeof defaultAgents !== 'undefined' ? defaultAgents : []);
+            const allUsers = typeof getAdminUsers === 'function' ? getAdminUsers() : [];
+            nextCfg.allowedAgentIds = (Array.isArray(allAgents) ? allAgents : []).map(a => String(a.id || '').trim()).filter(Boolean);
+            nextCfg.allowedUsernames = allUsers
+                .filter(u => String(u.role || '').trim().toLowerCase() !== 'administrator')
+                .map(u => String(u.username || '').trim().toLowerCase())
+                .filter(Boolean);
+        }
+        saveInsightsAccessControl(nextCfg);
+        window.renderInsightsAccessPanel();
+        if (typeof window.renderAdminManagement === 'function') window.renderAdminManagement();
+        if (typeof window.applyRoleNavVisibility === 'function') window.applyRoleNavVisibility();
+        if (typeof showToast === 'function') showToast(enableAll ? 'Granted Dashboard > Insights access to all listed agents' : 'Restricted Dashboard > Insights to Administrators only', enableAll ? 'success' : 'info');
+    };
+
+    async function loadInsightsFromSupabase(retryCount = 0) {
+        if (!window.IndustraSupabase || typeof window.IndustraSupabase.fetchSiteSetting !== 'function') {
+            if (retryCount < 8) setTimeout(() => loadInsightsFromSupabase(retryCount + 1), 400);
+            return;
+        }
+        try {
+            const sbInsights = await window.IndustraSupabase.fetchSiteSetting('insights_articles');
+            if (Array.isArray(sbInsights) && sbInsights.length > 0) {
+                const localInsights = getAllInsightArticles();
+                const merged = [];
+                const seen = new Set();
+                const keyOf = (item) => String((item && (item.id || item.slug)) || '').trim().toLowerCase();
+                sbInsights.forEach(item => {
+                    const k = keyOf(item);
+                    if (!k || seen.has(k)) return;
+                    seen.add(k);
+                    merged.push(item);
+                });
+                let hadLocalOnly = false;
+                localInsights.forEach(item => {
+                    const k = keyOf(item);
+                    if (!k || seen.has(k)) return;
+                    seen.add(k);
+                    merged.push(item);
+                    hadLocalOnly = true;
+                });
+                localStorage.setItem(INSIGHTS_STORAGE_KEY, JSON.stringify(merged));
+                if (hadLocalOnly && typeof window.IndustraSupabase.upsertSiteSetting === 'function') {
+                    window.IndustraSupabase.upsertSiteSetting('insights_articles', merged).catch(() => {});
+                }
+            } else if (typeof window.IndustraSupabase.upsertSiteSetting === 'function') {
+                await window.IndustraSupabase.upsertSiteSetting('insights_articles', getAllInsightArticles());
+            }
+            const sbAuto = await window.IndustraSupabase.fetchSiteSetting('insights_automation_settings');
+            if (sbAuto && typeof sbAuto === 'object') {
+                localStorage.setItem(INSIGHTS_AUTO_KEY, JSON.stringify(sbAuto));
+            }
+            const sbAccess = await window.IndustraSupabase.fetchSiteSetting('insights_access_control');
+            if (sbAccess && typeof sbAccess === 'object') {
+                localStorage.setItem(INSIGHTS_ACCESS_STORAGE_KEY, JSON.stringify({
+                    allowedUsernames: Array.isArray(sbAccess.allowedUsernames) ? sbAccess.allowedUsernames : [],
+                    allowedAgentIds: Array.isArray(sbAccess.allowedAgentIds) ? sbAccess.allowedAgentIds : []
+                }));
+            }
+            if (typeof window.applyRoleNavVisibility === 'function') window.applyRoleNavVisibility();
+            if (typeof window.renderAdminManagement === 'function') window.renderAdminManagement();
+            window.renderInsightsAccessPanel();
+            window.updateInsightsAutomationUI();
+            window.renderInsightsAdminTable();
+            const insightsViewEl = document.getElementById('insights-view');
+            if (insightsViewEl && insightsViewEl.style.display === 'block' && typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+                if (typeof window.switchView === 'function') window.switchView('overview');
+            }
+            checkAndRunScheduledInsightGeneration();
+        } catch (err) {
+            console.warn('Could not load insights from Supabase:', err);
+        }
+    }
+
+    // =========================================================================
+    // URL-TO-ARTICLE CAPTURE STUDIO & ORIGINAL MYFACTORYSPACE REWRITER
+    // =========================================================================
+    let currentCapturedInsightSource = null;
+    let selectedCapturedPhotoIndex = 0; // -1 = MyFactorySpace aerial library photo
+    let manualCapturedPhotoDataUrl = '';
+    let insightsCaptureMode = 'url';
+
+    function sanitizeHttpUrl(raw) {
+        const trimmed = String(raw || '').trim();
+        if (!trimmed) return '';
+        try {
+            const parsed = new URL(trimmed);
+            if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                return parsed.toString();
+            }
+        } catch (e) {}
+        return '';
+    }
+
+    function shortCaptureText(text, maxLen = 140) {
+        const clean = String(text || '').replace(/\s+/g, ' ').trim();
+        if (!clean || clean.length <= maxLen) return clean;
+        const cut = clean.slice(0, maxLen - 1);
+        const lastSpace = cut.lastIndexOf(' ');
+        return (lastSpace > maxLen * 0.6 ? cut.slice(0, lastSpace) : cut).trim() + '…';
+    }
+
+    function stripPublisherSuffix(rawTitle) {
+        let t = String(rawTitle || '').replace(/\s+/g, ' ').trim();
+        if (!t) return '';
+        // Strip common trailing news/portal brand tags like " | The Star", " - EdgeProp", " — NST"
+        const sepMatch = t.match(/^(.{18,}?)\s+(?:\||—|–|-)\s+([^|—–-]{2,42})$/);
+        if (sepMatch) {
+            const tail = sepMatch[2].toLowerCase();
+            if (!/\b(20\d{2}|guide|report|outlook|analysis|update|malaysia|selangor|klang|shah alam|subang|pj)\b/.test(tail)) {
+                t = sepMatch[1].trim();
+            }
+        }
+        return t;
+    }
+
+    function getDefaultAerialForCity(city) {
+        const c = String(city || '').toLowerCase();
+        if (c.includes('petaling')) return 'assets/images/drone_pj.jpg';
+        if (c.includes('subang')) return 'assets/images/drone_subang.jpg';
+        if (c.includes('shah alam')) return 'assets/images/drone_shahalam.jpg';
+        if (c.includes('klang') && !c.includes('valley')) return 'assets/images/drone_klang.jpg';
+        return 'assets/images/drone_all.jpg';
+    }
+
+    function setInsightsCaptureStatus(type, message, options = {}) {
+        const banner = document.getElementById('insights-capture-status');
+        if (!banner) return;
+        if (!message) {
+            banner.hidden = true;
+            banner.replaceChildren();
+            banner.className = 'capture-status-banner';
+            return;
+        }
+        banner.hidden = false;
+        banner.className = `capture-status-banner is-${type || 'loading'}`;
+        banner.replaceChildren();
+
+        const msgWrap = document.createElement('span');
+        msgWrap.style.display = 'inline-flex';
+        msgWrap.style.alignItems = 'center';
+        msgWrap.style.gap = '7px';
+
+        const icon = document.createElement('i');
+        if (type === 'loading') icon.className = 'fa-solid fa-spinner fa-spin';
+        else if (type === 'error') icon.className = 'fa-solid fa-circle-exclamation';
+        else if (type === 'warning') icon.className = 'fa-solid fa-triangle-exclamation';
+        else icon.className = 'fa-solid fa-circle-check';
+        icon.setAttribute('aria-hidden', 'true');
+
+        const txt = document.createElement('span');
+        txt.textContent = message;
+        msgWrap.append(icon, txt);
+        banner.appendChild(msgWrap);
+
+        if (options.offerManualFallback) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn btn-xs btn-outline';
+            btn.textContent = 'Switch to Paste Text / Notes';
+            btn.addEventListener('click', () => {
+                window.switchInsightsCaptureMode('manual');
+                const urlInput = document.getElementById('insights-capture-url');
+                const manualUrl = document.getElementById('insights-manual-url');
+                if (urlInput && manualUrl && urlInput.value.trim()) {
+                    manualUrl.value = urlInput.value.trim();
+                }
+                const manualText = document.getElementById('insights-manual-text');
+                if (manualText) manualText.focus();
+            });
+            banner.appendChild(btn);
+        }
+    }
+
+    // Accessible post-interaction validation (validate-input-after-interaction)
+    (function initInsightsCaptureValidation() {
+        const form = document.getElementById('insights-url-capture-form');
+        const input = document.getElementById('insights-capture-url');
+        if (!form || !input) return;
+
+        const supportsUserInvalid = typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('selector(:user-invalid)');
+        const dirtyState = new WeakMap();
+        const announcer = document.createElement('div');
+        announcer.setAttribute('aria-live', 'polite');
+        announcer.classList.add('visually-hidden');
+        document.body.appendChild(announcer);
+        let announceTimer = null;
+
+        const linkError = (el, shown) => {
+            const errorId = el.dataset.error;
+            if (!errorId) return;
+            const ids = (el.getAttribute('aria-describedby') || '').split(/\s+/).filter(id => id && id !== errorId);
+            if (shown) ids.push(errorId);
+            if (ids.length) el.setAttribute('aria-describedby', ids.join(' '));
+            else el.removeAttribute('aria-describedby');
+        };
+
+        const announceFieldError = (el) => {
+            const errEl = document.getElementById(el.dataset.error || '');
+            if (!errEl) return;
+            clearTimeout(announceTimer);
+            announcer.textContent = '';
+            const cleanMsg = (errEl.textContent || '').replace(/\s+/g, ' ').trim();
+            announceTimer = setTimeout(() => { announcer.textContent = `Reference Website Link: ${cleanMsg}`; }, 450);
+        };
+
+        const syncFieldState = (el, { forceShow = false, announce = false } = {}) => {
+            const rawVal = (el.value || '').trim();
+            const isValid = el.validity.valid && Boolean(sanitizeHttpUrl(rawVal));
+            let isInvalidShown = false;
+
+            if (supportsUserInvalid) {
+                isInvalidShown = forceShow ? !isValid : el.matches(':user-invalid');
+                el.classList.toggle('user-invalid-fallback', forceShow && !isValid);
+                el.classList.toggle('user-valid-fallback', isValid && rawVal.length > 0);
+            } else {
+                const st = dirtyState.get(el) || { interacted: false, blurred: false };
+                if (forceShow) { st.interacted = true; st.blurred = true; dirtyState.set(el, st); }
+                if (st.interacted && st.blurred) {
+                    isInvalidShown = !isValid;
+                    el.classList.toggle('user-invalid-fallback', !isValid);
+                    el.classList.toggle('user-valid-fallback', isValid);
+                } else {
+                    el.classList.remove('user-invalid-fallback', 'user-valid-fallback');
+                }
+            }
+
+            el.setAttribute('aria-invalid', isInvalidShown ? 'true' : 'false');
+            linkError(el, isInvalidShown);
+            if (isInvalidShown && announce) announceFieldError(el);
+            if (!isInvalidShown) {
+                clearTimeout(announceTimer);
+                announcer.textContent = '';
+            }
+            return isValid;
+        };
+
+        input.setAttribute('aria-invalid', 'false');
+        input.addEventListener('input', () => {
+            const st = dirtyState.get(input) || { interacted: false, blurred: false };
+            st.interacted = true;
+            dirtyState.set(input, st);
+            syncFieldState(input, { announce: false });
+        });
+        input.addEventListener('blur', () => {
+            const st = dirtyState.get(input) || { interacted: false, blurred: false };
+            st.blurred = true;
+            dirtyState.set(input, st);
+            if (st.interacted || input.value.trim()) syncFieldState(input, { announce: true });
+        });
+        form._validateCaptureUrl = () => syncFieldState(input, { forceShow: true, announce: true });
+    })();
+
+    function analyzeCapturedSource(captured, overrides = {}) {
+        const title = stripPublisherSuffix(captured.title || 'Klang Valley Industrial Update');
+        const allText = [
+            title,
+            captured.description || '',
+            ...(captured.headings || []),
+            ...(captured.highlights || []),
+            ...(captured.paragraphs || []).slice(0, 8),
+            ...(captured.bullets || []).slice(0, 8),
+            overrides.customNotes || ''
+        ].join(' ');
+        const lower = allText.toLowerCase();
+
+        // 1. Target City detection (or explicit override)
+        let targetCity = String(overrides.cityOverride || '').trim();
+        if (!targetCity) {
+            const citySignals = [
+                { city: 'Petaling Jaya', re: /\b(petaling jaya|section 51a?|ss2|pj industrial|damansara|ara damansara)\b/i },
+                { city: 'Subang Jaya', re: /\b(subang jaya|subang hi-?tech|usj|subang industrial|batu tiga)\b/i },
+                { city: 'Shah Alam', re: /\b(shah alam|bukit jelutong|glenmarie|sekitar 26|section 15|section 26|kota kemuning|setia alam|hicom)\b/i },
+                { city: 'Klang', re: /\b(port klang|westports|northport|pulau indah|kapar|meru|telok gong|bandar bukit raja|klang)\b/i }
+            ];
+            for (const entry of citySignals) {
+                if (entry.re.test(allText)) {
+                    targetCity = entry.city;
+                    break;
+                }
+            }
+            if (!targetCity) targetCity = 'Klang Valley';
+        }
+
+        // 2. Property Type detection
+        let targetType = 'All';
+        if (/\b(cold[- ]chain|fulfilment|fulfillment|distribution cent(?:re|er)|3pl|logistics hub|warehouse)\b/i.test(allText)) {
+            targetType = 'Detached Warehouse';
+        } else if (/\b(industrial land|land bank|acres?|hectares?|greenfield|freehold land)\b/i.test(allText)) {
+            targetType = 'Industrial Land';
+        } else if (/\b(semi[- ]?detached|semi[- ]?d)\b/i.test(allText)) {
+            targetType = 'Semi-Detached Factory';
+        } else if (/\b(terrace factory|link factory)\b/i.test(allText)) {
+            targetType = 'Terrace Factory';
+        } else if (/\b(detached factory|manufacturing plant|production facility|factory)\b/i.test(allText)) {
+            targetType = 'Detached Factory';
+        }
+
+        // 3. Category detection
+        let category = 'Industry Guide';
+        if (/\b(bomba|doe|ccc|cf|miti|mida|stamp duty|tax|budget|regulation|compliance|esg|green building|policy|guideline|tariff|tnb)\b/i.test(allText)) {
+            category = 'Legal & Compliance';
+        } else if (/\b(fdi|gdp|yield|rental growth|outlook|forecast|quarter|q[1-4]\s*20\d{2}|billion|million|supply|demand|vacancy|market report)\b/i.test(allText)) {
+            category = 'Sector Analysis';
+        } else if (targetCity !== 'Klang Valley' || /\b(wce|nkve|elite|kesas|ecrl|corridor|industrial park|highway|port klang)\b/i.test(allText)) {
+            category = 'Location Focus';
+        } else if (/\b(acquires?|acquisition|expands?|relocates?|breaks ground|signs lease|deal|transaction)\b/i.test(allText)) {
+            category = 'Case Studies';
+        }
+
+        // 4. Extract concise metric chip from captured text
+        const metricMatch = allText.match(/(RM\s?[\d,.]+\s?(?:bil(?:lion)?|mil(?:lion)?|k|psf|\/sq\s?ft)?|\b\d+(?:\.\d+)?%\b|\b\d[\d,.]*\s?(?:sq\s?ft|sqft|acres?|MW|kVA|Amp)\b)/i);
+        const leadMetric = metricMatch ? metricMatch[0].replace(/\s+/g, ' ').trim() : `${targetCity} Update`;
+
+        // 5. Gather clean, unique extracted signals
+        const rawFacts = [
+            ...(Array.isArray(captured.highlights) ? captured.highlights : []),
+            ...(Array.isArray(captured.bullets) ? captured.bullets : []),
+            ...(Array.isArray(captured.paragraphs) ? captured.paragraphs : [])
+        ];
+        const facts = [];
+        const factSeen = new Set();
+        for (const item of rawFacts) {
+            const clean = String(item || '').replace(/\s+/g, ' ').trim();
+            if (clean.length < 30) continue;
+            const key = clean.toLowerCase().slice(0, 65);
+            if (factSeen.has(key)) continue;
+            factSeen.add(key);
+            facts.push(shortCaptureText(clean, 210));
+            if (facts.length >= 6) break;
+        }
+        if (!facts.length && captured.description) {
+            facts.push(shortCaptureText(captured.description, 210));
+        }
+
+        // 6. Pull live MyFactorySpace corridor benchmarks
+        const allProps = (typeof properties !== 'undefined' && Array.isArray(properties)) ? properties : safeJsonParse('industria_properties', []);
+        const activeProps = allProps.filter(p => p && p.status !== 'Inactive' && p.status !== 'Pending');
+        const cityProps = targetCity === 'Klang Valley'
+            ? activeProps
+            : activeProps.filter(p => String(p.location || '').trim().toLowerCase() === targetCity.toLowerCase());
+        const benchProps = cityProps.length ? cityProps : activeProps;
+
+        const saleProps = benchProps.filter(p => (p.intent || '').toLowerCase() === 'sale' || (!String(p.price || '').toLowerCase().includes('mo') && String(p.price || '').trim() !== ''));
+        const rentProps = benchProps.filter(p => (p.intent || '').toLowerCase() === 'rent' || String(p.price || '').toLowerCase().includes('mo'));
+        const salePrices = saleProps.map(p => parsePriceNumForInsights(p.price)).filter(v => v > 0);
+        const rentPrices = rentProps.map(p => parsePriceNumForInsights(p.price)).filter(v => v > 0);
+        const powers = benchProps.map(p => parseInt(String(p.power || '').replace(/[^0-9]/g, ''), 10)).filter(n => !isNaN(n) && n > 0);
+
+        const activeParksObj = (typeof parks !== 'undefined' && parks && typeof parks === 'object') ? parks : safeJsonParse('industria_industrial_parks', {});
+        const locSettings = getAllLocationSettings();
+        const locEntry = Object.values(locSettings).find(l => l && l.city && l.city.toLowerCase() === targetCity.toLowerCase()) || null;
+
+        let corridorParks = [];
+        if (targetCity !== 'Klang Valley' && Array.isArray(activeParksObj[targetCity])) {
+            corridorParks = activeParksObj[targetCity].map(pk => (typeof pk === 'object' ? pk.name : pk)).filter(Boolean);
+        } else {
+            Object.values(activeParksObj).forEach(arr => {
+                if (Array.isArray(arr)) {
+                    arr.forEach(pk => {
+                        const nm = typeof pk === 'object' ? pk.name : pk;
+                        if (nm && corridorParks.length < 6) corridorParks.push(nm);
+                    });
+                }
+            });
+        }
+
+        const rentRange = rentPrices.length
+            ? `RM ${Math.min(...rentPrices).toLocaleString()} – RM ${Math.max(...rentPrices).toLocaleString()} / mo`
+            : 'RM 16,000 – RM 68,000 / mo';
+        const shortRentRange = rentPrices.length
+            ? `${formatShortRm(Math.min(...rentPrices))} – ${formatShortRm(Math.max(...rentPrices))}/mo`
+            : 'RM 16K – 68K/mo';
+        const saleRange = salePrices.length
+            ? `RM ${Math.min(...salePrices).toLocaleString()} – RM ${Math.max(...salePrices).toLocaleString()}`
+            : 'RM 5,800,000 – RM 28,000,000+';
+        const powerRange = powers.length ? `${Math.min(...powers)}–${Math.max(...powers)} Amp (3-Phase)` : '150–400 Amp (3-Phase)';
+        const highways = (locEntry && locEntry.stats && locEntry.stats.highways) || 'Federal Highway, NKVE, KESAS & ELITE';
+        const portDist = (locEntry && locEntry.stats && locEntry.stats.portDist) || '25–40 mins to Port Klang';
+        const fallbackAerial = (locEntry && (locEntry.cardImage || locEntry.heroImage)) || getDefaultAerialForCity(targetCity);
+
+        return {
+            cleanTopic: title,
+            targetCity,
+            targetType,
+            category,
+            leadMetric,
+            facts,
+            benchmarks: {
+                activeCount: benchProps.length,
+                saleCount: saleProps.length,
+                rentCount: rentProps.length,
+                rentRange,
+                shortRentRange,
+                saleRange,
+                powerRange,
+                topParks: corridorParks.slice(0, 4).join(', ') || `${targetCity} Prime Industrial Parks`,
+                highways,
+                portDist,
+                fallbackAerial
+            }
+        };
+    }
+
+    function buildMyFactorySpaceArticleFromCapture(captured, options = {}) {
+        const angle = options.angle || 'executive';
+        const customNotes = String(options.customNotes || '').trim();
+        const includeCredit = options.includeCredit !== false;
+        const analysis = analyzeCapturedSource(captured, {
+            cityOverride: options.cityOverride || '',
+            customNotes
+        });
+
+        const yearStr = new Date().getFullYear();
+        const todayIso = new Date().toISOString().slice(0, 10);
+        const autoCfg = getInsightsAutomationSettings();
+        const b = analysis.benchmarks;
+        const city = analysis.targetCity;
+        const propLabel = analysis.targetType === 'All' ? 'Factories & Warehouses' : `${analysis.targetType} Units`;
+
+        const angleConfig = {
+            executive: {
+                edition: 'specialized',
+                badge: 'Executive Brief',
+                titlePrefix: '',
+                titleSuffix: `— ${city} Industrial Briefing (${yearStr})`,
+                audience: 'factory owners, logistics directors, and corporate occupiers',
+                lensHeading: `What This Means for ${city} Industrial Occupiers & Owners`,
+                verdict: `Use this market shift as a timing filter: shortlist ${city} units with verified 3-phase TNB power, clean CCC/BOMBA status, and direct access to ${b.highways} before prime Grade-A stock tightens further.`
+            },
+            investor: {
+                edition: 'investor',
+                badge: 'Investor Playbook',
+                titlePrefix: 'Investor Brief: ',
+                titleSuffix: `— Yield & Capital Impact in ${city} (${yearStr})`,
+                audience: 'industrial property investors, family offices, and portfolio landlords',
+                lensHeading: `Investor & Rental Yield Implications in ${city}`,
+                verdict: `Prioritize freehold or long-leasehold industrial assets in ${city} with modern floor loading and 200+ Amp power — these specs consistently hold lower vacancy and stronger yield resilience.`
+            },
+            buyer: {
+                edition: 'compliance',
+                badge: 'Buyer & Tenant Guide',
+                titlePrefix: 'Factory & Warehouse Guide: ',
+                titleSuffix: `— ${city} Spec & Selection Checklist (${yearStr})`,
+                audience: 'expanding manufacturers, 3PL operators, and SME factory buyers',
+                lensHeading: `Operational & Relocation Checklist for ${city} Buyers & Tenants`,
+                verdict: `Lock in technical due diligence early: validate TNB substation headroom, slab floor loading, and BOMBA sprinkler/hydrant compliance before signing any Letter of Offer in ${city}.`
+            },
+            digest: {
+                edition: 'specialized',
+                badge: 'Market Digest',
+                titlePrefix: 'MyFactorySpace Take: ',
+                titleSuffix: `(${yearStr} Klang Valley Impact)`,
+                audience: 'Klang Valley industrial stakeholders tracking market developments',
+                lensHeading: `MyFactorySpace Advisory Breakdown for ${city}`,
+                verdict: `Headlines move fast, but real industrial value comes down to on-the-ground supply: compare active ${city} pricing (${b.shortRentRange}) against your actual power, height, and logistics requirements.`
+            }
+        }[angle] || {
+            edition: 'specialized',
+            badge: 'Executive Brief',
+            titlePrefix: '',
+            titleSuffix: `— ${city} Industrial Briefing (${yearStr})`,
+            audience: 'industrial buyers, tenants, and property owners',
+            lensHeading: `What This Means for ${city} Industrial Occupiers`,
+            verdict: `Pair market catalysts with verified physical specifications before committing to your next ${city} industrial asset.`
+        };
+
+        // Construct an original MyFactorySpace headline without verbatim duplication
+        const clippedCore = shortCaptureText(analysis.cleanTopic, 74).replace(/[.:;–—-]+$/, '');
+        const originalTitle = `${angleConfig.titlePrefix}${clippedCore} ${angleConfig.titleSuffix}`.replace(/\s+/g, ' ').trim();
+
+        const existingSlugs = new Set(getAllInsightArticles().map(a => String(a.slug || '').toLowerCase()));
+        let baseSlug = slugifyInsight(`${city}-${clippedCore}-${yearStr}`).slice(0, 68) || `mfs-insight-${Date.now()}`;
+        let finalSlug = baseSlug;
+        let suffixNum = 2;
+        while (existingSlugs.has(finalSlug)) {
+            finalSlug = `${baseSlug}-${suffixNum++}`;
+        }
+
+        const primarySignals = analysis.facts.slice(0, 4);
+        const signalLead = primarySignals[0] || `Recent industry developments around "${clippedCore}" highlight shifting demand across Malaysia's industrial real estate corridors.`;
+
+        const excerpt = shortCaptureText(
+            `MyFactorySpace ${angleConfig.badge}: ${clippedCore} analyzed for ${angleConfig.audience} — paired with ${b.activeCount} live ${city} listings (${b.shortRentRange}) and a clear 3-step action plan.`,
+            235
+        );
+
+        const keyTakeaways = [
+            `Market Catalyst (${analysis.leadMetric}): ${shortCaptureText(signalLead, 155)}`,
+            `Live ${city} Supply Benchmark: ${b.activeCount} active MyFactorySpace listings (${b.saleCount} Sale / ${b.rentCount} Rent) with rentals spanning ${b.shortRentRange}.`,
+            `Technical Baseline: Target ${b.powerRange}, container-ready access via ${b.highways}, and full CCC/BOMBA readiness.`,
+            customNotes
+                ? `Specialist Advisory Note: ${shortCaptureText(customNotes, 155)}`
+                : `Prime Estates to Watch: ${b.topParks} lead tenant & investor shortlists across ${city}.`
+        ];
+
+        const signalBulletsMd = primarySignals.length
+            ? primarySignals.map((f, idx) => `- **Signal ${idx + 1}:** ${f}`).join('\n')
+            : `- **Core Industry Signal:** ${clippedCore} signals rising focus on modern industrial infrastructure and specification quality across ${city}.`;
+
+        const customNotesBlock = customNotes
+            ? `\n### MyFactorySpace On-the-Ground Advisory Note\n${customNotes}\n`
+            : '';
+
+        const safeCreditUrl = sanitizeHttpUrl(captured.url || captured.fetchedUrl || '');
+        const creditFooter = (includeCredit && safeCreditUrl)
+            ? `\n---\n\n*Editorial Note: Market context inspired by reporting from [${captured.siteName || captured.domain || 'External Source'}](${safeCreditUrl}), independently re-analyzed and paired with live MyFactorySpace Klang Valley industrial data.*`
+            : '';
+
+        const body = [
+            `## At-a-Glance Executive Snapshot`,
+            `Recent developments surrounding **${clippedCore}** are shaping how ${angleConfig.audience} evaluate **${propLabel}** across **${city}**. Rather than reacting to headlines alone, MyFactorySpace connects this market catalyst directly to live Klang Valley inventory, power specifications, and compliance benchmarks.`,
+            customNotesBlock.trim(),
+            `## Key Market Signals Captured`,
+            signalBulletsMd,
+            `## Live MyFactorySpace ${city} Benchmark Matrix`,
+            `| Industrial Metric | Current ${city} Benchmark | Why It Matters |`,
+            `| --- | --- | --- |`,
+            `| Active Verified Supply | **${b.activeCount} listings** (${b.saleCount} Sale · ${b.rentCount} Rent) | Gauges negotiation leverage & immediate move-in stock |`,
+            `| Monthly Rental Range | **${b.rentRange}** | Anchors budgeting for ready factories & warehouses |`,
+            `| Capital / Sale Range | **${b.saleRange}** | Benchmarks freehold vs leasehold asset pricing |`,
+            `| Typical Power Supply | **${b.powerRange}** | Critical for manufacturing, cold-chain & automation loads |`,
+            `| Prime Industrial Parks | **${b.topParks}** | Established ecosystems with proven logistics access |`,
+            `| Highway & Port Link | **${b.highways}** (${b.portDist}) | Minimizes container haulage lead times |`,
+            `## ${angleConfig.lensHeading}`,
+            `- **Demand & Specification Shift:** Occupiers responding to ${clippedCore.toLowerCase()} increasingly favour high-eave (30–40 ft), heavy floor-load facilities over older low-clearance stock.`,
+            `- **Location Concentration:** ${b.topParks} continue attracting higher enquiry velocity due to highway connectivity via ${b.highways}.`,
+            `- **Cost & Timing Discipline:** Securing pre-verified industrial spaces with active TNB supply and clean CCC avoids 3–6 month renovation and regulatory delays.`,
+            `## 3-Step MyFactorySpace Action Plan`,
+            `1. **Define Non-Negotiable Specs First:** Confirm required built-up sq ft, 3-phase TNB Amp load, floor loading (kN/m² or ton/m²), and 40ft container loading bay needs before scheduling site viewings.`,
+            `2. **Benchmark Live ${city} Inventory:** Compare active sale and lease options across ${b.topParks} to verify realistic RM psf value against power and ceiling height specs.`,
+            `3. **Verify Regulatory & Utility Readiness Early:** Request official CCC/CF copies, BOMBA fire certificate status, and TNB meter/substation upgrade feasibility prior to earnest deposit.`,
+            `## Pre-Commitment Red-Flag Checks`,
+            `- **Power Upgrade Lead Time:** Upgrading from 100 Amp to 300+ Amp via TNB can add months and substantial capital contribution if the park substation lacks spare capacity.`,
+            `- **Unapproved Extensions:** Confirm all mezzanine decks, awnings, and racking layouts comply with local council (MBSA / MBPJ / MBSJ / MPK) and BOMBA guidelines.`,
+            `- **Container Access & Turning Radius:** Test actual 40ft prime mover ingress/egress during peak industrial park hours.`,
+            `> **MyFactorySpace Bottom-Line Verdict:** ${angleConfig.verdict}`,
+            creditFooter.trim()
+        ].filter(Boolean).join('\n\n');
+
+        const faqs = [
+            {
+                q: `How does "${shortCaptureText(clippedCore, 72)}" impact factory and warehouse demand in ${city}?`,
+                a: `It increases occupier and investor focus on compliant, well-connected ${city} industrial assets—especially units in ${b.topParks} with modern power and logistics specifications.`
+            },
+            {
+                q: `What are typical industrial rental and power benchmarks in ${city} right now?`,
+                a: `Live MyFactorySpace listings in ${city} span approximately ${b.rentRange} with typical 3-phase TNB power of ${b.powerRange}, depending on built-up size, ceiling height, and park grade.`
+            },
+            {
+                q: `What should buyers or tenants inspect before committing to a ${city} factory or warehouse?`,
+                a: `Always verify CCC/CF approval, BOMBA fire safety certification, actual TNB Amp capacity, slab floor loading, and 40ft container turning access before signing a Letter of Offer.`
+            }
+        ];
+
+        const mindMap = {
+            centerTitle: shortCaptureText(clippedCore, 36),
+            centerSubtitle: `${angleConfig.badge} · ${city} ${yearStr}`,
+            edition: angleConfig.edition,
+            branches: [
+                {
+                    title: 'Market Catalyst',
+                    metric: shortCaptureText(analysis.leadMetric, 24),
+                    color: '#059669',
+                    soft: '#ecfdf5',
+                    border: '#a7f3d0',
+                    icon: 'fa-solid fa-bolt',
+                    points: [
+                        shortCaptureText(primarySignals[0] || clippedCore, 82),
+                        shortCaptureText(primarySignals[1] || `Growing occupier focus across ${city} hubs`, 82)
+                    ]
+                },
+                {
+                    title: `${city} Live Benchmarks`,
+                    metric: shortCaptureText(b.shortRentRange, 24),
+                    color: '#2563eb',
+                    soft: '#eff6ff',
+                    border: '#bfdbfe',
+                    icon: 'fa-solid fa-chart-line',
+                    points: [
+                        `${b.activeCount} active units (${b.saleCount} Sale · ${b.rentCount} Rent)`,
+                        shortCaptureText(`Key Parks: ${b.topParks}`, 82)
+                    ]
+                },
+                {
+                    title: 'Specs & Compliance',
+                    metric: shortCaptureText(b.powerRange.replace(' (3-Phase)', ''), 24),
+                    color: '#7c3aed',
+                    soft: '#f5f3ff',
+                    border: '#ddd6fe',
+                    icon: 'fa-solid fa-shield-halved',
+                    points: [
+                        `Verify CCC/CF, BOMBA & TNB substation headroom`,
+                        shortCaptureText(`Access: ${b.highways}`, 82)
+                    ]
+                },
+                {
+                    title: '3-Step Action Plan',
+                    metric: 'Shortlist → Verify',
+                    color: '#d97706',
+                    soft: '#fffbeb',
+                    border: '#fde68a',
+                    icon: 'fa-solid fa-list-check',
+                    points: [
+                        `Lock power, floor load & eave height specs first`,
+                        customNotes
+                            ? shortCaptureText(customNotes, 82)
+                            : `Compare live ${city} listings before earnest deposit`
+                    ]
+                }
+            ]
+        };
+
+        const mmCb = document.getElementById('insights-auto-include-mindmap');
+        const igCb = document.getElementById('insights-auto-include-infographic');
+        const resolvedIncludeMindMap = typeof options.includeMindMap === 'boolean'
+            ? options.includeMindMap
+            : (mmCb ? Boolean(mmCb.checked) : (autoCfg.includeMindMap !== false));
+        const resolvedIncludeInfographic = typeof options.includeInfographic === 'boolean'
+            ? options.includeInfographic
+            : (igCb ? Boolean(igCb.checked) : (autoCfg.includeInfographic !== false));
+
+        return {
+            id: `ins_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            slug: finalSlug,
+            title: originalTitle,
+            category: analysis.category,
+            targetCity: city,
+            targetType: analysis.targetType,
+            coverImage: options.resolvedCoverImage || b.fallbackAerial,
+            edition: angleConfig.edition,
+            includeMindMap: resolvedIncludeMindMap,
+            includeInfographic: resolvedIncludeInfographic,
+            visualInfographic: '',
+            mindMap,
+            authorName: 'MyFactorySpace Editorial',
+            authorAvatar: 'assets/images/agent_marcus.jpg',
+            publishedAt: todayIso,
+            readTime: estimateInsightReadTime(body),
+            featured: false,
+            status: options.status || 'Draft',
+            autoGenerated: true,
+            contentSource: options.contentSourceOrigin || activeInsightsContentSource || 'website',
+            sourceInspirationUrl: safeCreditUrl,
+            excerpt,
+            keyTakeaways,
+            body,
+            faqs
+        };
+    }
+
+    function renderInsightsCaptureWorkspace(captured) {
+        const workspace = document.getElementById('insights-capture-workspace');
+        const summaryEl = document.getElementById('insights-capture-source-summary');
+        const photosGrid = document.getElementById('insights-capture-photos-grid');
+        const photoCountEl = document.getElementById('insights-capture-photo-count');
+        const factsList = document.getElementById('insights-capture-facts-list');
+        const factsCountEl = document.getElementById('insights-capture-facts-count');
+        if (!workspace || !summaryEl || !photosGrid || !factsList) return;
+
+        currentCapturedInsightSource = captured;
+        const images = Array.isArray(captured.images) ? captured.images : [];
+        selectedCapturedPhotoIndex = images.length > 0 ? 0 : -1;
+
+        const cityOverride = activeInsightsContentSource === 'internet'
+            ? ((document.getElementById('insights-public-city') || {}).value || '')
+            : ((document.getElementById('insights-capture-city') || {}).value || '');
+        const analysis = analyzeCapturedSource(captured, { cityOverride });
+
+        // 1. Source Summary (safe DOM construction — never raw untrusted HTML)
+        summaryEl.replaceChildren();
+        const leftBox = document.createElement('div');
+        leftBox.style.flex = '1 1 320px';
+
+        const metaRow = document.createElement('div');
+        metaRow.className = 'capture-source-meta';
+
+        const addChip = (text, extraClass = '') => {
+            const chip = document.createElement('span');
+            chip.className = `capture-meta-chip ${extraClass}`.trim();
+            chip.textContent = text;
+            metaRow.appendChild(chip);
+        };
+        addChip(captured.siteName || captured.domain || 'Pasted Notes', 'is-domain');
+        addChip(`Detected Corridor: ${analysis.targetCity}`, 'is-city');
+        addChip(analysis.category);
+        if (captured.wordCount) addChip(`~${captured.wordCount} words captured`);
+
+        const titleEl = document.createElement('h4');
+        titleEl.className = 'capture-source-title';
+        titleEl.textContent = analysis.cleanTopic || captured.title || 'Captured Article Idea';
+
+        const descEl = document.createElement('p');
+        descEl.style.margin = '0';
+        descEl.style.fontSize = '0.76rem';
+        descEl.style.color = '#64748b';
+        descEl.textContent = shortCaptureText(captured.description || analysis.facts[0] || 'Ready to transform into an original MyFactorySpace article.', 190);
+
+        leftBox.append(metaRow, titleEl, descEl);
+        summaryEl.appendChild(leftBox);
+
+        const safeUrl = sanitizeHttpUrl(captured.url || captured.fetchedUrl || '');
+        if (safeUrl) {
+            const extLink = document.createElement('a');
+            extLink.href = safeUrl;
+            extLink.target = '_blank';
+            extLink.rel = 'noopener noreferrer';
+            extLink.className = 'btn btn-xs btn-outline';
+            const linkIcon = document.createElement('i');
+            linkIcon.className = 'fa-solid fa-arrow-up-right-from-square';
+            linkIcon.setAttribute('aria-hidden', 'true');
+            extLink.append(linkIcon, document.createTextNode(' View Original'));
+            summaryEl.appendChild(extLink);
+        }
+
+        // 2. Photos Picker Grid (strictly referrerpolicy="no-referrer" for external photos)
+        photosGrid.replaceChildren();
+        const createPhotoCard = ({ idx, src, label, isExternal }) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = `capture-photo-card${selectedCapturedPhotoIndex === idx ? ' is-selected' : ''}`;
+            btn.dataset.photoIdx = String(idx);
+            btn.setAttribute('aria-pressed', selectedCapturedPhotoIndex === idx ? 'true' : 'false');
+
+            const img = document.createElement('img');
+            img.src = src;
+            img.alt = label;
+            img.loading = 'lazy';
+            if (isExternal) img.referrerPolicy = 'no-referrer';
+            img.addEventListener('error', () => {
+                if (isExternal) {
+                    btn.remove();
+                    if (selectedCapturedPhotoIndex === idx) {
+                        window.selectCapturedInsightPhoto(-1);
+                    }
+                }
+            });
+
+            const check = document.createElement('span');
+            check.className = 'capture-photo-check';
+            check.setAttribute('aria-hidden', 'true');
+            const checkIcon = document.createElement('i');
+            checkIcon.className = 'fa-solid fa-check';
+            check.appendChild(checkIcon);
+
+            const cap = document.createElement('span');
+            cap.className = 'capture-photo-caption';
+            cap.textContent = label;
+
+            btn.append(img, check, cap);
+            btn.addEventListener('click', () => window.selectCapturedInsightPhoto(idx));
+            return btn;
+        };
+
+        images.forEach((imgObj, idx) => {
+            const safeImgSrc = imgObj.isLocalData ? imgObj.url : sanitizeHttpUrl(imgObj.url);
+            if (!safeImgSrc) return;
+            const sourceTag = imgObj.source === 'og:image' || imgObj.source === 'og:image:secure_url'
+                ? 'Featured Photo'
+                : imgObj.source === 'uploaded'
+                    ? 'Uploaded Photo'
+                    : `Captured Photo ${idx + 1}`;
+            photosGrid.appendChild(createPhotoCard({
+                idx,
+                src: safeImgSrc,
+                label: imgObj.alt ? shortCaptureText(imgObj.alt, 28) : sourceTag,
+                isExternal: !imgObj.isLocalData
+            }));
+        });
+
+        // Always include MyFactorySpace's own verified aerial photo option
+        photosGrid.appendChild(createPhotoCard({
+            idx: -1,
+            src: analysis.benchmarks.fallbackAerial,
+            label: `MyFactorySpace Aerial (${analysis.targetCity})`,
+            isExternal: false
+        }));
+
+        if (photoCountEl) {
+            photoCountEl.textContent = images.length
+                ? `${images.length} captured + Aerial`
+                : 'Using Aerial Preset';
+        }
+
+        // 3. Extracted Facts & Signals
+        factsList.replaceChildren();
+        const factsToShow = analysis.facts.length
+            ? analysis.facts
+            : ['Topic captured cleanly — add extra notes below or click Rewrite to generate your MyFactorySpace draft with live corridor data.'];
+        factsToShow.forEach(fact => {
+            const li = document.createElement('li');
+            li.textContent = fact;
+            factsList.appendChild(li);
+        });
+        if (factsCountEl) {
+            factsCountEl.textContent = `${analysis.facts.length} key signal${analysis.facts.length === 1 ? '' : 's'}`;
+        }
+
+        workspace.hidden = false;
+    }
+
+    window.selectCapturedInsightPhoto = function(idx) {
+        selectedCapturedPhotoIndex = idx;
+        const grid = document.getElementById('insights-capture-photos-grid');
+        if (!grid) return;
+        grid.querySelectorAll('.capture-photo-card').forEach(card => {
+            const isSel = Number(card.dataset.photoIdx) === Number(idx);
+            card.classList.toggle('is-selected', isSel);
+            card.setAttribute('aria-pressed', isSel ? 'true' : 'false');
+        });
+    };
+
+    // 3-Option Content Source Selector (Inventory | Internet Public | Website Link Given)
+    window.selectInsightsContentSource = function(source, { silentScroll = false, skipMetaUpdate = false } = {}) {
+        const valid = ['inventory', 'internet', 'website'].includes(source) ? source : 'inventory';
+        activeInsightsContentSource = valid;
+
+        const tablist = document.getElementById('insights-source-tablist');
+        const tabs = tablist ? Array.from(tablist.querySelectorAll('[role="tab"]')) : [];
+        const panels = {
+            inventory: document.getElementById('panel-source-inventory'),
+            internet: document.getElementById('panel-source-internet'),
+            website: document.getElementById('panel-source-website')
+        };
+
+        tabs.forEach(tab => {
+            const isSelected = tab.dataset.source === valid;
+            tab.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+            tab.toggleAttribute('focusgroupstart', isSelected);
+            if (!Object.hasOwn(HTMLElement.prototype, 'focusGroup')) {
+                tab.tabIndex = isSelected ? 0 : -1;
+            }
+            if (isSelected && !silentScroll && typeof tab.scrollIntoView === 'function') {
+                try {
+                    tab.scrollIntoView({ block: 'nearest', inline: 'nearest', container: 'nearest' });
+                } catch (e) {
+                    tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+                }
+            }
+        });
+
+        Object.entries(panels).forEach(([key, panel]) => {
+            if (!panel) return;
+            if (key === valid) {
+                panel.hidden = false;
+            } else {
+                panel.hidden = 'until-found';
+            }
+        });
+
+        if (valid === 'inventory') {
+            setInsightsCaptureStatus('', '');
+        }
+
+        if (!skipMetaUpdate) {
+            updateInsightsAutomationStatusMeta();
+        }
+    };
+
+    // Accessible focusgroup keyboard fallback + Find-in-Page beforematch sync for 3-option tabs
+    (function initInsightsSourceTabs() {
+        const tablist = document.getElementById('insights-source-tablist');
+        if (!tablist) return;
+        const tabs = Array.from(tablist.querySelectorAll('[role="tab"]'));
+        const hasNativeFocusgroup = Object.hasOwn(HTMLElement.prototype, 'focusGroup');
+
+        if (!hasNativeFocusgroup) {
+            tabs.forEach((tab, idx) => {
+                tab.tabIndex = tab.getAttribute('aria-selected') === 'true' ? 0 : -1;
+                tab.addEventListener('keydown', (e) => {
+                    let nextIdx = -1;
+                    if (e.key === 'ArrowRight') nextIdx = (idx + 1) % tabs.length;
+                    else if (e.key === 'ArrowLeft') nextIdx = (idx - 1 + tabs.length) % tabs.length;
+                    else if (e.key === 'Home') nextIdx = 0;
+                    else if (e.key === 'End') nextIdx = tabs.length - 1;
+                    if (nextIdx >= 0) {
+                        e.preventDefault();
+                        const target = tabs[nextIdx];
+                        window.selectInsightsContentSource(target.dataset.source || 'inventory');
+                        target.focus();
+                    }
+                });
+            });
+        } else {
+            // Selection follows focus when arrowing with native focusgroup
+            tablist.addEventListener('focusin', (e) => {
+                const tab = e.target && e.target.closest ? e.target.closest('[role="tab"]') : null;
+                if (tab && tab.dataset.source && tab.dataset.source !== activeInsightsContentSource) {
+                    window.selectInsightsContentSource(tab.dataset.source);
+                }
+            });
+        }
+
+        // Sync tab state if native browser Find-in-Page matches hidden="until-found" panel content
+        ['inventory', 'internet', 'website'].forEach(key => {
+            const panel = document.getElementById(`panel-source-${key}`);
+            if (panel) {
+                panel.addEventListener('beforematch', () => {
+                    window.selectInsightsContentSource(key);
+                });
+            }
+        });
+    })();
+
+    // Option 2: Internet Public News Discovery & Auto-Generation
+    window.setPublicNewsPreset = function(query) {
+        const input = document.getElementById('insights-public-query');
+        if (input) input.value = query;
+        window.discoverPublicNewsForInsights();
+    };
+
+    window.clearPublicNewsResults = function() {
+        const wrap = document.getElementById('insights-public-results-wrap');
+        const list = document.getElementById('insights-public-results-list');
+        if (wrap) wrap.hidden = true;
+        if (list) list.replaceChildren();
+    };
+
+    window.discoverPublicNewsForInsights = async function() {
+        if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+            alert('Only Administrators and authorized agents can search public news for Market Insights.');
+            return;
+        }
+        const query = ((document.getElementById('insights-public-query') || {}).value || '').trim() || 'Malaysia Klang Valley industrial property warehouse factory';
+        const city = ((document.getElementById('insights-public-city') || {}).value || '').trim();
+        const btn = document.getElementById('btn-search-public-news');
+        const wrap = document.getElementById('insights-public-results-wrap');
+        const listEl = document.getElementById('insights-public-results-list');
+        const metaEl = document.getElementById('insights-public-results-meta');
+
+        if (!window.IndustraSupabase || typeof window.IndustraSupabase.discoverPublicIndustrialNews !== 'function') {
+            setInsightsCaptureStatus('error', 'Public news service is still loading. Please wait a moment and try again.');
+            return;
+        }
+
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Searching...';
+        }
+        setInsightsCaptureStatus('loading', `Searching public Malaysia & Klang Valley industrial news for "${shortCaptureText(query, 65)}"...`);
+
+        try {
+            const res = await window.IndustraSupabase.discoverPublicIndustrialNews({ query, city });
+            if (!res || !res.ok || !Array.isArray(res.items) || !res.items.length) {
+                setInsightsCaptureStatus('warning', (res && res.error) || 'No public news stories matched right now. Try a broader industrial keyword.');
+                if (wrap) wrap.hidden = true;
+                return;
+            }
+
+            if (listEl) {
+                listEl.replaceChildren();
+                res.items.forEach(item => {
+                    const card = document.createElement('article');
+                    card.className = 'public-story-card';
+                    const safeStoryUrl = sanitizeHttpUrl(item.url || '');
+
+                    const metaRow = document.createElement('div');
+                    metaRow.className = 'public-story-meta';
+                    if (safeStoryUrl) {
+                        const srcLink = document.createElement('a');
+                        srcLink.href = safeStoryUrl;
+                        srcLink.target = '_blank';
+                        srcLink.rel = 'noopener noreferrer';
+                        srcLink.className = 'public-story-source is-link';
+                        srcLink.title = `Open original article on ${item.source || 'publisher site'}`;
+                        const extIcon = document.createElement('i');
+                        extIcon.className = 'fa-solid fa-arrow-up-right-from-square';
+                        extIcon.style.fontSize = '0.62rem';
+                        extIcon.style.marginLeft = '4px';
+                        extIcon.setAttribute('aria-hidden', 'true');
+                        srcLink.append(document.createTextNode(item.source || 'Public News'), extIcon);
+                        metaRow.appendChild(srcLink);
+                    } else {
+                        const srcChip = document.createElement('span');
+                        srcChip.className = 'public-story-source';
+                        srcChip.textContent = item.source || 'Public News';
+                        metaRow.appendChild(srcChip);
+                    }
+                    const dateEl = document.createElement('span');
+                    dateEl.textContent = item.publishedAt || 'Recent';
+                    metaRow.appendChild(dateEl);
+
+                    const h5 = document.createElement('h5');
+                    h5.className = 'public-story-title';
+                    if (safeStoryUrl) {
+                        const titleLink = document.createElement('a');
+                        titleLink.href = safeStoryUrl;
+                        titleLink.target = '_blank';
+                        titleLink.rel = 'noopener noreferrer';
+                        titleLink.className = 'public-story-title-link';
+                        titleLink.title = 'Click to view original article in a new tab';
+                        titleLink.textContent = item.title || 'Public Industrial Story';
+                        h5.appendChild(titleLink);
+                    } else {
+                        h5.textContent = item.title || 'Public Industrial Story';
+                    }
+
+                    const desc = document.createElement('p');
+                    desc.className = 'public-story-desc';
+                    desc.textContent = item.description || 'Click Capture & Preview to extract photos & key signals for your MyFactorySpace article.';
+
+                    let urlBar = null;
+                    if (safeStoryUrl) {
+                        urlBar = document.createElement('div');
+                        urlBar.className = 'public-story-url-row';
+
+                        const urlLink = document.createElement('a');
+                        urlLink.href = safeStoryUrl;
+                        urlLink.target = '_blank';
+                        urlLink.rel = 'noopener noreferrer';
+                        urlLink.className = 'public-story-url-link';
+                        urlLink.title = `Open original article: ${safeStoryUrl}`;
+                        let shortDisplayUrl = safeStoryUrl.replace(/^https?:\/\/(www\.)?/i, '');
+                        if (shortDisplayUrl.length > 48) shortDisplayUrl = shortDisplayUrl.slice(0, 47) + '…';
+
+                        const linkIcon = document.createElement('i');
+                        linkIcon.className = 'fa-solid fa-link';
+                        linkIcon.setAttribute('aria-hidden', 'true');
+                        const extArrow = document.createElement('i');
+                        extArrow.className = 'fa-solid fa-arrow-up-right-from-square';
+                        extArrow.setAttribute('aria-hidden', 'true');
+                        urlLink.append(linkIcon, document.createTextNode(` ${shortDisplayUrl} `), extArrow);
+
+                        const copyBtn = document.createElement('button');
+                        copyBtn.type = 'button';
+                        copyBtn.className = 'public-story-copy-btn';
+                        copyBtn.title = 'Copy original article link';
+                        copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i>';
+                        copyBtn.addEventListener('click', () => {
+                            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                                navigator.clipboard.writeText(safeStoryUrl).then(() => {
+                                    if (typeof showToast === 'function') showToast('Original article link copied!', 'success');
+                                });
+                            }
+                        });
+
+                        urlBar.append(urlLink, copyBtn);
+                    }
+
+                    const actions = document.createElement('div');
+                    actions.className = 'public-story-actions';
+
+                    if (safeStoryUrl) {
+                        const origBtn = document.createElement('a');
+                        origBtn.href = safeStoryUrl;
+                        origBtn.target = '_blank';
+                        origBtn.rel = 'noopener noreferrer';
+                        origBtn.className = 'btn btn-xs btn-outline';
+                        origBtn.title = `Read original story on ${item.source || 'source website'}`;
+                        origBtn.innerHTML = '<i class="fa-solid fa-arrow-up-right-from-square"></i> Original Link';
+                        actions.appendChild(origBtn);
+                    }
+
+                    const previewBtn = document.createElement('button');
+                    previewBtn.type = 'button';
+                    previewBtn.className = 'btn btn-xs btn-outline';
+                    previewBtn.innerHTML = '<i class="fa-solid fa-images"></i> Capture &amp; Preview';
+                    previewBtn.addEventListener('click', () => window.capturePublicStoryItem(item, { instant: false }));
+
+                    const instantBtn = document.createElement('button');
+                    instantBtn.type = 'button';
+                    instantBtn.className = 'btn btn-xs btn-primary';
+                    instantBtn.innerHTML = '<i class="fa-solid fa-sparkles"></i> Instant Rewrite';
+                    instantBtn.addEventListener('click', () => window.capturePublicStoryItem(item, { instant: true }));
+
+                    actions.append(previewBtn, instantBtn);
+                    if (urlBar) card.append(metaRow, h5, desc, urlBar, actions);
+                    else card.append(metaRow, h5, desc, actions);
+                    listEl.appendChild(card);
+                });
+            }
+
+            if (metaEl) {
+                const providers = Array.isArray(res.providersUsed) && res.providersUsed.length ? res.providersUsed.join(' & ') : 'Public News';
+                metaEl.textContent = `Found ${res.items.length} fresh public stories via ${providers} (newest first)`;
+            }
+            if (wrap) wrap.hidden = false;
+            setInsightsCaptureStatus('success', `Found ${res.items.length} live public industrial stories! Pick one to Capture & Preview photos, or click Auto-Generate from Public News.`);
+        } catch (err) {
+            setInsightsCaptureStatus('error', 'Could not reach the Public News discovery service right now.');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
+    };
+
+    window.capturePublicStoryItem = async function(item, { instant = false } = {}) {
+        if (!item) return;
+        setInsightsCaptureStatus('loading', `Capturing photos & facts from "${shortCaptureText(item.title, 65)}"...`);
+
+        let captured = null;
+        if (item.directUrl && item.url && window.IndustraSupabase && typeof window.IndustraSupabase.captureUrlForInsight === 'function') {
+            try {
+                const res = await window.IndustraSupabase.captureUrlForInsight(item.url);
+                if (res && res.ok && ((res.paragraphs && res.paragraphs.length >= 1) || (res.images && res.images.length >= 1))) {
+                    captured = res;
+                    if ((!captured.images || !captured.images.length) && item.image) {
+                        captured.images = [{ url: item.image, alt: item.title, source: 'public-news' }];
+                    }
+                    captured.siteName = item.source || captured.siteName;
+                }
+            } catch (e) {}
+        }
+
+        // Clean RSS fallback if publisher restricts scraping or uses Google News redirect wrapper
+        if (!captured) {
+            const safeUrl = sanitizeHttpUrl(item.url || '');
+            let domain = item.source || 'Public News';
+            if (safeUrl) {
+                try { domain = new URL(safeUrl).hostname.replace(/^www\./i, ''); } catch (e) {}
+            }
+            const desc = String(item.description || '').trim();
+            captured = {
+                ok: true,
+                url: safeUrl,
+                domain,
+                siteName: item.source || domain,
+                title: item.title || 'Klang Valley Industrial Market Update',
+                description: desc || item.title,
+                publishedAt: item.publishedAt || '',
+                headings: [item.title].filter(Boolean),
+                paragraphs: [desc || `${item.title} — reported by ${item.source || 'public industrial news'}.`],
+                bullets: [item.title].filter(Boolean),
+                highlights: [desc || item.title].filter(Boolean),
+                images: item.image ? [{ url: item.image, alt: item.title, source: 'public-news' }] : [],
+                wordCount: (desc || item.title || '').split(/\s+/).filter(Boolean).length,
+                discoveredFrom: 'Public News'
+            };
+        }
+
+        renderInsightsCaptureWorkspace(captured);
+        if (instant) {
+            await window.buildDraftFromCapturedSource({ openEditor: true });
+        } else {
+            const pCount = (captured.images || []).length;
+            setInsightsCaptureStatus('success', `Loaded "${shortCaptureText(captured.title, 65)}" (${pCount} photo${pCount === 1 ? '' : 's'} + MyFactorySpace Aerial). Review & click Rewrite!`);
+        }
+    };
+
+    window.generateFromInternetPublic = async function({ manual = true } = {}) {
+        if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+            if (manual) alert('Only Administrators and authorized agents can generate Market Insights.');
+            return null;
+        }
+        const btn = document.getElementById('btn-generate-public-insight');
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn && manual) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Discovering &amp; Building...';
+        }
+
+        const autoCfg = getInsightsAutomationSettings();
+        const query = ((document.getElementById('insights-public-query') || {}).value || autoCfg.publicQuery || 'Malaysia Klang Valley industrial property warehouse factory').trim();
+        const city = ((document.getElementById('insights-public-city') || {}).value || autoCfg.publicCity || '').trim();
+        const angle = ((document.getElementById('insights-public-angle') || {}).value || autoCfg.publicAngle || 'executive').trim();
+
+        if (manual) setInsightsCaptureStatus('loading', `Discovering latest Malaysia public industrial news for "${shortCaptureText(query, 60)}"...`);
+
+        try {
+            const existing = getAllInsightArticles();
+            const excludeUrls = existing.map(a => a.sourceInspirationUrl).filter(Boolean);
+            const excludeTitles = existing.map(a => a.title).filter(Boolean);
+
+            const captured = await window.IndustraSupabase.discoverAndCapturePublicInsight({
+                query,
+                city,
+                excludeUrls,
+                excludeTitles
+            });
+
+            if (!captured || !captured.ok) {
+                if (manual) setInsightsCaptureStatus('warning', (captured && captured.error) || 'Could not pull public industrial news right now.');
+                return null;
+            }
+
+            const analysis = analyzeCapturedSource(captured, { cityOverride: city });
+            let resolvedCover = analysis.benchmarks.fallbackAerial;
+            if (Array.isArray(captured.images) && captured.images[0] && captured.images[0].url && typeof window.IndustraSupabase.importCapturedImageToStorage === 'function') {
+                if (manual) setInsightsCaptureStatus('loading', `Importing captured photo from ${captured.siteName || 'public news'} to Cloud Storage...`);
+                const imp = await window.IndustraSupabase.importCapturedImageToStorage(captured.images[0].url, analysis.cleanTopic);
+                if (imp && imp.success && imp.url) resolvedCover = imp.url;
+            }
+
+            const mmCb = document.getElementById('insights-auto-include-mindmap');
+            const igCb = document.getElementById('insights-auto-include-infographic');
+            const includeMindMap = mmCb ? Boolean(mmCb.checked) : (autoCfg.includeMindMap !== false);
+            const includeInfographic = igCb ? Boolean(igCb.checked) : (autoCfg.includeInfographic !== false);
+
+            const draft = buildMyFactorySpaceArticleFromCapture(captured, {
+                angle,
+                cityOverride: city,
+                includeCredit: true,
+                includeMindMap,
+                includeInfographic,
+                status: manual ? 'Draft' : (autoCfg.mode || 'Draft'),
+                contentSourceOrigin: 'internet',
+                resolvedCoverImage: resolvedCover
+            });
+
+            const list = getAllInsightArticles();
+            list.unshift(draft);
+            saveAllInsightArticles(list);
+
+            autoCfg.lastGeneratedAt = new Date().toISOString();
+            autoCfg.contentSource = 'internet';
+            autoCfg.publicQuery = query;
+            autoCfg.publicCity = city;
+            autoCfg.publicAngle = angle;
+            autoCfg.includeMindMap = includeMindMap;
+            autoCfg.includeInfographic = includeInfographic;
+            saveInsightsAutomationConfig(autoCfg);
+
+            if (typeof window.logDashboardActivity === 'function') {
+                window.logDashboardActivity({
+                    category: 'Insights',
+                    action: 'Public News Draft',
+                    target: draft.title,
+                    details: `Generated from Internet Public (${captured.siteName || 'Public News'}) with MindMap=${includeMindMap}, Infographic=${includeInfographic}`
+                });
+            }
+
+            if (typeof window.renderInsightsAdminTable === 'function') window.renderInsightsAdminTable();
+            if (typeof window.updateInsightsAutomationUI === 'function') window.updateInsightsAutomationUI();
+
+            if (manual) {
+                setInsightsCaptureStatus('success', `Generated original MyFactorySpace draft from ${captured.siteName || 'Public News'}: "${draft.title}"!`);
+                if (typeof showToast === 'function') showToast(`Generated from Internet Public News: "${shortCaptureText(draft.title, 60)}"`, 'success');
+                if (typeof window.openInsightEditorModal === 'function') window.openInsightEditorModal(draft.id);
+            } else if (typeof showToast === 'function') {
+                showToast(`Scheduled Public News Engine drafted: "${shortCaptureText(draft.title, 60)}"`, 'info');
+            }
+            return draft;
+        } catch (err) {
+            if (manual) setInsightsCaptureStatus('error', 'Failed to generate from Internet Public news. Try again shortly.');
+            return null;
+        } finally {
+            if (btn && manual) {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
+    };
+
+    window.generateFromGivenWebsiteUrl = async function({ url, manual = true } = {}) {
+        const safeUrl = sanitizeHttpUrl(url);
+        if (!safeUrl) return null;
+        if (manual) setInsightsCaptureStatus('loading', `Capturing ${new URL(safeUrl).hostname} & building MyFactorySpace edition...`);
+
+        try {
+            const captured = await window.IndustraSupabase.captureUrlForInsight(safeUrl);
+            if (!captured || !captured.ok) {
+                if (manual) {
+                    window.focusInsightsUrlCapture();
+                    setInsightsCaptureStatus(captured && captured.blocked ? 'warning' : 'error', (captured && captured.error) || 'Could not capture the given website link.', { offerManualFallback: true });
+                }
+                return null;
+            }
+
+            const autoCfg = getInsightsAutomationSettings();
+            const angle = ((document.getElementById('insights-capture-angle') || {}).value) || 'executive';
+            const cityOverride = ((document.getElementById('insights-capture-city') || {}).value) || '';
+            const analysis = analyzeCapturedSource(captured, { cityOverride });
+
+            let resolvedCover = analysis.benchmarks.fallbackAerial;
+            if (Array.isArray(captured.images) && captured.images[0] && captured.images[0].url && typeof window.IndustraSupabase.importCapturedImageToStorage === 'function') {
+                const imp = await window.IndustraSupabase.importCapturedImageToStorage(captured.images[0].url, analysis.cleanTopic);
+                if (imp && imp.success && imp.url) resolvedCover = imp.url;
+            }
+
+            const mmCb = document.getElementById('insights-auto-include-mindmap');
+            const igCb = document.getElementById('insights-auto-include-infographic');
+            const includeMindMap = mmCb ? Boolean(mmCb.checked) : (autoCfg.includeMindMap !== false);
+            const includeInfographic = igCb ? Boolean(igCb.checked) : (autoCfg.includeInfographic !== false);
+
+            const draft = buildMyFactorySpaceArticleFromCapture(captured, {
+                angle,
+                cityOverride,
+                includeCredit: true,
+                includeMindMap,
+                includeInfographic,
+                status: manual ? 'Draft' : (autoCfg.mode || 'Draft'),
+                contentSourceOrigin: 'website',
+                resolvedCoverImage: resolvedCover
+            });
+
+            const list = getAllInsightArticles();
+            list.unshift(draft);
+            saveAllInsightArticles(list);
+
+            autoCfg.lastGeneratedAt = new Date().toISOString();
+            autoCfg.contentSource = 'website';
+            autoCfg.defaultWebsiteUrl = safeUrl;
+            saveInsightsAutomationConfig(autoCfg);
+
+            if (typeof window.renderInsightsAdminTable === 'function') window.renderInsightsAdminTable();
+            if (typeof window.updateInsightsAutomationUI === 'function') window.updateInsightsAutomationUI();
+            if (manual) {
+                setInsightsCaptureStatus('success', `Generated from ${captured.domain}: "${draft.title}"!`);
+                if (typeof showToast === 'function') showToast(`Created MyFactorySpace draft from ${captured.domain}`, 'success');
+                if (typeof window.openInsightEditorModal === 'function') window.openInsightEditorModal(draft.id);
+            }
+            return draft;
+        } catch (e) {
+            if (manual) setInsightsCaptureStatus('error', 'Error generating from website link.');
+            return null;
+        }
+    };
+
+    window.focusInsightsUrlCapture = function() {
+        window.selectInsightsContentSource('website');
+        window.switchInsightsCaptureMode('url');
+        const card = document.getElementById('insights-automation-card');
+        if (card) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            card.classList.add('is-highlighted');
+            setTimeout(() => card.classList.remove('is-highlighted'), 1600);
+        }
+        const input = document.getElementById('insights-capture-url');
+        if (input) setTimeout(() => input.focus(), 250);
+    };
+
+    window.switchInsightsCaptureMode = function(mode) {
+        insightsCaptureMode = mode === 'manual' ? 'manual' : 'url';
+        const urlForm = document.getElementById('insights-url-capture-form');
+        const manualPanel = document.getElementById('insights-manual-capture-panel');
+        const btnUrl = document.getElementById('btn-capture-mode-url');
+        const btnManual = document.getElementById('btn-capture-mode-manual');
+
+        if (urlForm) urlForm.hidden = insightsCaptureMode !== 'url';
+        if (manualPanel) manualPanel.hidden = insightsCaptureMode !== 'manual';
+        if (btnUrl) {
+            btnUrl.classList.toggle('is-active', insightsCaptureMode === 'url');
+            btnUrl.setAttribute('aria-selected', insightsCaptureMode === 'url' ? 'true' : 'false');
+        }
+        if (btnManual) {
+            btnManual.classList.toggle('is-active', insightsCaptureMode === 'manual');
+            btnManual.setAttribute('aria-selected', insightsCaptureMode === 'manual' ? 'true' : 'false');
+        }
+    };
+
+    window.handleManualCapturePhotoUpload = function(fileInput) {
+        const statusEl = document.getElementById('insights-manual-photo-status');
+        if (!fileInput || !fileInput.files || !fileInput.files[0]) return;
+        const file = fileInput.files[0];
+        if (!file.type.startsWith('image/')) {
+            if (statusEl) statusEl.textContent = 'Please select a JPG, PNG, or WebP image.';
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => {
+            manualCapturedPhotoDataUrl = String(reader.result || '');
+            if (statusEl) statusEl.textContent = `Ready: ${file.name}`;
+        };
+        reader.readAsDataURL(file);
+    };
+
+    window.prepareManualCapturePreview = function() {
+        const title = ((document.getElementById('insights-manual-title') || {}).value || '').trim();
+        const url = ((document.getElementById('insights-manual-url') || {}).value || '').trim();
+        const rawText = ((document.getElementById('insights-manual-text') || {}).value || '').trim();
+        if (!title && !rawText) {
+            setInsightsCaptureStatus('error', 'Please enter a topic headline or paste some article notes/highlights first.');
+            return;
+        }
+
+        const lines = rawText
+            .split(/\n+/)
+            .map(l => l.replace(/^[-•*]\s*/, '').trim())
+            .filter(Boolean);
+        const paragraphs = lines.filter(l => l.length >= 35);
+        const bullets = lines.filter(l => l.length >= 16 && l.length < 220);
+        const safeUrl = sanitizeHttpUrl(url);
+        let domain = 'Editorial Notes';
+        if (safeUrl) {
+            try { domain = new URL(safeUrl).hostname.replace(/^www\./i, ''); } catch (e) {}
+        }
+
+        const images = [];
+        if (manualCapturedPhotoDataUrl) {
+            images.push({ url: manualCapturedPhotoDataUrl, alt: title || 'Uploaded Reference Photo', source: 'uploaded', isLocalData: true });
+        }
+
+        const captured = {
+            ok: true,
+            url: safeUrl,
+            domain,
+            siteName: domain,
+            title: title || shortCaptureText(lines[0] || 'Klang Valley Industrial Update', 90),
+            description: paragraphs[0] || lines[0] || '',
+            headings: title ? [title] : [],
+            paragraphs,
+            bullets,
+            highlights: paragraphs.length ? paragraphs.slice(0, 6) : bullets.slice(0, 6),
+            images,
+            wordCount: rawText.split(/\s+/).filter(Boolean).length
+        };
+
+        setInsightsCaptureStatus('success', 'Notes analyzed! Choose a photo and click "Rewrite into MyFactorySpace Draft & Open Editor".');
+        renderInsightsCaptureWorkspace(captured);
+    };
+
+    window.handleInsightsUrlCaptureSubmit = async function(e) {
+        if (e) e.preventDefault();
+        if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+            alert('Only Administrators and authorized agents can capture Market Insights.');
+            return;
+        }
+
+        const form = document.getElementById('insights-url-capture-form');
+        const input = document.getElementById('insights-capture-url');
+        const submitBtn = document.getElementById('btn-capture-url-submit');
+        if (!input) return;
+
+        // Auto-prepend https:// if the user pasted a bare domain like "theedgemalaysia.com/..."
+        let rawVal = input.value.trim();
+        if (rawVal && !/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(rawVal) && rawVal.includes('.')) {
+            rawVal = `https://${rawVal}`;
+            input.value = rawVal;
+        }
+
+        const valid = form && typeof form._validateCaptureUrl === 'function'
+            ? form._validateCaptureUrl()
+            : Boolean(sanitizeHttpUrl(rawVal));
+        if (!valid) {
+            input.focus();
+            return;
+        }
+
+        if (!window.IndustraSupabase || typeof window.IndustraSupabase.captureUrlForInsight !== 'function') {
+            setInsightsCaptureStatus('error', 'Supabase URL Capture client is still initializing. Please wait a second and retry.');
+            return;
+        }
+
+        const origBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Capturing...';
+        }
+        setInsightsCaptureStatus('loading', `Capturing photos & key info from ${new URL(rawVal).hostname}...`);
+
+        try {
+            const res = await window.IndustraSupabase.captureUrlForInsight(rawVal);
+            if (!res || !res.ok) {
+                setInsightsCaptureStatus(
+                    res && res.blocked ? 'warning' : 'error',
+                    (res && res.error) || 'Could not capture this website link.',
+                    { offerManualFallback: true }
+                );
+                return;
+            }
+
+            const photoCount = Array.isArray(res.images) ? res.images.length : 0;
+            const factCount = (Array.isArray(res.highlights) ? res.highlights.length : 0) || (Array.isArray(res.paragraphs) ? res.paragraphs.length : 0);
+            setInsightsCaptureStatus(
+                'success',
+                `Captured "${shortCaptureText(res.title, 70)}" (${photoCount} photo${photoCount === 1 ? '' : 's'}, ${factCount} key text block${factCount === 1 ? '' : 's'}). Review below and generate your original MyFactorySpace version!`
+            );
+            renderInsightsCaptureWorkspace(res);
+        } catch (err) {
+            setInsightsCaptureStatus('error', 'Network error while capturing link. Try again or paste the text manually.', { offerManualFallback: true });
+        } finally {
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = origBtnHtml;
+            }
+        }
+    };
+
+    window.clearInsightsUrlCapture = function() {
+        currentCapturedInsightSource = null;
+        selectedCapturedPhotoIndex = 0;
+        manualCapturedPhotoDataUrl = '';
+        const ws = document.getElementById('insights-capture-workspace');
+        if (ws) ws.hidden = true;
+        const notes = document.getElementById('insights-capture-custom-notes');
+        if (notes) notes.value = '';
+        const photoStatus = document.getElementById('insights-manual-photo-status');
+        if (photoStatus) photoStatus.textContent = '';
+        setInsightsCaptureStatus('', '');
+    };
+
+    window.buildDraftFromCapturedSource = async function({ openEditor = true } = {}) {
+        if (!currentCapturedInsightSource) {
+            setInsightsCaptureStatus('error', 'Capture a website link or analyze pasted notes first.');
+            return;
+        }
+
+        const btnOpen = document.getElementById('btn-capture-rewrite-open');
+        const btnSave = document.getElementById('btn-capture-save-draft');
+        const origOpenHtml = btnOpen ? btnOpen.innerHTML : '';
+        if (btnOpen) {
+            btnOpen.disabled = true;
+            btnOpen.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Building MyFactorySpace Draft...';
+        }
+        if (btnSave) btnSave.disabled = true;
+
+        try {
+            const isPublicOrigin = activeInsightsContentSource === 'internet';
+            const angle = (document.getElementById(isPublicOrigin ? 'insights-public-angle' : 'insights-capture-angle') || {}).value || 'executive';
+            const cityOverride = (document.getElementById(isPublicOrigin ? 'insights-public-city' : 'insights-capture-city') || {}).value || '';
+            const customNotes = ((document.getElementById('insights-capture-custom-notes') || {}).value || '').trim();
+            const rehostPhoto = Boolean((document.getElementById('insights-capture-rehost-photo') || { checked: true }).checked);
+            const includeCredit = Boolean((document.getElementById('insights-capture-include-credit') || { checked: true }).checked);
+
+            const analysis = analyzeCapturedSource(currentCapturedInsightSource, { cityOverride, customNotes });
+            let resolvedCover = analysis.benchmarks.fallbackAerial;
+            const images = Array.isArray(currentCapturedInsightSource.images) ? currentCapturedInsightSource.images : [];
+            const chosenImg = selectedCapturedPhotoIndex >= 0 ? images[selectedCapturedPhotoIndex] : null;
+
+            if (chosenImg && chosenImg.url) {
+                if (chosenImg.isLocalData && window.IndustraSupabase && typeof window.IndustraSupabase.uploadImage === 'function') {
+                    setInsightsCaptureStatus('loading', 'Uploading your selected reference photo to MyFactorySpace Cloud Storage...');
+                    const up = await window.IndustraSupabase.uploadImage(chosenImg.url, `insight_manual_${Date.now()}.jpg`);
+                    if (up && up.success && up.url) resolvedCover = up.url;
+                } else if (rehostPhoto && window.IndustraSupabase && typeof window.IndustraSupabase.importCapturedImageToStorage === 'function') {
+                    setInsightsCaptureStatus('loading', 'Importing selected photo cleanly to MyFactorySpace Cloud Storage (CORS-safe for HD Infographic)...');
+                    const imported = await window.IndustraSupabase.importCapturedImageToStorage(chosenImg.url, analysis.cleanTopic);
+                    if (imported && imported.success && imported.url) {
+                        resolvedCover = imported.url;
+                    } else {
+                        resolvedCover = sanitizeHttpUrl(chosenImg.url) || analysis.benchmarks.fallbackAerial;
+                    }
+                } else {
+                    resolvedCover = sanitizeHttpUrl(chosenImg.url) || analysis.benchmarks.fallbackAerial;
+                }
+            }
+
+            const draft = buildMyFactorySpaceArticleFromCapture(currentCapturedInsightSource, {
+                angle,
+                cityOverride,
+                customNotes,
+                includeCredit,
+                resolvedCoverImage: resolvedCover
+            });
+
+            const list = getAllInsightArticles();
+            list.unshift(draft);
+            saveAllInsightArticles(list);
+            if (typeof window.renderInsightsAdminTable === 'function') window.renderInsightsAdminTable();
+
+            if (typeof window.logDashboardActivity === 'function') {
+                window.logDashboardActivity({
+                    category: 'Insights',
+                    action: 'Captured URL Draft',
+                    target: draft.title,
+                    details: `Created original MyFactorySpace ${draft.targetCity} draft from ${currentCapturedInsightSource.domain || 'notes'}`
+                });
+            }
+
+            setInsightsCaptureStatus('success', `Original MyFactorySpace draft "${draft.title}" created with Mind Map & HD Infographic Photo!`);
+            if (typeof showToast === 'function') {
+                showToast(`Created MyFactorySpace draft: "${shortCaptureText(draft.title, 60)}"`, 'success');
+            }
+
+            if (openEditor && typeof window.openInsightEditorModal === 'function') {
+                window.openInsightEditorModal(draft.id);
+            }
+        } finally {
+            if (btnOpen) {
+                btnOpen.disabled = false;
+                btnOpen.innerHTML = origOpenHtml;
+            }
+            if (btnSave) btnSave.disabled = false;
+        }
+    };
+
+    // Quick URL Capture Shortcut right inside #insight-editor-dialog
+    window.toggleInsightEditorQuickUrlBar = function() {
+        const row = document.getElementById('insight-editor-quick-url-row');
+        if (!row) return;
+        row.hidden = !row.hidden;
+        if (!row.hidden) {
+            const inp = document.getElementById('insight-editor-quick-url-input');
+            if (inp) inp.focus();
+        }
+    };
+
+    window.captureUrlDirectlyIntoEditor = async function() {
+        const inp = document.getElementById('insight-editor-quick-url-input');
+        const btn = document.getElementById('btn-editor-quick-capture');
+        const statusEl = document.getElementById('insight-editor-quick-url-status');
+        if (!inp) return;
+
+        let rawUrl = inp.value.trim();
+        if (rawUrl && !/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(rawUrl) && rawUrl.includes('.')) {
+            rawUrl = `https://${rawUrl}`;
+            inp.value = rawUrl;
+        }
+        const safeUrl = sanitizeHttpUrl(rawUrl);
+        if (!safeUrl) {
+            if (statusEl) {
+                statusEl.style.display = 'block';
+                statusEl.style.color = '#b91c1c';
+                statusEl.textContent = 'Please enter a valid website URL starting with https:// or http://.';
+            }
+            inp.focus();
+            return;
+        }
+
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Capturing...';
+        }
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.style.color = '#1e40af';
+            statusEl.textContent = 'Capturing link metadata, photo & key facts...';
+        }
+
+        try {
+            const captured = await window.IndustraSupabase.captureUrlForInsight(safeUrl);
+            if (!captured || !captured.ok) {
+                if (statusEl) {
+                    statusEl.style.color = '#b91c1c';
+                    statusEl.textContent = (captured && captured.error) || 'Could not capture this URL.';
+                }
+                return;
+            }
+
+            const analysis = analyzeCapturedSource(captured, {
+                cityOverride: ((document.getElementById('insight-input-city') || {}).value || '') === 'Klang Valley' ? '' : ((document.getElementById('insight-input-city') || {}).value || '')
+            });
+
+            let coverUrl = analysis.benchmarks.fallbackAerial;
+            if (Array.isArray(captured.images) && captured.images[0] && captured.images[0].url) {
+                if (statusEl) statusEl.textContent = 'Importing lead photo to MyFactorySpace Cloud Storage...';
+                const imported = await window.IndustraSupabase.importCapturedImageToStorage(captured.images[0].url, analysis.cleanTopic);
+                if (imported && imported.success && imported.url) coverUrl = imported.url;
+            }
+
+            const edMode = (document.getElementById('insight-input-edition') || {}).value || 'specialized';
+            const angleMap = { investor: 'investor', compliance: 'buyer', specialized: 'executive' };
+            const draft = buildMyFactorySpaceArticleFromCapture(captured, {
+                angle: angleMap[edMode] || 'executive',
+                includeCredit: true,
+                resolvedCoverImage: coverUrl
+            });
+
+            document.getElementById('insight-input-title').value = draft.title;
+            if (!document.getElementById('insight-edit-id').value) {
+                document.getElementById('insight-input-slug').value = draft.slug;
+            }
+            document.getElementById('insight-input-category').value = draft.category;
+            document.getElementById('insight-input-city').value = draft.targetCity;
+            document.getElementById('insight-input-type').value = draft.targetType;
+            document.getElementById('insight-input-excerpt').value = draft.excerpt;
+            document.getElementById('insight-input-takeaways').value = (draft.keyTakeaways || []).join('\n');
+            document.getElementById('insight-input-body').value = draft.body;
+            document.getElementById('insight-input-faqs').value = (draft.faqs || []).map(f => `Q: ${f.q} | A: ${f.a}`).join('\n');
+            window.setInsightCoverPreset(draft.coverImage);
+            populateInsightMindMapFields(draft.mindMap, draft);
+            window.refreshInsightVisualPreviews();
+
+            if (statusEl) {
+                statusEl.style.color = '#065f46';
+                statusEl.textContent = `Populated original MyFactorySpace draft from ${captured.domain || 'link'}! Review and customize before saving.`;
+            }
+            if (typeof showToast === 'function') showToast('Captured website link & filled MyFactorySpace draft!', 'success');
+        } catch (err) {
+            if (statusEl) {
+                statusEl.style.color = '#b91c1c';
+                statusEl.textContent = 'Could not reach URL Capture service. Try again shortly.';
+            }
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
+    };
+
+    window.autoFillInsightEditorFromInternetPublic = async function() {
+        if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+            alert('Only Administrators and authorized agents can generate Market Insights.');
+            return;
+        }
+        const btn = document.getElementById('btn-editor-from-public');
+        const origHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Pulling News...';
+        }
+        try {
+            const rawCity = (document.getElementById('insight-input-city') || {}).value || '';
+            const city = rawCity === 'Klang Valley' ? '' : rawCity;
+            const autoCfg = getInsightsAutomationSettings();
+            const query = ((document.getElementById('insights-public-query') || {}).value || autoCfg.publicQuery || 'Malaysia Klang Valley industrial property warehouse factory').trim();
+            const existing = getAllInsightArticles();
+            const captured = await window.IndustraSupabase.discoverAndCapturePublicInsight({
+                query,
+                city,
+                excludeUrls: existing.map(a => a.sourceInspirationUrl).filter(Boolean),
+                excludeTitles: existing.map(a => a.title).filter(Boolean)
+            });
+            if (!captured || !captured.ok) {
+                if (typeof showToast === 'function') showToast((captured && captured.error) || 'Could not pull public news right now.', 'error');
+                return;
+            }
+
+            const analysis = analyzeCapturedSource(captured, { cityOverride: city });
+            let coverUrl = analysis.benchmarks.fallbackAerial;
+            if (Array.isArray(captured.images) && captured.images[0] && captured.images[0].url && typeof window.IndustraSupabase.importCapturedImageToStorage === 'function') {
+                const imp = await window.IndustraSupabase.importCapturedImageToStorage(captured.images[0].url, analysis.cleanTopic);
+                if (imp && imp.success && imp.url) coverUrl = imp.url;
+            }
+
+            const edMode = (document.getElementById('insight-input-edition') || {}).value || 'specialized';
+            const angleMap = { investor: 'investor', compliance: 'buyer', specialized: 'executive' };
+            const draft = buildMyFactorySpaceArticleFromCapture(captured, {
+                angle: angleMap[edMode] || 'executive',
+                cityOverride: city,
+                includeCredit: true,
+                contentSourceOrigin: 'internet',
+                resolvedCoverImage: coverUrl
+            });
+
+            document.getElementById('insight-input-title').value = draft.title;
+            if (!document.getElementById('insight-edit-id').value) {
+                document.getElementById('insight-input-slug').value = draft.slug;
+            }
+            document.getElementById('insight-input-category').value = draft.category;
+            document.getElementById('insight-input-city').value = draft.targetCity;
+            document.getElementById('insight-input-type').value = draft.targetType;
+            document.getElementById('insight-input-excerpt').value = draft.excerpt;
+            document.getElementById('insight-input-takeaways').value = (draft.keyTakeaways || []).join('\n');
+            document.getElementById('insight-input-body').value = draft.body;
+            document.getElementById('insight-input-faqs').value = (draft.faqs || []).map(f => `Q: ${f.q} | A: ${f.a}`).join('\n');
+            window.setInsightCoverPreset(draft.coverImage);
+            populateInsightMindMapFields(draft.mindMap, draft);
+            window.refreshInsightVisualPreviews();
+            if (typeof showToast === 'function') showToast(`Drafted from Internet Public (${captured.siteName || 'News'})!`, 'success');
+        } catch (err) {
+            if (typeof showToast === 'function') showToast('Could not pull Internet Public news right now.', 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origHtml;
+            }
+        }
+    };
+
+    window.initInsightsAdminView = function() {
+        window.renderInsightsAccessPanel();
+        window.updateInsightsAutomationUI();
+        window.renderInsightsAdminTable();
+    };
+
+    loadInsightsFromSupabase();
+
+    // =========================================================================
+    // MULTI-ROW SELECTION & BULK DELETE ACROSS ALL 6 DASHBOARD CRM MODULES
+    // Covers: Properties (Assigned & Unassigned), Parks (Assigned, Unassigned &
+    // Approval Requests), Owner Lists, Lead List, Specialist Agents, Insights
+    // =========================================================================
+    function initEnterpriseTableBulkSelection() {
+        const supportsHasSelector = typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('selector(:has(*))');
+
+        const TABLE_CONFIGS = [
+            {
+                tbodyId: 'property-table-body',
+                domain: 'properties',
+                singularLabel: 'property listing',
+                pluralLabel: 'property listings',
+                extractKey(tr) {
+                    const btn = tr.querySelector('[onclick*="deleteProperty("]');
+                    if (!btn) return '';
+                    const m = (btn.getAttribute('onclick') || '').match(/deleteProperty\(\s*['"]([^'"]+)['"]\s*\)/);
+                    return m ? m[1] : '';
+                }
+            },
+            {
+                tbodyId: 'properties-unassigned-table-body',
+                domain: 'properties',
+                singularLabel: 'unassigned property listing',
+                pluralLabel: 'unassigned property listings',
+                extractKey(tr) {
+                    const btn = tr.querySelector('[onclick*="deleteProperty("]');
+                    if (!btn) return '';
+                    const m = (btn.getAttribute('onclick') || '').match(/deleteProperty\(\s*['"]([^'"]+)['"]\s*\)/);
+                    return m ? m[1] : '';
+                }
+            },
+            {
+                tbodyId: 'parks-table-body',
+                domain: 'parks',
+                singularLabel: 'industrial park',
+                pluralLabel: 'industrial parks',
+                extractKey(tr) {
+                    const btn = tr.querySelector('[onclick*="deletePark("]');
+                    if (!btn) return '';
+                    const m = (btn.getAttribute('onclick') || '').match(/deletePark\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)/);
+                    return m ? `${m[1]}:::${m[2]}` : '';
+                }
+            },
+            {
+                tbodyId: 'parks-unassigned-table-body',
+                domain: 'parks',
+                singularLabel: 'unassigned industrial park',
+                pluralLabel: 'unassigned industrial parks',
+                extractKey(tr) {
+                    const btn = tr.querySelector('[onclick*="deletePark("]');
+                    if (!btn) return '';
+                    const m = (btn.getAttribute('onclick') || '').match(/deletePark\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)/);
+                    return m ? `${m[1]}:::${m[2]}` : '';
+                }
+            },
+            {
+                tbodyId: 'park-requests-table-body',
+                domain: 'parkRequests',
+                singularLabel: 'park approval request',
+                pluralLabel: 'park approval requests',
+                extractKey(tr) {
+                    const btn = tr.querySelector('[onclick*="deleteParkRequest("]');
+                    if (!btn) return '';
+                    const m = (btn.getAttribute('onclick') || '').match(/deleteParkRequest\(\s*['"]([^'"]+)['"]\s*\)/);
+                    return m ? m[1] : '';
+                }
+            },
+            {
+                tbodyId: 'owner-list-table-body',
+                domain: 'ownerListings',
+                singularLabel: 'owner listing request',
+                pluralLabel: 'owner listing requests',
+                extractKey(tr) {
+                    const btn = tr.querySelector('[onclick*="deleteOwnerListing("]');
+                    if (!btn) return '';
+                    const m = (btn.getAttribute('onclick') || '').match(/deleteOwnerListing\(\s*['"]([^'"]+)['"]\s*\)/);
+                    return m ? m[1] : '';
+                }
+            },
+            {
+                tbodyId: 'leads-table-body',
+                domain: 'leads',
+                singularLabel: 'customer lead inquiry',
+                pluralLabel: 'customer lead inquiries',
+                extractKey(tr) {
+                    const btn = tr.querySelector('[onclick*="deleteLead("]');
+                    if (!btn) return '';
+                    const m = (btn.getAttribute('onclick') || '').match(/deleteLead\(\s*['"]([^'"]+)['"]\s*\)/);
+                    return m ? m[1] : '';
+                }
+            },
+            {
+                tbodyId: 'agents-table-body',
+                domain: 'agents',
+                singularLabel: 'specialist agent',
+                pluralLabel: 'specialist agents',
+                extractKey(tr) {
+                    const btn = tr.querySelector('[onclick*="deleteAgent("]');
+                    if (!btn) return '';
+                    const m = (btn.getAttribute('onclick') || '').match(/deleteAgent\(\s*['"]([^'"]+)['"]\s*\)/);
+                    return m ? m[1] : '';
+                }
+            },
+            {
+                tbodyId: 'insights-table-body',
+                domain: 'insights',
+                singularLabel: 'market insight article',
+                pluralLabel: 'market insight articles',
+                extractKey(tr) {
+                    const btn = tr.querySelector('[onclick*="deleteInsightArticle("]');
+                    if (!btn) return '';
+                    const m = (btn.getAttribute('onclick') || '').match(/deleteInsightArticle\(\s*['"]([^'"]+)['"]\s*\)/);
+                    return m ? m[1] : '';
+                }
+            }
+        ];
+
+        const tableStates = new Map();
+
+        function syncRowFallbackClass(tr, checked) {
+            if (!supportsHasSelector && tr) {
+                tr.classList.toggle('is-bulk-row-selected', Boolean(checked));
+            }
+        }
+
+        function getEnabledRowCheckboxes(tbody) {
+            if (!tbody) return [];
+            return Array.from(tbody.querySelectorAll('input.crm-bulk-row-cb:not(:disabled)'));
+        }
+
+        function extractRowDisplayLabel(tr, fallbackLabel) {
+            if (!tr) return fallbackLabel || 'Selected Item';
+            const strong = tr.querySelector('strong');
+            if (strong && strong.textContent.trim()) {
+                return strong.textContent.replace(/\s+/g, ' ').trim().slice(0, 88);
+            }
+            const cells = Array.from(tr.querySelectorAll('td:not(.crm-bulk-cell)'));
+            for (const cell of cells) {
+                const txt = (cell.textContent || '').replace(/\s+/g, ' ').trim();
+                if (txt && txt.length > 2) return txt.slice(0, 88);
+            }
+            return fallbackLabel || 'Selected Item';
+        }
+
+        // Native <dialog> 2-Step Double-Confirmation Modal for Bulk Deletion
+        function requestDoubleConfirmBulkDelete(opts) {
+            const count = Number(opts && opts.count) || 0;
+            const label = count === 1 ? (opts.singularLabel || 'item') : (opts.pluralLabel || 'items');
+            const itemNames = Array.isArray(opts && opts.itemNames) ? opts.itemNames.filter(Boolean) : [];
+            const extraWarning = String((opts && opts.extraWarning) || '').trim();
+
+            let dialog = document.getElementById('crm-bulk-delete-dialog');
+            if (!dialog) {
+                dialog = document.createElement('dialog');
+                dialog.id = 'crm-bulk-delete-dialog';
+                dialog.setAttribute('aria-labelledby', 'crm-bulk-delete-title');
+                dialog.innerHTML = `
+                    <form method="dialog" id="crm-bulk-delete-form">
+                        <div class="crm-bulk-dialog-header">
+                            <div class="crm-bulk-dialog-icon" aria-hidden="true">
+                                <i class="fa-solid fa-triangle-exclamation"></i>
+                            </div>
+                            <div class="crm-bulk-dialog-title-wrap">
+                                <h2 id="crm-bulk-delete-title">Confirm Bulk Deletion</h2>
+                                <p id="crm-bulk-delete-subtitle">Double confirmation required before permanent removal.</p>
+                            </div>
+                        </div>
+                        <div class="crm-bulk-dialog-body">
+                            <div class="crm-bulk-preview-box">
+                                <div class="crm-bulk-preview-label">
+                                    <span>Selected Records to Delete</span>
+                                    <span id="crm-bulk-preview-count-pill">0 Items</span>
+                                </div>
+                                <ul class="crm-bulk-preview-list" id="crm-bulk-preview-list"></ul>
+                            </div>
+                            <div id="crm-bulk-extra-warning" style="display:none; font-size:0.78rem; color:#92400e; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:0.55rem 0.75rem; font-weight:600;"></div>
+                            <label class="crm-bulk-double-confirm-label" for="crm-bulk-double-confirm-cb">
+                                <input type="checkbox" id="crm-bulk-double-confirm-cb" class="crm-bulk-checkbox" style="margin-top:1px;">
+                                <span id="crm-bulk-double-confirm-text">I confirm permanent deletion of these selected records. This action cannot be undone.</span>
+                            </label>
+                        </div>
+                        <div class="crm-bulk-dialog-footer">
+                            <button type="submit" value="cancel" class="btn btn-sm btn-outline" id="crm-bulk-cancel-btn" autofocus>Cancel &amp; Keep</button>
+                            <button type="submit" value="delete" class="btn btn-sm crm-bulk-dialog-confirm-btn" id="crm-bulk-confirm-submit-btn" disabled>
+                                <i class="fa-solid fa-trash-can" aria-hidden="true"></i> <span>Permanently Delete</span>
+                            </button>
+                        </div>
+                    </form>
+                `;
+                document.body.appendChild(dialog);
+            }
+
+            const titleEl = dialog.querySelector('#crm-bulk-delete-title');
+            const subEl = dialog.querySelector('#crm-bulk-delete-subtitle');
+            const countPillEl = dialog.querySelector('#crm-bulk-preview-count-pill');
+            const listEl = dialog.querySelector('#crm-bulk-preview-list');
+            const warnEl = dialog.querySelector('#crm-bulk-extra-warning');
+            const cbEl = dialog.querySelector('#crm-bulk-double-confirm-cb');
+            const cbTextEl = dialog.querySelector('#crm-bulk-double-confirm-text');
+            const confirmSubmitBtn = dialog.querySelector('#crm-bulk-confirm-submit-btn');
+
+            if (titleEl) titleEl.textContent = `Delete ${count} Selected ${label.replace(/\b\w/g, c => c.toUpperCase())}?`;
+            if (subEl) subEl.textContent = `Step 2 of 2 · Review selected ${label} and check the confirmation box below to unlock deletion.`;
+            if (countPillEl) countPillEl.textContent = `${count} Selected`;
+
+            if (listEl) {
+                listEl.replaceChildren();
+                const displayItems = itemNames.slice(0, 8);
+                displayItems.forEach(name => {
+                    const li = document.createElement('li');
+                    const icon = document.createElement('i');
+                    icon.className = 'fa-solid fa-circle-minus';
+                    icon.setAttribute('aria-hidden', 'true');
+                    const span = document.createElement('span');
+                    span.textContent = name;
+                    span.style.overflow = 'hidden';
+                    span.style.textOverflow = 'ellipsis';
+                    li.append(icon, span);
+                    listEl.appendChild(li);
+                });
+                if (itemNames.length > displayItems.length) {
+                    const moreLi = document.createElement('li');
+                    moreLi.style.background = '#f1f5f9';
+                    moreLi.style.color = '#475569';
+                    moreLi.textContent = `+ ${itemNames.length - displayItems.length} more selected ${label}...`;
+                    listEl.appendChild(moreLi);
+                }
+            }
+
+            if (warnEl) {
+                if (extraWarning) {
+                    warnEl.style.display = 'block';
+                    warnEl.textContent = extraWarning;
+                } else {
+                    warnEl.style.display = 'none';
+                    warnEl.textContent = '';
+                }
+            }
+
+            if (cbTextEl) {
+                cbTextEl.textContent = `I confirm permanent deletion of ${count} ${label} from Dashboard CRM and Supabase Cloud Database.`;
+            }
+
+            if (cbEl && confirmSubmitBtn) {
+                cbEl.checked = false;
+                confirmSubmitBtn.disabled = true;
+                confirmSubmitBtn.innerHTML = `<i class="fa-solid fa-trash-can" aria-hidden="true"></i> <span>Yes, Permanently Delete (${count})</span>`;
+                cbEl.onchange = () => {
+                    confirmSubmitBtn.disabled = !cbEl.checked;
+                };
+            }
+
+            return new Promise((resolve) => {
+                const onClose = () => {
+                    dialog.removeEventListener('close', onClose);
+                    const choice = dialog.returnValue;
+                    dialog.returnValue = '';
+                    resolve(choice === 'delete');
+                };
+                dialog.addEventListener('close', onClose);
+                dialog.returnValue = '';
+                if (typeof dialog.showModal === 'function') {
+                    dialog.showModal();
+                } else {
+                    resolve(confirm(`Permanently delete ${count} selected ${label}?`));
+                }
+            });
+        }
+
+        function updateTableBulkUI(tbodyId) {
+            const state = tableStates.get(tbodyId);
+            if (!state) return;
+            const { tbody, headerCb, toolbar, selectAllBtn, countBadge, clearBtn, deleteBtn } = state;
+            const enabledCbs = getEnabledRowCheckboxes(tbody);
+            const checkedCbs = enabledCbs.filter(cb => cb.checked);
+            const total = enabledCbs.length;
+            const selectedCount = checkedCbs.length;
+
+            // Keep state.selectedKeys synchronized with visible checked boxes
+            state.selectedKeys.clear();
+            checkedCbs.forEach(cb => {
+                if (cb.dataset.bulkKey) state.selectedKeys.add(cb.dataset.bulkKey);
+            });
+
+            if (headerCb) {
+                headerCb.disabled = total === 0;
+                headerCb.checked = total > 0 && selectedCount === total;
+                headerCb.indeterminate = selectedCount > 0 && selectedCount < total;
+            }
+
+            if (toolbar) {
+                const hasSelection = selectedCount > 0;
+                const allSelected = total > 0 && selectedCount === total;
+                toolbar.classList.toggle('has-selection', hasSelection);
+                if (countBadge) {
+                    countBadge.hidden = !hasSelection;
+                    countBadge.innerHTML = `<i class="fa-solid fa-check-double" aria-hidden="true"></i> <span>${selectedCount} Selected</span>`;
+                }
+                if (selectAllBtn) {
+                    selectAllBtn.disabled = total === 0;
+                    // Hide Select All when all rows are already selected so there is no redundant button next to Clear
+                    selectAllBtn.hidden = allSelected;
+                    selectAllBtn.innerHTML = hasSelection
+                        ? `<i class="fa-regular fa-square-check" aria-hidden="true"></i> <span>Select All (${total})</span>`
+                        : `<i class="fa-regular fa-square-check" aria-hidden="true"></i> <span>Select All</span>`;
+                }
+                if (clearBtn) {
+                    clearBtn.hidden = !hasSelection;
+                    clearBtn.innerHTML = `<i class="fa-solid fa-xmark" aria-hidden="true"></i> <span>Clear</span>`;
+                }
+                if (deleteBtn) {
+                    deleteBtn.hidden = !hasSelection;
+                    deleteBtn.innerHTML = `<i class="fa-solid fa-trash-can" aria-hidden="true"></i> <span>Delete (${selectedCount})</span>`;
+                }
+            }
+        }
+
+        function decorateTbodyRows(tbodyId) {
+            const state = tableStates.get(tbodyId);
+            if (!state || !state.tbody) return;
+            const { tbody, cfg } = state;
+            const rows = Array.from(tbody.querySelectorAll(':scope > tr'));
+
+            rows.forEach((tr, rowIdx) => {
+                // Skip if already decorated
+                if (tr.querySelector(':scope > td.crm-bulk-cell')) return;
+
+                // Empty state or full-row message with colspan
+                const firstTd = tr.querySelector(':scope > td');
+                if (rows.length === 1 && firstTd && firstTd.hasAttribute('colspan')) {
+                    if (!firstTd.dataset.bulkColspanAdjusted) {
+                        const curSpan = parseInt(firstTd.getAttribute('colspan') || '1', 10);
+                        firstTd.setAttribute('colspan', String(curSpan + 1));
+                        firstTd.dataset.bulkColspanAdjusted = 'true';
+                    }
+                    return;
+                }
+
+                const key = cfg.extractKey(tr);
+                const td = document.createElement('td');
+                td.className = 'crm-bulk-cell';
+
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.className = 'crm-bulk-checkbox crm-bulk-row-cb';
+                cb.setAttribute('aria-label', `Select ${cfg.singularLabel} row ${rowIdx + 1}`);
+
+                if (key) {
+                    cb.dataset.bulkKey = key;
+                    if (state.selectedKeys.has(key)) {
+                        cb.checked = true;
+                        syncRowFallbackClass(tr, true);
+                    }
+                } else {
+                    cb.disabled = true;
+                    cb.title = 'This row cannot be bulk-deleted with your current permissions or status';
+                }
+
+                td.appendChild(cb);
+                tr.insertBefore(td, tr.firstChild);
+            });
+
+            updateTableBulkUI(tbodyId);
+        }
+
+        async function executeBulkDeleteForTable(tbodyId) {
+            const state = tableStates.get(tbodyId);
+            if (!state) return;
+            const { cfg, tbody } = state;
+            const keys = Array.from(state.selectedKeys);
+            if (keys.length === 0) return;
+
+            const count = keys.length;
+            const label = count === 1 ? cfg.singularLabel : cfg.pluralLabel;
+            const checkedRowLabels = getEnabledRowCheckboxes(tbody)
+                .filter(cb => cb.checked)
+                .map((cb, idx) => extractRowDisplayLabel(cb.closest('tr'), `${cfg.singularLabel} #${idx + 1}`));
+
+            if (cfg.domain === 'properties') {
+                if (currentUserRole === 'Entry Support') {
+                    alert('Entry Support role is view-only.');
+                    return;
+                }
+                const allowedParks = getAgentAssignedParks();
+                const activeUserObj = typeof getCurrentUserObj === 'function' ? getCurrentUserObj() : {};
+                const activeUsername = (sessionStorage.getItem('loggedInUser') || (activeUserObj.username || '')).toLowerCase();
+                const activeAgent = typeof getCurrentAgent === 'function' ? getCurrentAgent() : null;
+
+                const permittedIds = [];
+                const permittedTitles = [];
+                const deniedTitles = [];
+                keys.forEach(id => {
+                    const prop = properties.find(p => String(p.id) === String(id));
+                    if (!prop) return;
+                    if (allowedParks !== null) {
+                        const isCreator = (prop.createdBy && String(prop.createdBy).toLowerCase() === activeUsername) ||
+                                          (prop.createdByAgentId && activeAgent && String(prop.createdByAgentId) === String(activeAgent.id));
+                        if (!isCreator && (allowedParks.length === 0 || !prop.park || !isParkAllowed(prop.park, allowedParks))) {
+                            deniedTitles.push(prop.title || `#${id}`);
+                            return;
+                        }
+                    }
+                    permittedIds.push(String(id));
+                    permittedTitles.push(prop.title || `Property #${id}`);
+                });
+
+                if (permittedIds.length === 0) {
+                    alert('Access Denied: You can only delete property listings within your assigned parks or created by you.');
+                    return;
+                }
+                const denyNotice = deniedTitles.length > 0
+                    ? `${deniedTitles.length} listing(s) outside your assigned parks will be skipped.`
+                    : '';
+                const confirmed = await requestDoubleConfirmBulkDelete({
+                    count: permittedIds.length,
+                    singularLabel: cfg.singularLabel,
+                    pluralLabel: cfg.pluralLabel,
+                    itemNames: permittedTitles.length > 0 ? permittedTitles : checkedRowLabels,
+                    extraWarning: denyNotice
+                });
+                if (!confirmed) return;
+
+                const idSet = new Set(permittedIds);
+                const removedProps = properties.filter(p => idSet.has(String(p.id)));
+                properties = properties.filter(p => !idSet.has(String(p.id)));
+                window.properties = properties;
+                safeLocalStorageSet('industria_properties', properties);
+                permittedIds.forEach(id => {
+                    if (typeof syncPropertyDeleteToSupabase === 'function') {
+                        syncPropertyDeleteToSupabase(id);
+                    }
+                });
+                window.dispatchEvent(new Event('storage'));
+                state.selectedKeys.clear();
+                renderTable();
+                if (typeof window.logDashboardActivity === 'function') {
+                    window.logDashboardActivity({
+                        category: 'Properties',
+                        action: 'Bulk Delete',
+                        target: `${permittedIds.length} Listings`,
+                        details: `Bulk deleted: ${removedProps.slice(0, 4).map(p => p.title || ('#' + p.id)).join(', ')}${removedProps.length > 4 ? '...' : ''}`
+                    });
+                }
+                if (typeof showToast === 'function') {
+                    showToast(`Deleted ${permittedIds.length} ${permittedIds.length === 1 ? cfg.singularLabel : cfg.pluralLabel}.`, 'success');
+                }
+                return;
+            }
+
+            if (cfg.domain === 'parks') {
+                if (currentUserRole !== 'Administrator') {
+                    alert('Only Administrator can delete parks.');
+                    return;
+                }
+                const confirmed = await requestDoubleConfirmBulkDelete({
+                    count,
+                    singularLabel: cfg.singularLabel,
+                    pluralLabel: cfg.pluralLabel,
+                    itemNames: checkedRowLabels,
+                    extraWarning: 'Properties and specialist agents assigned to these parks will be unassigned.'
+                });
+                if (!confirmed) return;
+
+                const deletedParkNames = [];
+                let reqs = getParkRequests();
+                let reqsChanged = false;
+                const allAgents = (typeof agents !== 'undefined' && Array.isArray(agents)) ? agents : safeJsonParse('industria_agents', []);
+                const modifiedAgents = new Set();
+
+                keys.forEach(rawKey => {
+                    const parts = String(rawKey).split(':::');
+                    if (parts.length < 2) return;
+                    const city = decodeURIComponent(parts[0]);
+                    const name = decodeURIComponent(parts[1]);
+                    if (!parks[city]) return;
+
+                    const targetPark = parks[city].find(p => (typeof p === 'string' ? p : p.name) === name);
+                    if (!targetPark) return;
+                    const targetId = (typeof targetPark === 'object' && targetPark.id) ? targetPark.id : name;
+
+                    parks[city] = parks[city].filter(p => (typeof p === 'string' ? p : p.name) !== name);
+                    deletedParkNames.push(`${name} (${city})`);
+
+                    if (typeof window.removeParkFromLocationDirectory === 'function') {
+                        window.removeParkFromLocationDirectory(city, name);
+                    }
+                    if (typeof syncParkDeleteToSupabase === 'function') {
+                        syncParkDeleteToSupabase(targetId);
+                    }
+
+                    properties.forEach(p => {
+                        if (p.location === city && p.park === name) {
+                            p.park = '';
+                            if (typeof syncPropertyToSupabase === 'function') {
+                                syncPropertyToSupabase(p);
+                            }
+                        }
+                    });
+
+                    const normName = name.trim().toLowerCase();
+                    allAgents.forEach(a => {
+                        let changed = false;
+                        if (Array.isArray(a.parks) && a.parks.some(p => (typeof p === 'string' ? p : (p && p.name ? p.name : '')).trim().toLowerCase() === normName)) {
+                            a.parks = a.parks.filter(p => (typeof p === 'string' ? p : (p && p.name ? p.name : '')).trim().toLowerCase() !== normName);
+                            changed = true;
+                        }
+                        if (Array.isArray(a.assignedParks) && a.assignedParks.some(p => (typeof p === 'string' ? p : (p && p.name ? p.name : '')).trim().toLowerCase() === normName)) {
+                            a.assignedParks = a.assignedParks.filter(p => (typeof p === 'string' ? p : (p && p.name ? p.name : '')).trim().toLowerCase() !== normName);
+                            changed = true;
+                        }
+                        if (changed) modifiedAgents.add(a);
+                    });
+
+                    const nextReqs = reqs.filter(r => !(r.city === city && r.name.trim().toLowerCase() === normName && r.status === 'Approved'));
+                    if (nextReqs.length !== reqs.length) {
+                        reqs = nextReqs;
+                        reqsChanged = true;
+                    }
+                });
+
+                safeLocalStorageSet('industria_industrial_parks', JSON.stringify(parks));
+                safeLocalStorageSet('industria_properties', JSON.stringify(properties));
+
+                if (modifiedAgents.size > 0) {
+                    safeLocalStorageSet('industria_agents', JSON.stringify(allAgents));
+                    if (typeof agents !== 'undefined') agents = allAgents;
+                    for (const a of modifiedAgents) {
+                        if (typeof syncAgentToSupabase === 'function') {
+                            await syncAgentToSupabase(a);
+                        }
+                    }
+                    if (typeof window.renderAgentsTable === 'function') window.renderAgentsTable();
+                }
+
+                if (reqsChanged) {
+                    saveParkRequests(reqs);
+                    renderParkRequestsTable();
+                }
+
+                state.selectedKeys.clear();
+                renderParksTable();
+                renderTable();
+
+                if (deletedParkNames.length > 0 && typeof window.logDashboardActivity === 'function') {
+                    window.logDashboardActivity({
+                        category: 'Parks',
+                        action: 'Bulk Delete',
+                        target: `${deletedParkNames.length} Parks`,
+                        details: `Bulk deleted parks: ${deletedParkNames.slice(0, 4).join(', ')}${deletedParkNames.length > 4 ? '...' : ''}`
+                    });
+                }
+                if (typeof showToast === 'function') {
+                    showToast(`Deleted ${deletedParkNames.length} ${deletedParkNames.length === 1 ? cfg.singularLabel : cfg.pluralLabel}.`, 'success');
+                }
+                return;
+            }
+
+            if (cfg.domain === 'parkRequests') {
+                if (currentUserRole !== 'Administrator') {
+                    alert('Only Administrator can remove park approval requests.');
+                    return;
+                }
+                const reqs = getParkRequests();
+                const idSet = new Set(keys.map(String));
+                const targetReqs = reqs.filter(r => idSet.has(String(r.id)) && (r.status === 'Rejected' || r.status === 'Approved'));
+                if (targetReqs.length === 0) {
+                    alert('Only approved or rejected approval requests can be removed.');
+                    return;
+                }
+                const approvedCount = targetReqs.filter(r => r.status === 'Approved').length;
+                const extraNote = approvedCount > 0
+                    ? `Note: ${approvedCount} approved proposal(s) will also be removed from active parks.`
+                    : '';
+                const confirmed = await requestDoubleConfirmBulkDelete({
+                    count: targetReqs.length,
+                    singularLabel: cfg.singularLabel,
+                    pluralLabel: cfg.pluralLabel,
+                    itemNames: targetReqs.map(r => `${r.name} (${r.city} · ${r.status})`),
+                    extraWarning: extraNote
+                });
+                if (!confirmed) return;
+
+                const allAgents = (typeof agents !== 'undefined' && Array.isArray(agents)) ? agents : safeJsonParse('industria_agents', []);
+                let agentsModified = false;
+                let propsModified = false;
+
+                for (const req of targetReqs) {
+                    if (req.status === 'Approved' && parks && parks[req.city]) {
+                        const normName = req.name.trim().toLowerCase();
+                        const targetPark = parks[req.city].find(p => (typeof p === 'string' ? p : p.name).trim().toLowerCase() === normName);
+                        if (targetPark) {
+                            const targetId = (typeof targetPark === 'object' && targetPark.id) ? targetPark.id : req.name;
+                            parks[req.city] = parks[req.city].filter(p => (typeof p === 'string' ? p : p.name).trim().toLowerCase() !== normName);
+                            if (typeof syncParkDeleteToSupabase === 'function') syncParkDeleteToSupabase(targetId);
+                            if (typeof window.removeParkFromLocationDirectory === 'function') {
+                                window.removeParkFromLocationDirectory(req.city, req.name);
+                            }
+                        }
+                        properties.forEach(p => {
+                            if (p.location === req.city && p.park && p.park.trim().toLowerCase() === normName) {
+                                p.park = '';
+                                propsModified = true;
+                                if (typeof syncPropertyToSupabase === 'function') syncPropertyToSupabase(p);
+                            }
+                        });
+                        for (const a of allAgents) {
+                            let thisMod = false;
+                            if (Array.isArray(a.parks) && a.parks.some(p => (typeof p === 'string' ? p : (p && p.name ? p.name : '')).trim().toLowerCase() === normName)) {
+                                a.parks = a.parks.filter(p => (typeof p === 'string' ? p : (p && p.name ? p.name : '')).trim().toLowerCase() !== normName);
+                                thisMod = true;
+                            }
+                            if (Array.isArray(a.assignedParks) && a.assignedParks.some(p => (typeof p === 'string' ? p : (p && p.name ? p.name : '')).trim().toLowerCase() === normName)) {
+                                a.assignedParks = a.assignedParks.filter(p => (typeof p === 'string' ? p : (p && p.name ? p.name : '')).trim().toLowerCase() !== normName);
+                                thisMod = true;
+                            }
+                            if (thisMod) {
+                                agentsModified = true;
+                                if (typeof syncAgentToSupabase === 'function') await syncAgentToSupabase(a);
+                            }
+                        }
+                    }
+                }
+
+                if (approvedCount > 0) {
+                    safeLocalStorageSet('industria_industrial_parks', JSON.stringify(parks));
+                }
+                if (propsModified) {
+                    safeLocalStorageSet('industria_properties', JSON.stringify(properties));
+                }
+                if (agentsModified) {
+                    safeLocalStorageSet('industria_agents', JSON.stringify(allAgents));
+                    if (typeof agents !== 'undefined') agents = allAgents;
+                    if (typeof window.renderAgentsTable === 'function') window.renderAgentsTable();
+                }
+
+                const removeSet = new Set(targetReqs.map(r => String(r.id)));
+                const remainingReqs = reqs.filter(r => !removeSet.has(String(r.id)));
+                saveParkRequests(remainingReqs);
+                state.selectedKeys.clear();
+                renderParkRequestsTable();
+                renderParksTable();
+                renderTable();
+                if (typeof showToast === 'function') {
+                    showToast(`Removed ${targetReqs.length} ${targetReqs.length === 1 ? cfg.singularLabel : cfg.pluralLabel}.`, 'success');
+                }
+                return;
+            }
+
+            if (cfg.domain === 'ownerListings') {
+                const confirmed = await requestDoubleConfirmBulkDelete({
+                    count,
+                    singularLabel: cfg.singularLabel,
+                    pluralLabel: cfg.pluralLabel,
+                    itemNames: checkedRowLabels
+                });
+                if (!confirmed) return;
+                const idSet = new Set(keys.map(String));
+                let listings = safeJsonParse('industria_owner_listings', defaultOwnerListings);
+                const removed = listings.filter(l => idSet.has(String(l.id)));
+                listings = listings.filter(l => !idSet.has(String(l.id)));
+                safeLocalStorageSet('industria_owner_listings', listings);
+                state.selectedKeys.clear();
+                renderOwnerList();
+                if (typeof window.renderOverviewSummaries === 'function') window.renderOverviewSummaries();
+                if (window.IndustraSupabase && typeof window.IndustraSupabase.deleteOwnerListing === 'function') {
+                    await Promise.allSettled(keys.map(id => window.IndustraSupabase.deleteOwnerListing(id)));
+                }
+                if (removed.length > 0 && typeof window.logDashboardActivity === 'function') {
+                    window.logDashboardActivity({
+                        category: 'Owner Listings',
+                        action: 'Bulk Delete',
+                        target: `${removed.length} Owner Requests`,
+                        details: `Bulk deleted owner requests: ${removed.slice(0, 4).map(r => r.name || ('#' + r.id)).join(', ')}`
+                    });
+                }
+                if (typeof showToast === 'function') {
+                    showToast(`Deleted ${removed.length || count} ${label}.`, 'success');
+                }
+                return;
+            }
+
+            if (cfg.domain === 'leads') {
+                const confirmed = await requestDoubleConfirmBulkDelete({
+                    count,
+                    singularLabel: cfg.singularLabel,
+                    pluralLabel: cfg.pluralLabel,
+                    itemNames: checkedRowLabels
+                });
+                if (!confirmed) return;
+                const idSet = new Set(keys.map(String));
+                let leads = safeJsonParse('industria_leads', defaultLeads);
+                const removed = leads.filter(l => idSet.has(String(l.id)));
+                leads = leads.filter(l => !idSet.has(String(l.id)));
+                safeLocalStorageSet('industria_leads', leads);
+                state.selectedKeys.clear();
+                renderLeads();
+                if (typeof window.renderOverviewSummaries === 'function') window.renderOverviewSummaries();
+                if (window.IndustraSupabase && typeof window.IndustraSupabase.deleteLead === 'function') {
+                    await Promise.allSettled(keys.map(id => window.IndustraSupabase.deleteLead(id)));
+                }
+                if (removed.length > 0 && typeof window.logDashboardActivity === 'function') {
+                    window.logDashboardActivity({
+                        category: 'Leads',
+                        action: 'Bulk Delete',
+                        target: `${removed.length} Leads`,
+                        details: `Bulk deleted customer leads: ${removed.slice(0, 4).map(r => r.name || ('#' + r.id)).join(', ')}`
+                    });
+                }
+                if (typeof showToast === 'function') {
+                    showToast(`Deleted ${removed.length || count} ${label}.`, 'success');
+                }
+                return;
+            }
+
+            if (cfg.domain === 'agents') {
+                const role = (typeof resolveCurrentUserRole === 'function' ? resolveCurrentUserRole() : null) ||
+                             currentUserRole || 'Administrator';
+                const roleLower = String(role).toLowerCase();
+                if (roleLower !== 'administrator' && roleLower !== 'supervisor') {
+                    alert('Only Administrators and Supervisors can delete specialist agents.');
+                    return;
+                }
+                const confirmed = await requestDoubleConfirmBulkDelete({
+                    count,
+                    singularLabel: cfg.singularLabel,
+                    pluralLabel: cfg.pluralLabel,
+                    itemNames: checkedRowLabels
+                });
+                if (!confirmed) return;
+                const idSet = new Set(keys.map(String));
+                const prevList = safeJsonParse('industria_agents', typeof defaultAgents !== 'undefined' ? defaultAgents : []);
+                const removed = prevList.filter(a => idSet.has(String(a.id)));
+                let nextList = prevList.filter(a => !idSet.has(String(a.id)));
+                if (nextList.length === 0 && typeof defaultAgents !== 'undefined') {
+                    nextList = JSON.parse(JSON.stringify(defaultAgents));
+                }
+                safeLocalStorageSet('industria_agents', nextList);
+                if (typeof agents !== 'undefined') agents = nextList;
+                state.selectedKeys.clear();
+                if (window.IndustraSupabase && typeof window.IndustraSupabase.deleteAgent === 'function') {
+                    Promise.allSettled(keys.map(id => window.IndustraSupabase.deleteAgent(id)));
+                }
+                if (removed.length > 0 && typeof window.logDashboardActivity === 'function') {
+                    window.logDashboardActivity({
+                        category: 'Specialist Agents',
+                        action: 'Bulk Delete',
+                        target: `${removed.length} Agents`,
+                        details: `Bulk deleted specialist agents: ${removed.map(a => a.name || ('#' + a.id)).join(', ')}`
+                    });
+                }
+                if (typeof window.renderAgentsTable === 'function') window.renderAgentsTable();
+                renderParksTable();
+                renderTable();
+                if (typeof showToast === 'function') {
+                    showToast(`Deleted ${removed.length || count} ${label}.`, 'success');
+                }
+                return;
+            }
+
+            if (cfg.domain === 'insights') {
+                if (typeof window.canAccessInsights === 'function' && !window.canAccessInsights()) {
+                    alert('Only Administrators and authorized agents can delete Market Insights.');
+                    return;
+                }
+                const confirmed = await requestDoubleConfirmBulkDelete({
+                    count,
+                    singularLabel: cfg.singularLabel,
+                    pluralLabel: cfg.pluralLabel,
+                    itemNames: checkedRowLabels
+                });
+                if (!confirmed) return;
+                const idSet = new Set(keys.map(String));
+                const list = getAllInsightArticles();
+                const removed = list.filter(a => idSet.has(String(a.id)));
+                const next = list.filter(a => !idSet.has(String(a.id)));
+                saveAllInsightArticles(next);
+                state.selectedKeys.clear();
+                window.renderInsightsAdminTable();
+                if (removed.length > 0 && typeof window.logDashboardActivity === 'function') {
+                    window.logDashboardActivity({
+                        category: 'Insights',
+                        action: 'Bulk Delete',
+                        target: `${removed.length} Articles`,
+                        details: `Bulk deleted insights: ${removed.slice(0, 3).map(a => a.title || a.id).join(', ')}`
+                    });
+                }
+                if (typeof showToast === 'function') {
+                    showToast(`Deleted ${removed.length || count} ${label}.`, 'success');
+                }
+            }
+        }
+
+        TABLE_CONFIGS.forEach(cfg => {
+            const tbody = document.getElementById(cfg.tbodyId);
+            if (!tbody) return;
+            const table = tbody.closest('table');
+            if (!table) return;
+
+            // Accessible keyboard-scrollable responsive table region (responsive-table)
+            const wrapper = table.closest('.table-responsive');
+            const card = table.closest('.card');
+            const headingEl = card ? card.querySelector('.card-header h3') : null;
+            const regionLabel = headingEl ? headingEl.textContent.replace(/\s+/g, ' ').trim() : cfg.pluralLabel;
+            if (wrapper) {
+                if (!wrapper.hasAttribute('tabindex')) wrapper.setAttribute('tabindex', '0');
+                if (!wrapper.hasAttribute('role')) wrapper.setAttribute('role', 'region');
+                if (!wrapper.hasAttribute('aria-label') && regionLabel) {
+                    wrapper.setAttribute('aria-label', regionLabel);
+                }
+            }
+
+            // 1. Prepend Select-All checkbox column header into thead
+            const theadRow = table.querySelector('thead tr');
+            let headerCb = null;
+            if (theadRow && !theadRow.querySelector('th.crm-bulk-th')) {
+                const th = document.createElement('th');
+                th.className = 'crm-bulk-th';
+                th.setAttribute('scope', 'col');
+
+                headerCb = document.createElement('input');
+                headerCb.type = 'checkbox';
+                headerCb.className = 'crm-bulk-checkbox crm-bulk-select-all';
+                headerCb.setAttribute('aria-label', `Select all visible ${cfg.pluralLabel}`);
+                th.appendChild(headerCb);
+                theadRow.insertBefore(th, theadRow.firstChild);
+            } else if (theadRow) {
+                headerCb = theadRow.querySelector('input.crm-bulk-select-all');
+            }
+
+            // 2. Build & mount Bulk Action Toolbar inside the table card header
+            const cardHeader = card ? card.querySelector('.card-header') : null;
+            let toolbar = null;
+            let selectAllBtn = null;
+            let countBadge = null;
+            let clearBtn = null;
+            let deleteBtn = null;
+
+            if (cardHeader && !cardHeader.querySelector('.crm-bulk-toolbar')) {
+                toolbar = document.createElement('div');
+                toolbar.className = 'crm-bulk-toolbar';
+                toolbar.setAttribute('role', 'toolbar');
+                toolbar.setAttribute('aria-label', `Bulk actions for ${regionLabel}`);
+
+                countBadge = document.createElement('span');
+                countBadge.className = 'crm-bulk-count-badge';
+                countBadge.hidden = true;
+                countBadge.innerHTML = '<i class="fa-solid fa-check-double" aria-hidden="true"></i> <span>0 Selected</span>';
+
+                selectAllBtn = document.createElement('button');
+                selectAllBtn.type = 'button';
+                selectAllBtn.className = 'crm-bulk-select-all-btn';
+                selectAllBtn.innerHTML = '<i class="fa-regular fa-square-check" aria-hidden="true"></i> <span>Select All</span>';
+
+                clearBtn = document.createElement('button');
+                clearBtn.type = 'button';
+                clearBtn.className = 'crm-bulk-clear-btn';
+                clearBtn.hidden = true;
+                clearBtn.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i> <span>Clear</span>';
+
+                deleteBtn = document.createElement('button');
+                deleteBtn.type = 'button';
+                deleteBtn.className = 'btn btn-sm crm-bulk-delete-btn';
+                deleteBtn.hidden = true;
+                deleteBtn.innerHTML = '<i class="fa-solid fa-trash-can" aria-hidden="true"></i> <span>Delete (0)</span>';
+
+                toolbar.append(countBadge, selectAllBtn, clearBtn, deleteBtn);
+
+                // Place inside the right-side controls group if present, else append to cardHeader
+                const actionsWrap = cardHeader.querySelector(':scope > div:last-child') || cardHeader;
+                if (actionsWrap !== cardHeader && actionsWrap.tagName === 'DIV') {
+                    actionsWrap.insertBefore(toolbar, actionsWrap.firstChild);
+                } else {
+                    cardHeader.appendChild(toolbar);
+                }
+            }
+
+            const state = {
+                cfg,
+                tbody,
+                table,
+                headerCb,
+                toolbar,
+                selectAllBtn,
+                countBadge,
+                clearBtn,
+                deleteBtn,
+                selectedKeys: new Set(),
+                lastClickedCb: null
+            };
+            tableStates.set(cfg.tbodyId, state);
+
+            const setAllRowsChecked = (nextChecked) => {
+                const cbs = getEnabledRowCheckboxes(tbody);
+                cbs.forEach(cb => {
+                    cb.checked = nextChecked;
+                    syncRowFallbackClass(cb.closest('tr'), nextChecked);
+                });
+                updateTableBulkUI(cfg.tbodyId);
+            };
+
+            if (headerCb) {
+                headerCb.addEventListener('change', () => {
+                    setAllRowsChecked(headerCb.checked);
+                });
+            }
+
+            if (selectAllBtn) {
+                selectAllBtn.addEventListener('click', () => {
+                    const cbs = getEnabledRowCheckboxes(tbody);
+                    const allChecked = cbs.length > 0 && cbs.every(cb => cb.checked);
+                    setAllRowsChecked(!allChecked);
+                });
+            }
+
+            if (clearBtn) {
+                clearBtn.addEventListener('click', () => {
+                    setAllRowsChecked(false);
+                });
+            }
+
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => {
+                    executeBulkDeleteForTable(cfg.tbodyId);
+                });
+            }
+
+            // Delegated row checkbox interaction with Shift+Click range selection
+            tbody.addEventListener('click', (e) => {
+                const cb = e.target.closest('input.crm-bulk-row-cb');
+                if (!cb || cb.disabled) return;
+
+                if (e.shiftKey && state.lastClickedCb && state.lastClickedCb !== cb) {
+                    const cbs = getEnabledRowCheckboxes(tbody);
+                    const startIdx = cbs.indexOf(state.lastClickedCb);
+                    const endIdx = cbs.indexOf(cb);
+                    if (startIdx !== -1 && endIdx !== -1) {
+                        const [from, to] = startIdx < endIdx ? [startIdx, endIdx] : [endIdx, startIdx];
+                        for (let i = from; i <= to; i++) {
+                            cbs[i].checked = cb.checked;
+                            syncRowFallbackClass(cbs[i].closest('tr'), cb.checked);
+                        }
+                    }
+                }
+                state.lastClickedCb = cb;
+                syncRowFallbackClass(cb.closest('tr'), cb.checked);
+                updateTableBulkUI(cfg.tbodyId);
+            });
+
+            // Observe tbody childList changes so any search, filter, sort, tab switch, or cloud sync re-decorates rows
+            const observer = new MutationObserver(() => {
+                decorateTbodyRows(cfg.tbodyId);
+            });
+            observer.observe(tbody, { childList: true });
+
+            // Initial decoration for any rows already rendered
+            decorateTbodyRows(cfg.tbodyId);
+        });
+    }
+
+    initEnterpriseTableBulkSelection();
+
     initDashboardSearch();
+    syncDashboardLocationSelects();
+    loadLocationSettingsFromSupabase();
 
     // Initial sync of Property Features & Listing Badges UI controls across all views
     if (typeof syncPropertyFeaturesUI === 'function') {
@@ -14293,7 +19675,7 @@ function initDashboardApp() {
         if (typeof window.checkMandatoryAgentOnboarding === 'function') window.checkMandatoryAgentOnboarding();
     }, 0);
 
-    // Cross-tab real-time sync for properties and overview active count
+    // Cross-tab real-time sync for properties, insights, and overview active count
     window.addEventListener('storage', function(e) {
         if (!e.key || e.key === 'industria_properties') {
             const stored = safeJsonParse('industria_properties', null);
@@ -14303,6 +19685,11 @@ function initDashboardApp() {
                 if (typeof window.updateActivePropertiesMetric === 'function') {
                     window.updateActivePropertiesMetric(properties);
                 }
+            }
+        }
+        if (!e.key || e.key === INSIGHTS_STORAGE_KEY) {
+            if (typeof window.renderInsightsAdminTable === 'function') {
+                window.renderInsightsAdminTable();
             }
         }
     });

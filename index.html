@@ -51,9 +51,14 @@
     <!-- Icons (FontAwesome) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
     
+    <!-- Leaflet & MarkerCluster -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css" crossorigin="anonymous">
+
     <!-- Styles -->
     <link rel="preload" as="image" href="assets/images/hero.jpg?v=34" fetchpriority="high">
-    <link rel="stylesheet" href="css/styles.css?v=84">
+    <link rel="stylesheet" href="css/styles.css?v=112">
 
     <!-- Corporate Branding Initializer (Zero-Flicker Synchronous Engine) -->
     <script>
@@ -417,6 +422,7 @@
                     </div>
                 </li>
                 <li><a href="#services">Services</a></li>
+                <li><a href="insights.html">Insights</a></li>
                 <li><a href="#about">Why Choose Us</a></li>
                 <li><a href="#who-we-are">Who Are We</a></li>
                 <li><a href="#owner-section">Property Owners</a></li>
@@ -439,42 +445,294 @@
         <div class="container">
             <div class="hero-content">
                 <h1>Factories & Warehouses For Sale & Rent in Klang Valley</h1>
-                <p>Elevate your business operations with top-tier warehouses and factories<br>in Petaling Jaya, Subang Jaya, Shah Alam, and Klang.</p>
+                <p>Elevate your business operations with top-tier warehouses and factories <br>in Petaling Jaya, Subang Jaya, Shah Alam, and Klang.</p>
                 
-                <form class="search-bar" id="search-form">
-                    <div class="search-field">
-                        <i class="fa-solid fa-location-dot search-field-icon"></i>
-                        <select id="heroLocationSelect" name="location" aria-label="Location">
-                            <option value="All">All Locations</option>
-                            <option value="Petaling Jaya">Petaling Jaya</option>
-                            <option value="Subang Jaya">Subang Jaya</option>
-                            <option value="Shah Alam">Shah Alam</option>
-                            <option value="Klang">Klang</option>
-                        </select>
-                        <i class="fa-solid fa-chevron-down search-field-arrow"></i>
+                <div class="hero-search-wrapper">
+                    <div class="hero-intent-tabs" role="radiogroup" aria-label="Property Transaction Type">
+                        <div class="hero-intent-tab" role="radio" tabindex="0" aria-checked="false" data-intent="Sale" title="For Sale (click again to clear)">
+                            <input type="radio" name="heroIntent" value="Sale" id="heroIntentSale" tabindex="-1">
+                            <span class="hero-intent-radio-dot" aria-hidden="true"></span>
+                            <span>For Sale</span>
+                        </div>
+                        <div class="hero-intent-tab" role="radio" tabindex="0" aria-checked="false" data-intent="Rent" title="For Rent (click again to clear)">
+                            <input type="radio" name="heroIntent" value="Rent" id="heroIntentRent" tabindex="-1">
+                            <span class="hero-intent-radio-dot" aria-hidden="true"></span>
+                            <span>For Rent</span>
+                        </div>
                     </div>
-                    <div class="search-field">
-                        <i class="fa-solid fa-warehouse search-field-icon"></i>
-                        <select id="heroTypeSelect" name="type" aria-label="Property Type">
-                            <option value="All">Property Type</option>
-                            <option value="Shoplot (Near Factory)">Shoplot (Near Factory)</option>
-                            <option value="Terrace Factory">Terrace Factory</option>
-                            <option value="Cluster Factory">Cluster Factory</option>
-                            <option value="Semi-Detached Factory">Semi-Detached Factory</option>
-                            <option value="Detached Factory">Detached Factory</option>
-                            <option value="Warehouse">Warehouse</option>
-                            <option value="Land">Land</option>
-                        </select>
-                        <i class="fa-solid fa-chevron-down search-field-arrow"></i>
+
+                    <form class="search-bar" id="search-form">
+                        <div class="search-field search-field-location" id="hero-location-field">
+                            <i class="fa-solid fa-location-dot search-field-icon"></i>
+                            <button type="button" id="hero-location-trigger" class="hero-type-trigger hero-popover-trigger" aria-expanded="false" aria-controls="hero-location-popover">
+                                <span id="hero-location-trigger-label">All Locations</span>
+                            </button>
+                            <select id="heroLocationSelect" name="location" class="hero-sr-backing-select" aria-hidden="true" tabindex="-1">
+                                <option value="All">All Locations</option>
+                                <option value="Petaling Jaya">Petaling Jaya</option>
+                                <option value="Subang Jaya">Subang Jaya</option>
+                                <option value="Shah Alam">Shah Alam</option>
+                                <option value="Klang">Klang</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down search-field-arrow"></i>
+                        </div>
+                        <div class="search-field search-field-section" id="hero-section-field">
+                            <i class="fa-solid fa-map-location-dot search-field-icon"></i>
+                            <button type="button" id="hero-section-trigger" class="hero-type-trigger hero-popover-trigger" aria-expanded="false" aria-controls="hero-section-popover">
+                                <span id="hero-section-trigger-label">All Sections</span>
+                            </button>
+                            <select id="heroSectionSelect" name="section" class="hero-sr-backing-select" aria-hidden="true" tabindex="-1">
+                                <option value="All">All Sections</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down search-field-arrow"></i>
+                        </div>
+                        <div class="search-field search-field-type" id="hero-type-field">
+                            <i class="fa-solid fa-warehouse search-field-icon"></i>
+                            <button type="button" id="hero-type-trigger" class="hero-type-trigger" aria-expanded="false" aria-controls="hero-type-popover">
+                                <span id="hero-type-trigger-label">Any type</span>
+                            </button>
+                            <input type="hidden" id="heroTypeSelect" name="type" value="All">
+                            <i class="fa-solid fa-chevron-down search-field-arrow"></i>
+                        </div>
+                        <div class="search-field search-field-keyword">
+                            <i class="fa-solid fa-magnifying-glass search-field-icon"></i>
+                            <input type="text" id="heroKeywordInput" name="keyword" placeholder="Search property name..." aria-label="Search property name">
+                        </div>
+                        <div class="hero-search-actions">
+                            <button type="button" class="hero-filter-btn" id="hero-filter-toggle-btn" aria-expanded="false" aria-controls="hero-filters-popover">
+                                <i class="fa-solid fa-sliders"></i>
+                                <span>Filters</span>
+                                <span class="hero-filter-count-badge" id="hero-filter-count-badge" style="display: none;">0</span>
+                            </button>
+                            <button type="submit" class="btn btn-primary search-submit-btn">
+                                <span>Search</span> <i class="fa-solid fa-magnifying-glass"></i>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Compact Location Popover (Matches Property Type UI/UX) -->
+                    <div class="hero-type-popover hero-location-popover" id="hero-location-popover" aria-hidden="true">
+                        <div class="hero-type-popover-head">
+                            <div class="hero-type-popover-title-wrap">
+                                <span class="hero-type-popover-title"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Location</span>
+                                <span class="hero-type-popover-sub">Choose Klang Valley industrial hub</span>
+                            </div>
+                            <div class="hero-type-popover-head-actions">
+                                <span class="hero-type-selection-badge" id="hero-location-selection-badge">All Locations</span>
+                                <button type="button" class="hero-type-select-all-btn" id="hero-location-all-btn">All Cities</button>
+                            </div>
+                        </div>
+                        <div class="hero-choice-grid hero-location-grid" id="hero-location-grid" role="radiogroup" aria-label="Select Location"></div>
+                        <div class="hero-filters-footer hero-type-popover-footer">
+                            <button type="button" class="hero-filters-clear-btn" id="hero-location-clear-btn">
+                                <i class="fa-solid fa-rotate-left"></i> Reset Location
+                            </button>
+                            <div class="hero-type-footer-right">
+                                <span class="hero-type-footer-summary" id="hero-location-footer-summary">Showing all Klang Valley locations</span>
+                                <button type="button" class="hero-filters-apply-btn" id="hero-location-apply-btn">
+                                    <i class="fa-solid fa-check" aria-hidden="true"></i> Done
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="search-field">
-                        <i class="fa-solid fa-magnifying-glass search-field-icon"></i>
-                        <input type="text" id="heroKeywordInput" name="keyword" placeholder="Search property name..." aria-label="Search property name">
+
+                    <!-- Compact Sections Popover (Matches Property Type UI/UX) -->
+                    <div class="hero-type-popover hero-section-popover" id="hero-section-popover" aria-hidden="true">
+                        <div class="hero-type-popover-head">
+                            <div class="hero-type-popover-title-wrap">
+                                <span class="hero-type-popover-title"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> Industrial Sections</span>
+                                <span class="hero-section-city-chip" id="hero-section-city-chip">All Klang Valley</span>
+                            </div>
+                            <div class="hero-type-popover-head-actions">
+                                <div class="hero-section-search-wrap" id="hero-section-search-wrap">
+                                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                    <input type="search" id="hero-section-quick-filter" class="hero-section-quick-filter" placeholder="Filter section..." aria-label="Filter industrial sections">
+                                </div>
+                                <span class="hero-type-selection-badge" id="hero-section-selection-badge">All Sections</span>
+                            </div>
+                        </div>
+                        <div class="hero-section-groups" id="hero-section-groups" role="radiogroup" aria-label="Select Industrial Section"></div>
+                        <div class="hero-filters-footer hero-type-popover-footer">
+                            <button type="button" class="hero-filters-clear-btn" id="hero-section-clear-btn">
+                                <i class="fa-solid fa-rotate-left"></i> Reset Section
+                            </button>
+                            <div class="hero-type-footer-right">
+                                <span class="hero-type-footer-summary" id="hero-section-footer-summary">Showing all industrial sections</span>
+                                <button type="button" class="hero-filters-apply-btn" id="hero-section-apply-btn">
+                                    <i class="fa-solid fa-check" aria-hidden="true"></i> Done
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <button type="submit" class="btn btn-primary search-submit-btn">
-                        <span>Search</span> <i class="fa-solid fa-magnifying-glass"></i>
-                    </button>
-                </form>
+
+                    <div class="hero-type-popover" id="hero-type-popover" aria-hidden="true">
+                        <div class="hero-type-popover-head">
+                            <div class="hero-type-popover-title-wrap">
+                                <span class="hero-type-popover-title"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Property Type</span>
+                                <span class="hero-type-popover-sub">Choose one or more industrial property formats</span>
+                            </div>
+                            <div class="hero-type-popover-head-actions">
+                                <span class="hero-type-selection-badge" id="hero-type-selection-badge">All Types</span>
+                                <button type="button" class="hero-type-select-all-btn" id="hero-type-select-all-btn">Select All</button>
+                            </div>
+                        </div>
+                        <div class="hero-type-columns" id="hero-type-columns">
+                            <div class="hero-type-col" data-type-group="Factory">
+                                <label class="hero-type-parent">
+                                    <input type="checkbox" class="hero-type-checkbox hero-type-parent-cb" data-type-category="Factory">
+                                    <span class="hero-type-parent-icon" aria-hidden="true"><i class="fa-solid fa-industry"></i></span>
+                                    <span class="hero-type-parent-label">Factory</span>
+                                    <span class="hero-type-group-count" data-group-count="Factory">4</span>
+                                </label>
+                                <div class="hero-type-children">
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Detached Factory" data-parent-category="Factory">
+                                        <span>Detached Factory</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Semi-Detached Factory" data-parent-category="Factory">
+                                        <span>Semi-Detached Factory</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Terrace Factory" data-parent-category="Factory">
+                                        <span>Terrace Factory</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Cluster Factory" data-parent-category="Factory">
+                                        <span>Cluster Factory</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="hero-type-col" data-type-group="Warehouse">
+                                <label class="hero-type-parent">
+                                    <input type="checkbox" class="hero-type-checkbox hero-type-parent-cb" data-type-category="Warehouse">
+                                    <span class="hero-type-parent-icon" aria-hidden="true"><i class="fa-solid fa-warehouse"></i></span>
+                                    <span class="hero-type-parent-label">Warehouse</span>
+                                    <span class="hero-type-group-count" data-group-count="Warehouse">4</span>
+                                </label>
+                                <div class="hero-type-children">
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Detached Warehouse" data-parent-category="Warehouse">
+                                        <span>Detached Warehouse</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Semi-Detached Warehouse" data-parent-category="Warehouse">
+                                        <span>Semi-Detached Warehouse</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Shared Warehouse" data-parent-category="Warehouse">
+                                        <span>Shared Warehouse</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Multi-Storey Warehouse" data-parent-category="Warehouse">
+                                        <span>Multi-Storey Warehouse</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="hero-type-col" data-type-group="Land">
+                                <label class="hero-type-parent">
+                                    <input type="checkbox" class="hero-type-checkbox hero-type-parent-cb" data-type-category="Land">
+                                    <span class="hero-type-parent-icon" aria-hidden="true"><i class="fa-solid fa-map-location-dot"></i></span>
+                                    <span class="hero-type-parent-label">Land</span>
+                                    <span class="hero-type-group-count" data-group-count="Land">3</span>
+                                </label>
+                                <div class="hero-type-children">
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Industrial Land" data-parent-category="Land">
+                                        <span>Industrial Land</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Commercial Land" data-parent-category="Land">
+                                        <span>Commercial Land</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Agricultural Land" data-parent-category="Land">
+                                        <span>Agricultural Land</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="hero-type-col" data-type-group="Shoplot">
+                                <label class="hero-type-parent">
+                                    <input type="checkbox" class="hero-type-checkbox hero-type-parent-cb" data-type-category="Shoplot">
+                                    <span class="hero-type-parent-icon" aria-hidden="true"><i class="fa-solid fa-store"></i></span>
+                                    <span class="hero-type-parent-label">Shoplot</span>
+                                    <span class="hero-type-group-count" data-group-count="Shoplot">1</span>
+                                </label>
+                                <div class="hero-type-children">
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Shoplot (Near Factory)" data-parent-category="Shoplot">
+                                        <span>Shoplot (Near Factory)</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hero-filters-footer hero-type-popover-footer">
+                            <button type="button" class="hero-filters-clear-btn" id="hero-type-clear-btn">
+                                <i class="fa-solid fa-rotate-left"></i> Reset Types
+                            </button>
+                            <div class="hero-type-footer-right">
+                                <span class="hero-type-footer-summary" id="hero-type-footer-summary">Showing all industrial types</span>
+                                <button type="button" class="hero-filters-apply-btn" id="hero-type-apply-btn">
+                                    <i class="fa-solid fa-check" aria-hidden="true"></i> Done
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hero-filters-popover" id="hero-filters-popover" aria-hidden="true">
+                        <div class="hero-filters-grid">
+                            <div class="hero-filter-group">
+                                <label><i class="fa-solid fa-tag"></i> Budget (RM)</label>
+                                <div class="hero-range-pair">
+                                    <input type="text" inputmode="numeric" id="hero-budget-min" placeholder="Min RM" aria-label="Minimum Budget RM">
+                                    <span class="hero-range-dash">&ndash;</span>
+                                    <input type="text" inputmode="numeric" id="hero-budget-max" placeholder="Max RM" aria-label="Maximum Budget RM">
+                                </div>
+                            </div>
+                            <div class="hero-filter-group">
+                                <label><i class="fa-solid fa-building"></i> Build Up (Sqft)</label>
+                                <div class="hero-range-pair">
+                                    <input type="text" inputmode="numeric" id="hero-buildup-min" placeholder="Min sqft" aria-label="Minimum Build Up Sqft">
+                                    <span class="hero-range-dash">&ndash;</span>
+                                    <input type="text" inputmode="numeric" id="hero-buildup-max" placeholder="Max sqft" aria-label="Maximum Build Up Sqft">
+                                </div>
+                            </div>
+                            <div class="hero-filter-group">
+                                <label><i class="fa-solid fa-maximize"></i> Land Area (Sqft)</label>
+                                <div class="hero-range-pair">
+                                    <input type="text" inputmode="numeric" id="hero-landarea-min" placeholder="Min sqft" aria-label="Minimum Land Area Sqft">
+                                    <span class="hero-range-dash">&ndash;</span>
+                                    <input type="text" inputmode="numeric" id="hero-landarea-max" placeholder="Max sqft" aria-label="Maximum Land Area Sqft">
+                                </div>
+                            </div>
+                            <div class="hero-filter-group">
+                                <label><i class="fa-solid fa-file-contract"></i> Tenure</label>
+                                <div class="hero-tenure-pills" role="radiogroup" aria-label="Property Tenure">
+                                    <label class="hero-tenure-pill active">
+                                        <input type="radio" name="heroTenure" value="All" checked>
+                                        <span>Both</span>
+                                    </label>
+                                    <label class="hero-tenure-pill">
+                                        <input type="radio" name="heroTenure" value="Freehold">
+                                        <span>Freehold</span>
+                                    </label>
+                                    <label class="hero-tenure-pill">
+                                        <input type="radio" name="heroTenure" value="Leasehold">
+                                        <span>Leasehold</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hero-filters-footer">
+                            <button type="button" class="hero-filters-clear-btn" id="hero-filters-clear-btn">
+                                <i class="fa-solid fa-rotate-left"></i> Clear Filters
+                            </button>
+                            <button type="button" class="hero-filters-apply-btn" id="hero-filters-apply-btn">
+                                Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Hero Trust Badges (Highlighted Yellow Image 2) -->
@@ -549,16 +807,16 @@
                 </div>
             </div>
 
-            <!-- Type Filters (Moved above properties listing) -->
-            <div class="type-filters" id="type-filters" style="margin-top: 1.5rem; margin-bottom: 2rem;">
-                <button class="type-filter-btn active" data-type="All">All Types</button>
-                <button class="type-filter-btn" data-type="Shoplot (Near Factory)">Shoplot (Near Factory)</button>
-                <button class="type-filter-btn" data-type="Terrace Factory">Terrace Factory</button>
-                <button class="type-filter-btn" data-type="Cluster Factory">Cluster Factory</button>
-                <button class="type-filter-btn" data-type="Semi-Detached Factory">Semi-Detached Factory</button>
-                <button class="type-filter-btn" data-type="Detached Factory">Detached Factory</button>
-                <button class="type-filter-btn" data-type="Warehouse">Warehouse</button>
-                <button class="type-filter-btn" data-type="Land">Land</button>
+            <!-- Type Filters (Clean 1-Row Categories + Contextual Subtype Strip) -->
+            <div class="type-filters-wrapper" style="margin-top: 1.5rem; margin-bottom: 2rem;">
+                <div class="type-filters" id="type-filters" style="margin: 0;">
+                    <button class="type-filter-btn active" data-type="All">All Types</button>
+                    <button class="type-filter-btn" data-type="Factory">Factory</button>
+                    <button class="type-filter-btn" data-type="Warehouse">Warehouse</button>
+                    <button class="type-filter-btn" data-type="Land">Land</button>
+                    <button class="type-filter-btn" data-type="Shoplot (Near Factory)">Shoplot (Near Factory)</button>
+                </div>
+                <div class="type-subfilters" id="type-subfilters" style="display: none;"></div>
             </div>
 
             <div class="property-grid" id="property-list">
@@ -616,6 +874,121 @@
 
             <div style="text-align: center; margin-top: 2.5rem;">
                 <a href="properties.html#browse-properties" id="view-all-properties-btn" class="btn btn-outline">View All Properties</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Klang Valley Covered Industrial Parks Map -->
+    <section class="section home-map-section" id="location-map-section">
+        <div class="container">
+            <div class="section-header" style="margin-bottom: 2rem;">
+                <h2>Explore Our Covered Industrial Parks</h2>
+                <p>Interactive map of prime Klang Valley industrial parks &amp; hubs covered by our specialist team across Petaling Jaya, Subang Jaya, Shah Alam, and Klang.</p>
+            </div>
+
+            <div class="home-map-card">
+                <div class="home-map-toolbar">
+                    <div class="home-map-filters-row">
+                        <div class="home-map-city-pills" role="group" aria-label="Filter covered industrial parks by city">
+                            <button type="button" class="home-map-city-btn active" data-city="All">All Klang Valley</button>
+                            <button type="button" class="home-map-city-btn" data-city="Petaling Jaya">Petaling Jaya</button>
+                            <button type="button" class="home-map-city-btn" data-city="Subang Jaya">Subang Jaya</button>
+                            <button type="button" class="home-map-city-btn" data-city="Shah Alam">Shah Alam</button>
+                            <button type="button" class="home-map-city-btn" data-city="Klang">Klang</button>
+                        </div>
+                        <div class="home-map-search-box">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="home-map-park-search" placeholder="Search industrial park or section..." aria-label="Search covered industrial park or section">
+                        </div>
+                    </div>
+
+                    <div class="home-map-kpi-strip">
+                        <button type="button" class="home-map-kpi-item is-park-kpi" data-home-map-trigger="true" title="Click to explore all covered parks on map">
+                            <span class="home-map-kpi-icon"><i class="fa-solid fa-industry"></i></span>
+                            <span class="home-map-kpi-meta">
+                                <strong id="home-map-total-parks">0</strong>
+                                <span>Covered Parks</span>
+                            </span>
+                        </button>
+                        <button type="button" class="home-map-kpi-item" data-home-map-trigger="true" title="Click to explore cities on map">
+                            <span class="home-map-kpi-icon"><i class="fa-solid fa-city"></i></span>
+                            <span class="home-map-kpi-meta">
+                                <strong id="home-map-cities-count">0</strong>
+                                <span>Cities Covered</span>
+                            </span>
+                        </button>
+                        <button type="button" class="home-map-kpi-item" data-home-map-trigger="true" title="Click to explore industrial sections on map">
+                            <span class="home-map-kpi-icon"><i class="fa-solid fa-layer-group"></i></span>
+                            <span class="home-map-kpi-meta">
+                                <strong id="home-map-sections-count">0</strong>
+                                <span>Industrial Sections</span>
+                            </span>
+                        </button>
+                        <button type="button" class="home-map-kpi-item" data-home-map-trigger="true" title="Click to view assigned area specialists on map">
+                            <span class="home-map-kpi-icon"><i class="fa-solid fa-user-tie"></i></span>
+                            <span class="home-map-kpi-meta">
+                                <strong id="home-map-specialists-count">0</strong>
+                                <span>Area Specialists</span>
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="home-map-toggle-strip" id="home-map-toggle-strip">
+                        <div class="home-map-toggle-top">
+                            <div class="home-map-toggle-caption">
+                                <span class="home-map-pin-radar" aria-hidden="true">
+                                    <i class="fa-solid fa-location-dot"></i>
+                                </span>
+                                <div class="home-map-caption-text">
+                                    <strong>Interactive Park &amp; Specialist Explorer</strong>
+                                    <span>Jump straight to an industrial park pin, cluster breakdown, or assigned specialist</span>
+                                </div>
+                            </div>
+                            <div class="home-map-toggle-actions">
+                                <button type="button" id="home-map-toggle-btn" class="btn btn-primary home-map-toggle-btn" aria-expanded="false" aria-controls="home-map-layout">
+                                    <i class="fa-solid fa-map-location-dot"></i> <span>Show Interactive Map</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="home-map-quick-chips" id="home-map-quick-chips" aria-label="Quick-jump covered industrial parks"></div>
+                    </div>
+                </div>
+
+                <div class="home-map-layout" id="home-map-layout" hidden>
+                    <div class="home-map-stage">
+                        <div class="home-map-stage-controls">
+                            <button type="button" id="home-map-layer-btn" class="imap-ctrl-btn">
+                                <i class="fa-solid fa-satellite"></i> <span>Satellite</span>
+                            </button>
+                        </div>
+                        <div id="homepage-map-canvas" class="home-map-canvas"></div>
+                        <div class="imap-bottom-overlay">
+                            <div class="imap-legend-pill">
+                                <span class="imap-legend-item"><span class="imap-dot is-park"></span> Covered Industrial Park</span>
+                                <span class="imap-legend-sep">|</span>
+                                <span class="imap-units-summary">Numbers show Covered Parks in area</span>
+                            </div>
+                            <button type="button" class="imap-kbd-btn" data-imap-open-shortcuts="true" title="Keyboard shortcuts for Mac & Windows (?)" aria-label="Open map keyboard shortcuts">
+                                <i class="fa-regular fa-keyboard"></i> <span>Keyboard shortcuts</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <aside class="home-map-sidebar">
+                        <div class="home-map-sidebar-head">
+                            <h4><i class="fa-solid fa-industry"></i> Covered Industrial Parks</h4>
+                            <span>Click park to zoom</span>
+                        </div>
+                        <div id="homepage-map-breakdown" class="home-map-breakdown-list">
+                            <!-- Populated by JS -->
+                        </div>
+                        <div class="home-map-sidebar-foot">
+                            <a href="properties.html#browse-properties" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                                <i class="fa-solid fa-map-location-dot" style="margin-right: 6px;"></i> Open Full Split Map &amp; Filters
+                            </a>
+                        </div>
+                    </aside>
+                </div>
             </div>
         </div>
     </section>
@@ -814,7 +1187,7 @@
                     <button type="button" class="banner-btn banner-btn-white open-owner-modal-btn">
                         <i class="fa-solid fa-paper-plane"></i> Submit Property Listing Request
                     </button>
-                    <a href="https://wa.me/60312345678?text=Hello%20MyFactorySpace%20Team%2C%20I%20am%20a%20property%20owner%20and%20would%20like%20to%20list%20my%20industrial%20property." target="_blank" class="banner-btn banner-btn-whatsapp main-whatsapp-link" id="main-whatsapp-btn-2">
+                    <a href="https://wa.me/60176008088?text=Hello%20MyFactorySpace%20Team%2C%20I%20am%20a%20property%20owner%20and%20would%20like%20to%20list%20my%20industrial%20property." target="_blank" rel="noopener noreferrer" class="banner-btn banner-btn-whatsapp main-whatsapp-link" id="main-whatsapp-btn-2">
                         <i class="fa-brands fa-whatsapp"></i> Reach Us on WhatsApp
                     </a>
                 </div>
@@ -1026,6 +1399,7 @@
                     <ul>
                         <li><a href="#home">Home</a></li>
                         <li><a href="#properties">Properties</a></li>
+                        <li><a href="insights.html">Market Insights</a></li>
                         <li><a href="#about">About Us</a></li>
                     </ul>
                 </div>
@@ -1119,13 +1493,26 @@
                             <span class="lead-input-icon"><i class="fa-solid fa-warehouse"></i></span>
                             <select id="modalOwnerType" class="form-control" required>
                                 <option value="">Select Type</option>
-                                <option value="Shoplot (Near Factory)">Shoplot (Near Factory)</option>
-                                <option value="Terrace Factory">Terrace Factory</option>
-                                <option value="Cluster Factory">Cluster Factory</option>
-                                <option value="Semi-Detached Factory">Semi-Detached Factory</option>
-                                <option value="Detached Factory">Detached Factory</option>
-                                <option value="Warehouse">Warehouse</option>
-                                <option value="Land">Land</option>
+                                <optgroup label="Factory">
+                                    <option value="Detached Factory">Detached Factory</option>
+                                    <option value="Semi-Detached Factory">Semi-Detached Factory</option>
+                                    <option value="Terrace Factory">Terrace Factory</option>
+                                    <option value="Cluster Factory">Cluster Factory</option>
+                                </optgroup>
+                                <optgroup label="Warehouse">
+                                    <option value="Detached Warehouse">Detached Warehouse</option>
+                                    <option value="Semi-Detached Warehouse">Semi-Detached Warehouse</option>
+                                    <option value="Shared Warehouse">Shared Warehouse</option>
+                                    <option value="Multi-Storey Warehouse">Multi-Storey Warehouse</option>
+                                </optgroup>
+                                <optgroup label="Land">
+                                    <option value="Industrial Land">Industrial Land</option>
+                                    <option value="Commercial Land">Commercial Land</option>
+                                    <option value="Agricultural Land">Agricultural Land</option>
+                                </optgroup>
+                                <optgroup label="Shoplot">
+                                    <option value="Shoplot (Near Factory)">Shoplot (Near Factory)</option>
+                                </optgroup>
                             </select>
                             <span class="lead-select-chevron"><i class="fa-solid fa-chevron-down"></i></span>
                         </div>
@@ -1179,9 +1566,12 @@
     <!-- Scripts -->
     <!-- Supabase JS SDK & Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/supabase-client.js?v=35"></script>
-    <script src="js/property-share.js?v=44"></script>
-    <script src="js/scripts.js?v=72"></script>
+    <script src="js/supabase-client.js?v=38"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js" crossorigin="anonymous"></script>
+    <script src="js/property-share.js?v=45"></script>
+    <script src="js/property-map.js?v=8"></script>
+    <script src="js/scripts.js?v=89"></script>
     <script src="js/visit-tracker.js?v=2"></script>
     <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
     <script defer src="/_vercel/insights/script.js"></script>

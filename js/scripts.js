@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const navLinks = document.getElementById('nav-links');
     const searchForm = document.getElementById('search-form');
     const heroLocationSelect = document.getElementById('heroLocationSelect');
+    const heroSectionSelect = document.getElementById('heroSectionSelect');
     const heroTypeSelect = document.getElementById('heroTypeSelect');
     const propertyList = document.getElementById('property-list');
     const cityFilters = document.querySelectorAll('.city-filter-card');
@@ -16,6 +17,119 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsCountEl = document.getElementById('results-count');
     const leadForm = document.getElementById('lead-form');
     const leadSuccess = document.getElementById('lead-success');
+
+    let splitMapCtrl = null;
+    let homeMapCtrl = null;
+
+    const BASE_LOCATION_DEFAULTS = {
+        'petaling-jaya': { city: 'Petaling Jaya', shortLabel: 'PJ', slug: 'petaling-jaya', cardImage: 'assets/images/drone_pj.jpg', heroImage: 'assets/images/drone_pj.jpg', showOnMainpage: true },
+        'subang-jaya': { city: 'Subang Jaya', shortLabel: 'Subang', slug: 'subang-jaya', cardImage: 'assets/images/drone_subang.jpg', heroImage: 'assets/images/drone_subang.jpg', showOnMainpage: true },
+        'shah-alam': { city: 'Shah Alam', shortLabel: 'Shah Alam', slug: 'shah-alam', cardImage: 'assets/images/drone_shahalam.jpg', heroImage: 'assets/images/drone_shahalam.jpg', showOnMainpage: true },
+        'klang': { city: 'Klang', shortLabel: 'Klang', slug: 'klang', cardImage: 'assets/images/drone_klang.jpg', heroImage: 'assets/images/drone_klang.jpg', showOnMainpage: true }
+    };
+
+    function getConfiguredLocations(includeHidden = false) {
+        const merged = {};
+        Object.keys(BASE_LOCATION_DEFAULTS).forEach(slug => {
+            merged[slug] = Object.assign({}, BASE_LOCATION_DEFAULTS[slug]);
+        });
+        const saved = safeJsonParse('industria_location_settings', null);
+        if (saved && typeof saved === 'object') {
+            Object.keys(saved).forEach(slug => {
+                const item = saved[slug];
+                if (!item || typeof item !== 'object' || !item.city) return;
+                const base = merged[slug] || {};
+                merged[slug] = Object.assign({}, base, item, {
+                    slug: item.slug || base.slug || slug,
+                    shortLabel: item.shortLabel || base.shortLabel || item.city,
+                    showOnMainpage: item.showOnMainpage !== false && String(item.showOnMainpage) !== 'false',
+                    cardImage: item.cardImage || base.cardImage || item.heroImage || base.heroImage || '',
+                    heroImage: item.heroImage || base.heroImage || item.cardImage || base.cardImage || ''
+                });
+            });
+        }
+
+        const siteSettings = safeJsonParse('industria_settings', {}) || {};
+        const order = Array.isArray(siteSettings.locationPriorityOrder) ? siteSettings.locationPriorityOrder : ['Petaling Jaya', 'Subang Jaya', 'Shah Alam', 'Klang'];
+        const orderIndex = new Map();
+        order.forEach((name, idx) => {
+            if (name) orderIndex.set(String(name).trim().toLowerCase(), idx);
+        });
+
+        return Object.values(merged)
+            .filter(loc => loc && loc.city && (includeHidden || loc.showOnMainpage !== false))
+            .sort((a, b) => {
+                const ia = orderIndex.has(a.city.toLowerCase()) ? orderIndex.get(a.city.toLowerCase()) : 9999;
+                const ib = orderIndex.has(b.city.toLowerCase()) ? orderIndex.get(b.city.toLowerCase()) : 9999;
+                if (ia !== ib) return ia - ib;
+                return a.city.localeCompare(b.city);
+            });
+    }
+
+    function getShortLabelForCity(cityName) {
+        if (!cityName) return '';
+        const list = getConfiguredLocations(true);
+        const norm = String(cityName).trim().toLowerCase();
+        const found = list.find(l => l.city.trim().toLowerCase() === norm);
+        return (found && found.shortLabel) ? found.shortLabel : cityName;
+    }
+
+    function resolveLocationCardImage(locObj, activeProps) {
+        if (locObj && locObj.cardImage) return locObj.cardImage;
+        if (locObj && locObj.heroImage) return locObj.heroImage;
+        const normCity = String((locObj && locObj.city) || '').trim().toLowerCase();
+        if (Array.isArray(activeProps) && normCity) {
+            const propMatch = activeProps.find(p => p && String(p.location || '').trim().toLowerCase() === normCity && (p.image || (Array.isArray(p.images) && p.images[0])));
+            if (propMatch) return propMatch.image || propMatch.images[0];
+        }
+        return 'assets/images/drone_all.jpg';
+    }
+
+    function selectParkFromMap(parkInfo) {
+        if (!parkInfo || !parkInfo.name) return;
+        const isBrowsePage = !!document.getElementById('park-select-filter') && !document.getElementById('view-all-properties-btn');
+        if (!isBrowsePage) {
+            const params = new URLSearchParams();
+            if (parkInfo.city && parkInfo.city !== 'All' && parkInfo.city !== 'Selangor') {
+                params.set('location', parkInfo.city);
+            }
+            params.set('park', parkInfo.name);
+            window.location.href = `properties.html?${params.toString()}#browse-properties`;
+            return;
+        }
+
+        if (splitMapCtrl && splitMapCtrl.isMoveSearchActive()) {
+            splitMapCtrl.clearMoveSearch();
+        }
+        const validCities = getConfiguredLocations(true).map(l => l.city);
+        activeCity = (parkInfo.city && validCities.includes(parkInfo.city)) ? parkInfo.city : 'All';
+        activeSection = 'All';
+        activePark = parkInfo.name;
+
+        if (typeof syncFilterUI === 'function') syncFilterUI();
+        if (typeof renderProperties === 'function') renderProperties();
+
+        const targetEl = document.getElementById('property-list') || document.getElementById('browse-properties');
+        if (targetEl) {
+            const rect = targetEl.getBoundingClientRect();
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            window.scrollTo({ top: Math.max(0, rect.top + scrollTop - 96), behavior: 'smooth' });
+        }
+    }
+
+    if (window.IndustraMap) {
+        splitMapCtrl = window.IndustraMap.initSplitMapController({
+            onBoundsChange: () => {
+                if (typeof renderProperties === 'function') {
+                    renderProperties({ isMapMove: true });
+                }
+            },
+            onSelectPark: selectParkFromMap
+        });
+        homeMapCtrl = window.IndustraMap.initHomepageOverviewMap({
+            onSelectPark: selectParkFromMap
+        });
+    }
 
     // --- STORAGE SANITIZER & SELF-HEALER ---
     (function sanitizeLocalStorage() {
@@ -397,7 +511,33 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         try {
-            const sbProps = await window.IndustraSupabase.fetchProperties();
+            const sb = window.IndustraSupabase;
+            const settingsKeys = ['watermark_settings', 'location_landing_settings', 'property_types_settings', 'general_settings'];
+            const settingsPromise = typeof sb.fetchSiteSettingsBatch === 'function'
+                ? sb.fetchSiteSettingsBatch(settingsKeys)
+                : (typeof sb.fetchSiteSetting === 'function'
+                    ? Promise.all(settingsKeys.map(k => sb.fetchSiteSetting(k))).then(vals => {
+                        const obj = {};
+                        settingsKeys.forEach((k, idx) => { obj[k] = vals[idx]; });
+                        return obj;
+                    })
+                    : Promise.resolve({}));
+
+            const [propsRes, parksRes, agentsRes, settingsRes] = await Promise.allSettled([
+                sb.fetchProperties(),
+                sb.fetchIndustrialParks(),
+                sb.fetchAgents(),
+                settingsPromise
+            ]);
+
+            const sbProps = propsRes.status === 'fulfilled' ? propsRes.value : null;
+            const sbParks = parksRes.status === 'fulfilled' ? parksRes.value : null;
+            const sbAgents = agentsRes.status === 'fulfilled' ? agentsRes.value : null;
+            const sbSettings = (settingsRes.status === 'fulfilled' && settingsRes.value && typeof settingsRes.value === 'object') ? settingsRes.value : {};
+
+            if (sbSettings.watermark_settings && typeof sbSettings.watermark_settings === 'object') {
+                safeLocalStorageSet('industria_watermark_settings', sbSettings.watermark_settings);
+            }
             if (sbProps && Array.isArray(sbProps) && sbProps.length > 0) {
                 const mappedProps = sbProps.map(sp => {
                     const base = sp.specs && typeof sp.specs === 'object' ? sp.specs : {};
@@ -451,6 +591,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         mapUrl: (sp.specs && sp.specs.mapUrl) || sp.map_url || base.mapUrl || '',
                         googleMapUrl: (sp.specs && sp.specs.googleMapUrl) || sp.google_map_url || base.googleMapUrl || '',
                         googleEarthUrl: (sp.specs && sp.specs.googleEarthUrl) || sp.google_earth_url || base.googleEarthUrl || '',
+                        lat: (sp.lat !== undefined && sp.lat !== null && sp.lat !== '') ? Number(sp.lat) : ((sp.specs && sp.specs.lat !== undefined && sp.specs.lat !== null && sp.specs.lat !== '') ? Number(sp.specs.lat) : base.lat),
+                        lng: (sp.lng !== undefined && sp.lng !== null && sp.lng !== '') ? Number(sp.lng) : ((sp.specs && sp.specs.lng !== undefined && sp.specs.lng !== null && sp.specs.lng !== '') ? Number(sp.specs.lng) : base.lng),
                         usage: sp.usage || base.usage || '',
                         lift: sp.lift !== null && sp.lift !== undefined ? String(sp.lift) : (base.lift || ''),
                         loadingBay: sp.loading_bay !== null && sp.loading_bay !== undefined ? String(sp.loading_bay) : (base.loadingBay || ''),
@@ -492,24 +634,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (typeof populateLeadInterest === 'function') {
                     populateLeadInterest();
                 }
-                if (typeof window.IndustraSupabase.fetchSiteSetting === 'function') {
-                    try {
-                        const sbWmPre = await window.IndustraSupabase.fetchSiteSetting('watermark_settings');
-                        if (sbWmPre && typeof sbWmPre === 'object') {
-                            safeLocalStorageSet('industria_watermark_settings', sbWmPre);
-                        }
-                    } catch (wmErr) {}
-                }
                 applyWatermarksToProperties().then(() => {
                     if (typeof renderProperties === 'function') renderProperties();
                 });
-            } else if (sbProps === null && retryCount < 10) {
+            } else if (sbProps === null && retryCount < 6) {
                 setTimeout(() => syncWithSupabase(retryCount + 1), 500);
                 return;
             }
 
-            // Fetch industrial parks from Supabase
-            const sbParks = await window.IndustraSupabase.fetchIndustrialParks();
             if (sbParks && Array.isArray(sbParks) && sbParks.length > 0) {
                 const parksObj = {};
                 sbParks.forEach(sp => {
@@ -520,7 +652,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         id: sp.id,
                         name: sp.name,
                         section: sp.section || specs.section || '',
-                        hidden: sp.hidden !== undefined && sp.hidden !== null ? !!sp.hidden : !!specs.hidden
+                        hidden: sp.hidden !== undefined && sp.hidden !== null ? !!sp.hidden : !!specs.hidden,
+                        lat: (sp.lat !== undefined && sp.lat !== null && sp.lat !== '') ? Number(sp.lat) : (specs.lat !== undefined && specs.lat !== null && specs.lat !== '' ? Number(specs.lat) : null),
+                        lng: (sp.lng !== undefined && sp.lng !== null && sp.lng !== '') ? Number(sp.lng) : (specs.lng !== undefined && specs.lng !== null && specs.lng !== '' ? Number(specs.lng) : null),
+                        agentId: sp.agent_id || specs.agentId || '',
+                        agentName: sp.agent_name || specs.agentName || ''
                     });
                 });
                 parks = parksObj;
@@ -536,33 +672,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Fetch agents from Supabase DB
-            const sbAgents = await window.IndustraSupabase.fetchAgents();
             if (sbAgents && Array.isArray(sbAgents) && sbAgents.length > 0) {
                 safeLocalStorageSet('industria_agents', sbAgents);
                 if (typeof renderAgents === 'function') {
                     renderAgents();
                 }
+                if (typeof renderProperties === 'function') {
+                    renderProperties();
+                }
             }
 
-            if (typeof window.IndustraSupabase.fetchSiteSetting === 'function') {
-                const sbWatermark = await window.IndustraSupabase.fetchSiteSetting('watermark_settings');
-                if (sbWatermark && typeof sbWatermark === 'object') {
-                    safeLocalStorageSet('industria_watermark_settings', sbWatermark);
+            if (sbSettings.location_landing_settings && typeof sbSettings.location_landing_settings === 'object') {
+                safeLocalStorageSet('industria_location_settings', sbSettings.location_landing_settings);
+            }
+            if (Array.isArray(sbSettings.property_types_settings) && sbSettings.property_types_settings.length > 0) {
+                const mergedPropTypes = typeof mergeWithDefaultPropertyTypeGroups === 'function'
+                    ? mergeWithDefaultPropertyTypeGroups(sbSettings.property_types_settings)
+                    : sbSettings.property_types_settings;
+                safeLocalStorageSet('industria_property_types', mergedPropTypes);
+                if (typeof renderHeroPropertyTypeColumns === 'function') {
+                    renderHeroPropertyTypeColumns();
                 }
-                const sbGeneral = await window.IndustraSupabase.fetchSiteSetting('general_settings');
-                if (sbGeneral && typeof sbGeneral === 'object') {
-                    safeLocalStorageSet('industria_settings', sbGeneral);
-                    if (sbGeneral.branding) {
-                        safeLocalStorageSet('industria_branding_settings', sbGeneral.branding);
-                        if (typeof applyBranding === 'function') {
-                            applyBranding();
-                        }
-                    }
-                    if (typeof applySiteSettings === 'function') {
-                        applySiteSettings();
+            }
+            if (sbSettings.general_settings && typeof sbSettings.general_settings === 'object') {
+                safeLocalStorageSet('industria_settings', sbSettings.general_settings);
+                if (sbSettings.general_settings.branding) {
+                    safeLocalStorageSet('industria_branding_settings', sbSettings.general_settings.branding);
+                    if (typeof applyBranding === 'function') {
+                        applyBranding();
                     }
                 }
+                if (typeof applySiteSettings === 'function') {
+                    applySiteSettings();
+                }
+            }
+            if (typeof renderDynamicLocationsUI === 'function') {
+                renderDynamicLocationsUI();
             }
         } catch (e) {
             console.warn('Initial Supabase sync notice:', e);
@@ -613,8 +758,9 @@ document.addEventListener('DOMContentLoaded', () => {
         ownerFaq3Answer: "Yes. We evaluate floor loading specs (ton/m²), electrical substations, ceiling height clearances, and DOE zoning approvals to maximize your asking value.",
 
         address: "No. 2-3, Jalan Radin Anum 2, Bandar Baru Sri Petaling, 57000 Kuala Lumpur",
-        phone: "+60 3-9054 8582",
+        phone: "+60 17-600 8088",
         email: "info@MyFactorySpace.com",
+        googleMapsApiKey: "",
         facebook: "https://facebook.com",
         instagram: "https://instagram.com",
         tiktok: "https://tiktok.com",
@@ -893,7 +1039,15 @@ document.addEventListener('DOMContentLoaded', () => {
             el.innerHTML = copyrightText;
         });
 
-        // Main WhatsApp Button Linking (Linked to Dashboard > Settings > Admin Management > Main WhatsApp Contact)
+        // Helper: Normalize phone/WhatsApp strings (e.g. "+60 17-600 8088" or "017-600 8088") into wa.me digits ("60176008088")
+        function formatWhatsAppDigits(raw) {
+            let digits = String(raw || '').replace(/[^0-9]/g, '');
+            if (!digits) return '';
+            if (digits.startsWith('0')) digits = '60' + digits.slice(1);
+            return digits;
+        }
+
+        // Main WhatsApp Button Linking
         const users = safeJsonParse('industria_users', []);
         let mainWaNum = '';
         if (Array.isArray(users) && users.length > 0) {
@@ -906,18 +1060,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         if (!mainWaNum) {
-            mainWaNum = siteSettings.whatsappNotificationNumber || siteSettings.mainWhatsapp || siteSettings.phone || '60312345678';
+            mainWaNum = siteSettings.whatsappNotificationNumber || siteSettings.mainWhatsapp || siteSettings.phone || '60176008088';
         }
 
-        const cleanMainWa = mainWaNum.replace(/[^0-9]/g, '');
+        const cleanMainWa = formatWhatsAppDigits(mainWaNum);
+        // "Reach Us on WhatsApp" (Owner Property Listing Request Banner) links directly to Contact Information > Phone Number
+        const contactPhoneWa = formatWhatsAppDigits(siteSettings.phone) || cleanMainWa;
+
         if (cleanMainWa) {
             const waBtn1 = document.getElementById('main-whatsapp-btn-1');
             if (waBtn1) {
                 waBtn1.href = `https://wa.me/${cleanMainWa}?text=${encodeURIComponent('Hello MyFactorySpace Specialist, I have custom industrial property requirements.')}`;
-            }
-            const waBtn2 = document.getElementById('main-whatsapp-btn-2');
-            if (waBtn2) {
-                waBtn2.href = `https://wa.me/${cleanMainWa}?text=${encodeURIComponent('Hello MyFactorySpace Team, I am a property owner and would like to list my industrial property.')}`;
             }
             const allWaLinks = document.querySelectorAll('.main-whatsapp-link');
             allWaLinks.forEach(link => {
@@ -926,6 +1079,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     link.href = `https://wa.me/${cleanMainWa}?text=${encodeURIComponent(defaultMsg)}`;
                 }
             });
+        }
+        if (contactPhoneWa) {
+            const waBtn2 = document.getElementById('main-whatsapp-btn-2');
+            if (waBtn2) {
+                waBtn2.href = `https://wa.me/${contactPhoneWa}?text=${encodeURIComponent('Hello MyFactorySpace Team, I am a property owner and would like to list my industrial property.')}`;
+            }
+        }
+
+        if (window.IndustraMap && typeof window.IndustraMap.setGoogleMapsApiKey === 'function') {
+            window.IndustraMap.setGoogleMapsApiKey(siteSettings.googleMapsApiKey || '');
         }
     }
 
@@ -1027,15 +1190,134 @@ document.addEventListener('DOMContentLoaded', () => {
     let activeSection = 'All';
     let activePark = 'All';
     let activeIntent = 'All';
+    let activeTenure = 'All';
     let activeKeyword = '';
     let activeSort = 'date-desc'; // Default: Date Added (Newest First)
+    let rangeState = {
+        budget: { min: '', max: '' },
+        buildup: { min: '', max: '' },
+        landarea: { min: '', max: '' }
+    };
+
+    function formatCommaNumberString(val) {
+        const cleaned = String(val || '').replace(/[^0-9.]/g, '');
+        if (!cleaned) return '';
+        const parts = cleaned.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        return parts.length > 1 ? parts[0] + '.' + parts[1] : parts[0];
+    }
+
+    const DEFAULT_PROPERTY_TYPE_GROUPS = [
+        {
+            category: 'Factory',
+            subtypes: ['Detached Factory', 'Semi-Detached Factory', 'Terrace Factory', 'Cluster Factory']
+        },
+        {
+            category: 'Warehouse',
+            subtypes: ['Detached Warehouse', 'Semi-Detached Warehouse', 'Shared Warehouse', 'Multi-Storey Warehouse']
+        },
+        {
+            category: 'Land',
+            subtypes: ['Industrial Land', 'Commercial Land', 'Agricultural Land']
+        },
+        {
+            category: 'Shoplot',
+            subtypes: ['Shoplot (Near Factory)']
+        }
+    ];
+
+    function mergeWithDefaultPropertyTypeGroups(rawList) {
+        const base = DEFAULT_PROPERTY_TYPE_GROUPS.map(g => ({
+            category: g.category,
+            subtypes: [...g.subtypes]
+        }));
+        if (!Array.isArray(rawList) || rawList.length === 0) return base;
+        rawList.forEach(item => {
+            if (!item || !item.category || !Array.isArray(item.subtypes)) return;
+            const match = base.find(b => b.category.toLowerCase() === String(item.category).trim().toLowerCase());
+            if (match) {
+                item.subtypes.forEach(sub => {
+                    const clean = String(sub || '').trim();
+                    if (clean && !match.subtypes.some(s => s.toLowerCase() === clean.toLowerCase())) {
+                        match.subtypes.push(clean);
+                    }
+                });
+            } else {
+                base.push({ category: String(item.category).trim(), subtypes: [...item.subtypes] });
+            }
+        });
+        return base;
+    }
+
+    function getPropertyTypeGroups() {
+        const saved = safeJsonParse('industria_property_types', null);
+        return mergeWithDefaultPropertyTypeGroups(saved);
+    }
+
+    function expandTypeTokensToSubtypes(rawTypeStr) {
+        const str = String(rawTypeStr || '').trim();
+        if (!str || str.toLowerCase() === 'all') return [];
+        const groups = getPropertyTypeGroups();
+        const tokens = str.split(',').map(s => s.trim()).filter(Boolean);
+        const result = [];
+        const seen = new Set();
+        const pushUnique = (val) => {
+            const k = val.toLowerCase();
+            if (!seen.has(k)) {
+                seen.add(k);
+                result.push(val);
+            }
+        };
+        tokens.forEach(tok => {
+            const lower = tok.toLowerCase();
+            const group = groups.find(g => g.category.toLowerCase() === lower);
+            if (group) {
+                group.subtypes.forEach(pushUnique);
+            } else {
+                pushUnique(tok);
+            }
+        });
+        return result;
+    }
+
+    function matchesPropertyTypeFilter(propTypeVal, filterState) {
+        const selected = expandTypeTokensToSubtypes(filterState);
+        if (selected.length === 0) return true;
+        const propLower = String(propTypeVal || '').trim().toLowerCase();
+        if (!propLower) return false;
+        if (selected.some(t => t.toLowerCase() === propLower)) return true;
+        if (selected.some(t => t.toLowerCase().startsWith('shoplot')) && propLower.includes('shoplot')) return true;
+
+        // Category-level fallback for legacy property records ('Warehouse', 'Land', 'Cluster Factory', 'Factory')
+        const groups = getPropertyTypeGroups();
+        for (const g of groups) {
+            const catLower = g.category.toLowerCase();
+            const allSubsSelected = g.subtypes.every(sub => selected.some(s => s.toLowerCase() === sub.toLowerCase()));
+            if (!allSubsSelected) continue;
+            if (catLower === 'factory' && propLower.includes('factory') && !propLower.includes('shoplot')) return true;
+            if (catLower === 'land' && (propLower === 'land' || propLower.endsWith(' land'))) return true;
+            if (catLower === 'warehouse' && propLower.includes('warehouse')) return true;
+        }
+        return false;
+    }
 
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.has('location')) activeCity = urlParams.get('location');
-    if (urlParams.has('type')) activeType = urlParams.get('type');
+    if (urlParams.has('types')) activeType = urlParams.get('types');
+    else if (urlParams.has('type')) activeType = urlParams.get('type');
     if (urlParams.has('section')) activeSection = urlParams.get('section');
     if (urlParams.has('park')) activePark = urlParams.get('park');
     if (urlParams.has('intent')) activeIntent = urlParams.get('intent');
+    if (urlParams.has('tenure')) {
+        const rawTen = String(urlParams.get('tenure') || '').trim();
+        activeTenure = (!rawTen || rawTen.toLowerCase() === 'both' || rawTen.toLowerCase() === 'all') ? 'All' : rawTen;
+    }
+    if (urlParams.has('budgetMin')) rangeState.budget.min = formatCommaNumberString(urlParams.get('budgetMin'));
+    if (urlParams.has('budgetMax')) rangeState.budget.max = formatCommaNumberString(urlParams.get('budgetMax'));
+    if (urlParams.has('buildupMin')) rangeState.buildup.min = formatCommaNumberString(urlParams.get('buildupMin'));
+    if (urlParams.has('buildupMax')) rangeState.buildup.max = formatCommaNumberString(urlParams.get('buildupMax'));
+    if (urlParams.has('landMin')) rangeState.landarea.min = formatCommaNumberString(urlParams.get('landMin'));
+    if (urlParams.has('landMax')) rangeState.landarea.max = formatCommaNumberString(urlParams.get('landMax'));
     if (urlParams.has('keyword')) activeKeyword = urlParams.get('keyword');
     const directListingId = urlParams.get('id') || urlParams.get('propertyId');
 
@@ -1084,7 +1366,7 @@ document.addEventListener('DOMContentLoaded', () => {
         })();
     }
 
-    if (window.location.hash === '#browse-properties' || directListingId || urlParams.has('location') || urlParams.has('type') || urlParams.has('section') || urlParams.has('park') || urlParams.has('intent') || urlParams.has('keyword')) {
+    if (window.location.hash === '#browse-properties' || directListingId || urlParams.has('location') || urlParams.has('type') || urlParams.has('types') || urlParams.has('section') || urlParams.has('park') || urlParams.has('intent') || urlParams.has('tenure') || urlParams.has('budgetMin') || urlParams.has('budgetMax') || urlParams.has('buildupMin') || urlParams.has('buildupMax') || urlParams.has('landMin') || urlParams.has('landMax') || urlParams.has('keyword')) {
         setTimeout(() => {
             const browseSection = document.getElementById('browse-properties') || document.getElementById('properties');
             if (browseSection) {
@@ -1129,20 +1411,786 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 5. SEARCH & HERO FILTERS ---
+    let heroIntentValue = activeIntent || 'All';
+    const heroIntentTabs = document.querySelectorAll('.hero-intent-tab');
+    const heroFilterToggleBtn = document.getElementById('hero-filter-toggle-btn');
+    const heroFiltersPopover = document.getElementById('hero-filters-popover');
+    const heroFilterCountBadge = document.getElementById('hero-filter-count-badge');
+    const heroSearchWrapper = document.querySelector('.hero-search-wrapper');
+    const heroFiltersClearBtn = document.getElementById('hero-filters-clear-btn');
+    const heroFiltersApplyBtn = document.getElementById('hero-filters-apply-btn');
+    const heroTenurePills = document.querySelectorAll('.hero-tenure-pill');
+
+    const HERO_RANGE_IDS = {
+        budget: ['hero-budget-min', 'hero-budget-max'],
+        buildup: ['hero-buildup-min', 'hero-buildup-max'],
+        landarea: ['hero-landarea-min', 'hero-landarea-max']
+    };
+
+    function countActiveHeroExtraFilters() {
+        let count = 0;
+        if (rangeState.budget.min || rangeState.budget.max) count++;
+        if (rangeState.buildup.min || rangeState.buildup.max) count++;
+        if (rangeState.landarea.min || rangeState.landarea.max) count++;
+        if (activeTenure && activeTenure !== 'All' && activeTenure !== 'Both') count++;
+        return count;
+    }
+
+    const heroLocationField = document.getElementById('hero-location-field');
+    const heroLocationTrigger = document.getElementById('hero-location-trigger');
+    const heroLocationTriggerLabel = document.getElementById('hero-location-trigger-label');
+    const heroLocationPopover = document.getElementById('hero-location-popover');
+    const heroLocationGrid = document.getElementById('hero-location-grid');
+    const heroLocationAllBtn = document.getElementById('hero-location-all-btn');
+    const heroLocationClearBtn = document.getElementById('hero-location-clear-btn');
+    const heroLocationApplyBtn = document.getElementById('hero-location-apply-btn');
+    const heroLocationSelectionBadge = document.getElementById('hero-location-selection-badge');
+    const heroLocationFooterSummary = document.getElementById('hero-location-footer-summary');
+
+    const heroSectionField = document.getElementById('hero-section-field');
+    const heroSectionTrigger = document.getElementById('hero-section-trigger');
+    const heroSectionTriggerLabel = document.getElementById('hero-section-trigger-label');
+    const heroSectionPopover = document.getElementById('hero-section-popover');
+    const heroSectionGroups = document.getElementById('hero-section-groups');
+    const heroSectionCityChip = document.getElementById('hero-section-city-chip');
+    const heroSectionQuickFilter = document.getElementById('hero-section-quick-filter');
+    const heroSectionClearBtn = document.getElementById('hero-section-clear-btn');
+    const heroSectionApplyBtn = document.getElementById('hero-section-apply-btn');
+    const heroSectionSelectionBadge = document.getElementById('hero-section-selection-badge');
+    const heroSectionFooterSummary = document.getElementById('hero-section-footer-summary');
+
+    const heroTypeField = document.getElementById('hero-type-field');
+    const heroTypeTrigger = document.getElementById('hero-type-trigger');
+    const heroTypeTriggerLabel = document.getElementById('hero-type-trigger-label');
+    const heroTypePopover = document.getElementById('hero-type-popover');
+    const heroTypeColumns = document.getElementById('hero-type-columns');
+    const heroTypeClearBtn = document.getElementById('hero-type-clear-btn');
+    const heroTypeApplyBtn = document.getElementById('hero-type-apply-btn');
+    const heroTypeSelectAllBtn = document.getElementById('hero-type-select-all-btn');
+    const heroTypeSelectionBadge = document.getElementById('hero-type-selection-badge');
+    const heroTypeFooterSummary = document.getElementById('hero-type-footer-summary');
+
+    const HERO_TYPE_ICONS = {
+        Factory: 'fa-industry',
+        Warehouse: 'fa-warehouse',
+        Land: 'fa-map-location-dot',
+        Shoplot: 'fa-store'
+    };
+
+    function setHeroLocationOpen(shouldOpen) {
+        if (!heroLocationPopover || !heroLocationTrigger) return;
+        const open = !!shouldOpen;
+        if (open) {
+            setHeroSectionOpen(false);
+            setHeroTypeOpen(false);
+            setHeroFiltersOpen(false);
+            renderHeroLocationPopover();
+        }
+        heroLocationPopover.classList.toggle('is-open', open);
+        heroLocationPopover.setAttribute('aria-hidden', open ? 'false' : 'true');
+        heroLocationTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        heroLocationTrigger.classList.toggle('is-open', open);
+        if (heroLocationField) heroLocationField.classList.toggle('is-loc-open', open);
+    }
+
+    function setHeroSectionOpen(shouldOpen) {
+        if (!heroSectionPopover || !heroSectionTrigger) return;
+        const open = !!shouldOpen;
+        if (open) {
+            setHeroLocationOpen(false);
+            setHeroTypeOpen(false);
+            setHeroFiltersOpen(false);
+            if (heroSectionQuickFilter) heroSectionQuickFilter.value = '';
+            renderHeroSectionPopover('');
+        }
+        heroSectionPopover.classList.toggle('is-open', open);
+        heroSectionPopover.setAttribute('aria-hidden', open ? 'false' : 'true');
+        heroSectionTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        heroSectionTrigger.classList.toggle('is-open', open);
+        if (heroSectionField) heroSectionField.classList.toggle('is-sec-open', open);
+    }
+
+    function setHeroTypeOpen(shouldOpen) {
+        if (!heroTypePopover || !heroTypeTrigger) return;
+        const open = !!shouldOpen;
+        if (open) {
+            setHeroLocationOpen(false);
+            setHeroSectionOpen(false);
+            setHeroFiltersOpen(false);
+        }
+        heroTypePopover.classList.toggle('is-open', open);
+        heroTypePopover.setAttribute('aria-hidden', open ? 'false' : 'true');
+        heroTypeTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+        heroTypeTrigger.classList.toggle('is-open', open);
+        if (heroTypeField) heroTypeField.classList.toggle('is-type-open', open);
+    }
+
+    function renderHeroPropertyTypeColumns() {
+        if (!heroTypeColumns) return;
+        const groups = getPropertyTypeGroups();
+        heroTypeColumns.innerHTML = groups.map(g => {
+            const iconClass = HERO_TYPE_ICONS[g.category] || 'fa-building';
+            return `
+            <div class="hero-type-col" data-type-group="${escapeHtml(g.category)}">
+                <label class="hero-type-parent">
+                    <input type="checkbox" class="hero-type-checkbox hero-type-parent-cb" data-type-category="${escapeHtml(g.category)}">
+                    <span class="hero-type-parent-icon" aria-hidden="true"><i class="fa-solid ${iconClass}"></i></span>
+                    <span class="hero-type-parent-label">${escapeHtml(g.category)}</span>
+                    <span class="hero-type-group-count" data-group-count="${escapeHtml(g.category)}">${g.subtypes.length}</span>
+                </label>
+                <div class="hero-type-children">
+                    ${g.subtypes.map(sub => `
+                        <label class="hero-type-child">
+                            <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="${escapeHtml(sub)}" data-parent-category="${escapeHtml(g.category)}">
+                            <span>${escapeHtml(sub)}</span>
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+        }).join('');
+        syncHeroTypeUI();
+    }
+
+    function getHeroTypeDisplayText(selectedSubtypes) {
+        if (!selectedSubtypes || selectedSubtypes.length === 0) return 'Any type';
+        const groups = getPropertyTypeGroups();
+        const fullCategories = [];
+        const partialSubtypes = [];
+        groups.forEach(g => {
+            const matched = g.subtypes.filter(sub => selectedSubtypes.some(s => s.toLowerCase() === sub.toLowerCase()));
+            if (matched.length === g.subtypes.length && g.subtypes.length > 0) {
+                fullCategories.push(`${g.category} (All)`);
+            } else {
+                partialSubtypes.push(...matched);
+            }
+        });
+        const parts = [...fullCategories, ...partialSubtypes];
+        if (parts.length === 0) return selectedSubtypes.join(', ');
+        if (parts.length === 1) {
+            return parts[0] === 'Shoplot (All)' ? 'Shoplot (Near Factory)' : parts[0];
+        }
+        if (parts.length === 2) {
+            return parts.map(p => (p === 'Shoplot (All)' ? 'Shoplot' : p)).join(', ');
+        }
+        return `${selectedSubtypes.length} Types Selected`;
+    }
+
+    const supportsCssHas = typeof CSS !== 'undefined' && typeof CSS.supports === 'function' && CSS.supports('selector(:has(*))');
+
+    function syncHeroTypeUI() {
+        const selected = expandTypeTokensToSubtypes(activeType);
+        if (heroTypeSelect) {
+            heroTypeSelect.value = selected.length > 0 ? selected.join(',') : 'All';
+        }
+        let totalSubtypes = 0;
+        if (heroTypePopover) {
+            const childCbs = heroTypePopover.querySelectorAll('.hero-type-child-cb');
+            totalSubtypes = childCbs.length;
+            childCbs.forEach(cb => {
+                const isChecked = selected.some(s => s.toLowerCase() === cb.value.toLowerCase());
+                cb.checked = isChecked;
+                if (!supportsCssHas && cb.parentElement) {
+                    cb.parentElement.classList.toggle('is-checked-fallback', isChecked);
+                }
+            });
+            const parentCbs = heroTypePopover.querySelectorAll('.hero-type-parent-cb');
+            parentCbs.forEach(pcb => {
+                const cat = pcb.getAttribute('data-type-category');
+                const colChildren = Array.from(heroTypePopover.querySelectorAll(`.hero-type-child-cb[data-parent-category="${cat}"]`));
+                const checkedCount = colChildren.filter(c => c.checked).length;
+                const allChecked = colChildren.length > 0 && checkedCount === colChildren.length;
+                pcb.checked = allChecked;
+                pcb.indeterminate = checkedCount > 0 && checkedCount < colChildren.length;
+
+                const colEl = pcb.closest('.hero-type-col');
+                if (colEl) {
+                    if (!supportsCssHas) {
+                        colEl.classList.toggle('is-col-active-fallback', checkedCount > 0);
+                    }
+                    const countEl = colEl.querySelector('.hero-type-group-count');
+                    if (countEl) {
+                        countEl.textContent = checkedCount === 0
+                            ? String(colChildren.length)
+                            : (allChecked ? 'All' : `${checkedCount}/${colChildren.length}`);
+                        countEl.classList.toggle('is-active', checkedCount > 0);
+                    }
+                }
+            });
+        }
+        if (heroTypeTriggerLabel) {
+            heroTypeTriggerLabel.textContent = getHeroTypeDisplayText(selected);
+        }
+        if (heroTypeTrigger) {
+            heroTypeTrigger.classList.toggle('has-selection', selected.length > 0);
+        }
+        if (heroTypeSelectionBadge) {
+            heroTypeSelectionBadge.textContent = selected.length === 0
+                ? 'All Types'
+                : (selected.length === totalSubtypes && totalSubtypes > 0 ? 'All Selected' : `${selected.length} Selected`);
+            heroTypeSelectionBadge.classList.toggle('is-active', selected.length > 0);
+        }
+        if (heroTypeSelectAllBtn) {
+            const allSelected = totalSubtypes > 0 && selected.length === totalSubtypes;
+            heroTypeSelectAllBtn.textContent = allSelected ? 'Clear All' : 'Select All';
+        }
+        if (heroTypeFooterSummary) {
+            heroTypeFooterSummary.textContent = selected.length === 0
+                ? 'Showing all industrial types'
+                : `${selected.length} format${selected.length === 1 ? '' : 's'} selected`;
+        }
+    }
+
+    function commitHeroTypeSelectionFromCheckboxes() {
+        if (!heroTypePopover) return;
+        const checkedVals = Array.from(heroTypePopover.querySelectorAll('.hero-type-child-cb:checked')).map(cb => cb.value);
+        activeType = checkedVals.length > 0 ? checkedVals.join(',') : 'All';
+        syncHeroTypeUI();
+        if (typeof syncFilterUI === 'function') syncFilterUI();
+        if (window.location.pathname.includes('properties.html') && typeof renderProperties === 'function') {
+            renderProperties();
+        }
+    }
+
+    if (heroTypeTrigger && heroTypePopover) {
+        renderHeroPropertyTypeColumns();
+
+        heroTypeTrigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setHeroTypeOpen(!heroTypePopover.classList.contains('is-open'));
+        });
+
+        heroTypePopover.addEventListener('change', (e) => {
+            const target = e.target;
+            if (!(target instanceof HTMLInputElement)) return;
+            if (target.classList.contains('hero-type-parent-cb')) {
+                const cat = target.getAttribute('data-type-category');
+                const colChildren = heroTypePopover.querySelectorAll(`.hero-type-child-cb[data-parent-category="${cat}"]`);
+                colChildren.forEach(cb => { cb.checked = target.checked; });
+                target.indeterminate = false;
+                commitHeroTypeSelectionFromCheckboxes();
+            } else if (target.classList.contains('hero-type-child-cb')) {
+                commitHeroTypeSelectionFromCheckboxes();
+            }
+        });
+
+        if (heroTypeSelectAllBtn) {
+            heroTypeSelectAllBtn.addEventListener('click', () => {
+                const childCbs = Array.from(heroTypePopover.querySelectorAll('.hero-type-child-cb'));
+                const allChecked = childCbs.length > 0 && childCbs.every(cb => cb.checked);
+                childCbs.forEach(cb => { cb.checked = !allChecked; });
+                commitHeroTypeSelectionFromCheckboxes();
+            });
+        }
+
+        if (heroTypeClearBtn) {
+            heroTypeClearBtn.addEventListener('click', () => {
+                activeType = 'All';
+                syncHeroTypeUI();
+                if (typeof syncFilterUI === 'function') syncFilterUI();
+                if (window.location.pathname.includes('properties.html') && typeof renderProperties === 'function') {
+                    renderProperties();
+                }
+            });
+        }
+
+        if (heroTypeApplyBtn) {
+            heroTypeApplyBtn.addEventListener('click', () => {
+                setHeroTypeOpen(false);
+                if (window.location.pathname.includes('properties.html') && typeof renderProperties === 'function') {
+                    renderProperties();
+                    const browseSec = document.getElementById('browse-properties');
+                    if (browseSec) browseSec.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        }
+
+        document.addEventListener('click', (e) => {
+            if (heroSearchWrapper && !heroSearchWrapper.contains(e.target)) {
+                setHeroLocationOpen(false);
+                setHeroSectionOpen(false);
+                setHeroTypeOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (heroLocationPopover && heroLocationPopover.classList.contains('is-open')) setHeroLocationOpen(false);
+                if (heroSectionPopover && heroSectionPopover.classList.contains('is-open')) setHeroSectionOpen(false);
+                if (heroTypePopover && heroTypePopover.classList.contains('is-open')) setHeroTypeOpen(false);
+            }
+        });
+    }
+
+    // Compact All Locations & All Sections Popovers (Unified with Property Type UI/UX)
+    function renderHeroLocationPopover() {
+        if (!heroLocationGrid || !heroLocationSelect) return;
+        const currentLoc = heroLocationSelect.value || 'All';
+        const activeProps = typeof getPublicActiveProperties === 'function' ? getPublicActiveProperties() : [];
+        const cityCounts = {};
+        let totalCount = 0;
+
+        activeProps.forEach(p => {
+            if (!p) return;
+            if (typeof isParkHidden === 'function' && p.park && isParkHidden(p.location, p.park)) return;
+            totalCount++;
+            const loc = String(p.location || '').trim();
+            if (loc) cityCounts[loc] = (cityCounts[loc] || 0) + 1;
+        });
+
+        const options = Array.from(heroLocationSelect.options || []);
+        heroLocationGrid.innerHTML = options.map(opt => {
+            const val = opt.value || 'All';
+            const label = opt.textContent || (val === 'All' ? 'All Locations' : val);
+            const count = val === 'All' ? totalCount : (cityCounts[val] || 0);
+            const isChecked = val === currentLoc;
+            const fallbackClass = (!supportsCssHas && isChecked) ? ' is-checked-fallback' : '';
+            return `
+                <label class="hero-choice-chip${fallbackClass}">
+                    <input type="radio" name="heroLocationRadio" class="hero-choice-radio" value="${escapeHtml(val)}"${isChecked ? ' checked' : ''}>
+                    <span class="hero-choice-label">${escapeHtml(label)}</span>
+                    <span class="hero-choice-count">${count}</span>
+                </label>
+            `;
+        }).join('');
+
+        syncHeroLocationPopoverUI();
+    }
+
+    function syncHeroLocationPopoverUI() {
+        const val = (heroLocationSelect && heroLocationSelect.value) ? heroLocationSelect.value : 'All';
+        const isSpecific = val && val !== 'All';
+        const displayLabel = isSpecific ? val : 'All Locations';
+
+        if (heroLocationTriggerLabel) heroLocationTriggerLabel.textContent = displayLabel;
+        if (heroLocationTrigger) heroLocationTrigger.classList.toggle('has-selection', Boolean(isSpecific));
+        if (heroLocationSelectionBadge) {
+            heroLocationSelectionBadge.textContent = displayLabel;
+            heroLocationSelectionBadge.classList.toggle('is-active', Boolean(isSpecific));
+        }
+        if (heroLocationFooterSummary) {
+            heroLocationFooterSummary.textContent = isSpecific
+                ? `Filtered to ${val} industrial hub`
+                : 'Showing all Klang Valley locations';
+        }
+        if (heroLocationGrid) {
+            heroLocationGrid.querySelectorAll('.hero-choice-radio').forEach(r => {
+                const match = r.value === val;
+                r.checked = match;
+                if (!supportsCssHas && r.parentElement) {
+                    r.parentElement.classList.toggle('is-checked-fallback', match);
+                }
+            });
+        }
+    }
+
+    function renderHeroSectionPopover(filterText = '') {
+        if (!heroSectionGroups || !heroSectionSelect) return;
+        const targetCity = (heroLocationSelect && heroLocationSelect.value) ? heroLocationSelect.value : 'All';
+        const currentSec = heroSectionSelect.value || 'All';
+        const q = String(filterText || '').trim().toLowerCase();
+
+        const activeProps = typeof getPublicActiveProperties === 'function' ? getPublicActiveProperties() : [];
+        const sectionCounts = {};
+        const cityToSections = {};
+        let totalMatchingCity = 0;
+
+        activeProps.forEach(p => {
+            if (!p) return;
+            if (targetCity !== 'All' && p.location !== targetCity) return;
+            if (typeof isParkHidden === 'function' && p.park && isParkHidden(p.location, p.park)) return;
+            totalMatchingCity++;
+            const sec = typeof getSectionForProperty === 'function' ? getSectionForProperty(p) : (p.section || '');
+            if (!sec) return;
+            sectionCounts[sec] = (sectionCounts[sec] || 0) + 1;
+            const cName = p.location || 'Klang Valley';
+            if (!cityToSections[cName]) cityToSections[cName] = new Set();
+            cityToSections[cName].add(sec);
+        });
+
+        const buildChipHtml = (val, label, count) => {
+            const isChecked = val === currentSec;
+            const fallbackClass = (!supportsCssHas && isChecked) ? ' is-checked-fallback' : '';
+            return `
+                <label class="hero-choice-chip${fallbackClass}">
+                    <input type="radio" name="heroSectionRadio" class="hero-choice-radio" value="${escapeHtml(val)}"${isChecked ? ' checked' : ''}>
+                    <span class="hero-choice-label" title="${escapeHtml(label)}">${escapeHtml(label)}</span>
+                    <span class="hero-choice-count">${count}</span>
+                </label>
+            `;
+        };
+
+        const allOptions = Array.from(heroSectionSelect.options || [])
+            .map(o => o.value)
+            .filter(v => v && v !== 'All');
+        const filteredSections = q
+            ? allOptions.filter(sec => sec.toLowerCase().includes(q))
+            : allOptions;
+
+        if (q && filteredSections.length === 0) {
+            heroSectionGroups.innerHTML = `<div class="hero-section-empty">No sections match "${escapeHtml(filterText)}".</div>`;
+            syncHeroSectionPopoverUI();
+            return;
+        }
+
+        const allChipHtml = !q
+            ? `<div class="hero-choice-grid">${buildChipHtml('All', targetCity === 'All' ? 'All Sections' : `All ${targetCity} Sections`, totalMatchingCity)}</div>`
+            : '';
+
+        if (targetCity === 'All' && Object.keys(cityToSections).length > 1) {
+            const preferredOrder = ['Petaling Jaya', 'Subang Jaya', 'Shah Alam', 'Klang'];
+            const sortedCities = Object.keys(cityToSections).sort((a, b) => {
+                const ia = preferredOrder.indexOf(a);
+                const ib = preferredOrder.indexOf(b);
+                if (ia !== -1 && ib !== -1) return ia - ib;
+                if (ia !== -1) return -1;
+                if (ib !== -1) return 1;
+                return a.localeCompare(b);
+            });
+
+            const cityBlocks = sortedCities.map(cName => {
+                const secs = Array.from(cityToSections[cName])
+                    .filter(s => !q || s.toLowerCase().includes(q))
+                    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+                if (!secs.length) return '';
+                return `
+                    <div class="hero-section-city-block">
+                        <div class="hero-section-city-head">
+                            <span><i class="fa-solid fa-location-dot" style="color: var(--primary); margin-right: 4px;"></i>${escapeHtml(cName)}</span>
+                            <span>${secs.length} section${secs.length === 1 ? '' : 's'}</span>
+                        </div>
+                        <div class="hero-choice-grid">
+                            ${secs.map(s => buildChipHtml(s, s, sectionCounts[s] || 0)).join('')}
+                        </div>
+                    </div>
+                `;
+            }).filter(Boolean).join('');
+
+            heroSectionGroups.innerHTML = `${allChipHtml}${cityBlocks}`;
+        } else {
+            const flatChips = filteredSections.map(s => buildChipHtml(s, s, sectionCounts[s] || 0)).join('');
+            heroSectionGroups.innerHTML = `<div class="hero-choice-grid">${!q ? buildChipHtml('All', targetCity === 'All' ? 'All Sections' : `All ${targetCity} Sections`, totalMatchingCity) : ''}${flatChips}</div>`;
+        }
+
+        syncHeroSectionPopoverUI();
+    }
+
+    function syncHeroSectionPopoverUI() {
+        const targetCity = (heroLocationSelect && heroLocationSelect.value) ? heroLocationSelect.value : 'All';
+        const val = (heroSectionSelect && heroSectionSelect.value) ? heroSectionSelect.value : 'All';
+        const isSpecific = val && val !== 'All';
+        const displayLabel = isSpecific ? val : 'All Sections';
+
+        if (heroSectionTriggerLabel) heroSectionTriggerLabel.textContent = displayLabel;
+        if (heroSectionTrigger) heroSectionTrigger.classList.toggle('has-selection', Boolean(isSpecific));
+        if (heroSectionCityChip) {
+            heroSectionCityChip.textContent = targetCity === 'All' ? 'All Klang Valley' : `In ${targetCity}`;
+        }
+        if (heroSectionSelectionBadge) {
+            heroSectionSelectionBadge.textContent = displayLabel;
+            heroSectionSelectionBadge.classList.toggle('is-active', Boolean(isSpecific));
+        }
+        if (heroSectionFooterSummary) {
+            const totalSecs = heroSectionSelect ? Math.max(0, heroSectionSelect.options.length - 1) : 0;
+            heroSectionFooterSummary.textContent = isSpecific
+                ? `Filtered to ${val}`
+                : `${totalSecs} industrial section${totalSecs === 1 ? '' : 's'} available`;
+        }
+        if (heroSectionGroups) {
+            heroSectionGroups.querySelectorAll('.hero-choice-radio').forEach(r => {
+                const match = r.value === val;
+                r.checked = match;
+                if (!supportsCssHas && r.parentElement) {
+                    r.parentElement.classList.toggle('is-checked-fallback', match);
+                }
+            });
+        }
+    }
+
+    function applyHeroLocationSelection(newLoc, { closePopover = false } = {}) {
+        if (!heroLocationSelect) return;
+        heroLocationSelect.value = newLoc || 'All';
+        if (heroSectionSelect) heroSectionSelect.value = 'All';
+        if (typeof populateHeroSectionDropdown === 'function') {
+            populateHeroSectionDropdown();
+        }
+        syncHeroLocationPopoverUI();
+        renderHeroSectionPopover('');
+
+        if (window.location.pathname.includes('properties.html')) {
+            activeCity = heroLocationSelect.value;
+            activeSection = 'All';
+            activePark = 'All';
+            if (typeof syncFilterUI === 'function') syncFilterUI();
+            if (typeof renderProperties === 'function') renderProperties();
+        }
+        if (closePopover) setHeroLocationOpen(false);
+    }
+
+    function applyHeroSectionSelection(newSec, { closePopover = false } = {}) {
+        if (!heroSectionSelect) return;
+        heroSectionSelect.value = newSec || 'All';
+        syncHeroSectionPopoverUI();
+
+        if (window.location.pathname.includes('properties.html')) {
+            activeCity = heroLocationSelect ? heroLocationSelect.value : activeCity;
+            activeSection = heroSectionSelect.value;
+            activePark = 'All';
+            if (typeof syncFilterUI === 'function') syncFilterUI();
+            if (typeof renderProperties === 'function') renderProperties();
+        }
+        if (closePopover) setHeroSectionOpen(false);
+    }
+
+    if (heroLocationTrigger && heroLocationPopover) {
+        renderHeroLocationPopover();
+        heroLocationTrigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setHeroLocationOpen(!heroLocationPopover.classList.contains('is-open'));
+        });
+        heroLocationPopover.addEventListener('change', (e) => {
+            const target = e.target;
+            if (target instanceof HTMLInputElement && target.classList.contains('hero-choice-radio')) {
+                applyHeroLocationSelection(target.value, { closePopover: true });
+            }
+        });
+        if (heroLocationAllBtn) {
+            heroLocationAllBtn.addEventListener('click', () => applyHeroLocationSelection('All', { closePopover: false }));
+        }
+        if (heroLocationClearBtn) {
+            heroLocationClearBtn.addEventListener('click', () => applyHeroLocationSelection('All', { closePopover: false }));
+        }
+        if (heroLocationApplyBtn) {
+            heroLocationApplyBtn.addEventListener('click', () => setHeroLocationOpen(false));
+        }
+    }
+
+    if (heroSectionTrigger && heroSectionPopover) {
+        renderHeroSectionPopover('');
+        heroSectionTrigger.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setHeroSectionOpen(!heroSectionPopover.classList.contains('is-open'));
+        });
+        heroSectionPopover.addEventListener('change', (e) => {
+            const target = e.target;
+            if (target instanceof HTMLInputElement && target.classList.contains('hero-choice-radio')) {
+                applyHeroSectionSelection(target.value, { closePopover: true });
+            }
+        });
+        if (heroSectionQuickFilter) {
+            heroSectionQuickFilter.addEventListener('input', (e) => {
+                renderHeroSectionPopover(e.target.value || '');
+            });
+        }
+        if (heroSectionClearBtn) {
+            heroSectionClearBtn.addEventListener('click', () => {
+                if (heroSectionQuickFilter) heroSectionQuickFilter.value = '';
+                applyHeroSectionSelection('All', { closePopover: false });
+                renderHeroSectionPopover('');
+            });
+        }
+        if (heroSectionApplyBtn) {
+            heroSectionApplyBtn.addEventListener('click', () => setHeroSectionOpen(false));
+        }
+    }
+
+    function setHeroFiltersOpen(shouldOpen) {
+        if (!heroFiltersPopover || !heroFilterToggleBtn) return;
+        const open = !!shouldOpen;
+        if (open) {
+            setHeroLocationOpen(false);
+            setHeroSectionOpen(false);
+            setHeroTypeOpen(false);
+        }
+        heroFiltersPopover.classList.toggle('is-open', open);
+        heroFiltersPopover.setAttribute('aria-hidden', open ? 'false' : 'true');
+        heroFilterToggleBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        heroFilterToggleBtn.classList.toggle('is-open', open);
+    }
+
+    function syncHeroControlsFromState(autoSelectToolbarCriterion = false) {
+        heroIntentTabs.forEach(tab => {
+            const tabVal = tab.getAttribute('data-intent') || '';
+            const isMatch = heroIntentValue !== 'All' && tabVal.toLowerCase() === String(heroIntentValue).toLowerCase();
+            tab.classList.toggle('active', isMatch);
+            tab.setAttribute('aria-checked', isMatch ? 'true' : 'false');
+            const radio = tab.querySelector('input[type="radio"]');
+            if (radio) radio.checked = isMatch;
+        });
+
+        heroTenurePills.forEach(pill => {
+            const radio = pill.querySelector('input[type="radio"]');
+            const val = radio ? radio.value : 'All';
+            const isMatch = String(val).toLowerCase() === String(activeTenure || 'All').toLowerCase();
+            pill.classList.toggle('active', isMatch);
+            if (radio) radio.checked = isMatch;
+        });
+
+        const tenureSelectToolbar = document.getElementById('tenure-select-filter');
+        if (tenureSelectToolbar) tenureSelectToolbar.value = activeTenure || 'All';
+
+        Object.keys(HERO_RANGE_IDS).forEach(key => {
+            const [minId, maxId] = HERO_RANGE_IDS[key];
+            const minEl = document.getElementById(minId);
+            const maxEl = document.getElementById(maxId);
+            if (minEl && minEl.value !== rangeState[key].min) minEl.value = rangeState[key].min;
+            if (maxEl && maxEl.value !== rangeState[key].max) maxEl.value = rangeState[key].max;
+        });
+
+        const rcEl = document.getElementById('range-filter-criterion');
+        const rMinEl = document.getElementById('range-filter-min');
+        const rMaxEl = document.getElementById('range-filter-max');
+        if (rcEl) {
+            if (autoSelectToolbarCriterion) {
+                const activeCrit = ['budget', 'buildup', 'landarea'].find(k => rangeState[k].min || rangeState[k].max) || 'budget';
+                rcEl.value = activeCrit;
+            }
+            const curCrit = rcEl.value || 'budget';
+            if (rMinEl && rangeState[curCrit]) rMinEl.value = rangeState[curCrit].min;
+            if (rMaxEl && rangeState[curCrit]) rMaxEl.value = rangeState[curCrit].max;
+        }
+
+        const extraCount = countActiveHeroExtraFilters();
+        if (heroFilterCountBadge) {
+            heroFilterCountBadge.textContent = String(extraCount);
+            heroFilterCountBadge.style.display = extraCount > 0 ? 'inline-flex' : 'none';
+        }
+        if (heroFilterToggleBtn) {
+            heroFilterToggleBtn.classList.toggle('has-active', extraCount > 0);
+        }
+    }
+
+    function toggleHeroIntentTab(tab) {
+        const clickedVal = tab.getAttribute('data-intent') || 'All';
+        heroIntentValue = (heroIntentValue.toLowerCase() === clickedVal.toLowerCase()) ? 'All' : clickedVal;
+        if (window.location.pathname.includes('properties.html')) {
+            activeIntent = heroIntentValue;
+            if (typeof syncFilterUI === 'function') syncFilterUI();
+            if (typeof renderProperties === 'function') renderProperties();
+        } else {
+            syncHeroControlsFromState();
+        }
+    }
+
+    heroIntentTabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            toggleHeroIntentTab(tab);
+        });
+        tab.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                toggleHeroIntentTab(tab);
+            }
+        });
+    });
+
+    if (heroFilterToggleBtn && heroFiltersPopover) {
+        heroFilterToggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setHeroFiltersOpen(!heroFiltersPopover.classList.contains('is-open'));
+        });
+
+        document.addEventListener('click', (e) => {
+            if (heroFiltersPopover.classList.contains('is-open') && heroSearchWrapper && !heroSearchWrapper.contains(e.target)) {
+                setHeroFiltersOpen(false);
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && heroFiltersPopover.classList.contains('is-open')) {
+                setHeroFiltersOpen(false);
+            }
+        });
+    }
+
+    Object.keys(HERO_RANGE_IDS).forEach(key => {
+        const [minId, maxId] = HERO_RANGE_IDS[key];
+        [['min', minId], ['max', maxId]].forEach(([bound, elId]) => {
+            const el = document.getElementById(elId);
+            if (!el) return;
+            const handleSync = () => {
+                formatNumberInputWithCommas(el);
+                rangeState[key][bound] = el.value;
+                syncHeroControlsFromState();
+                if (window.location.pathname.includes('properties.html') && typeof renderProperties === 'function') {
+                    renderProperties();
+                }
+            };
+            el.addEventListener('input', handleSync);
+            el.addEventListener('blur', handleSync);
+        });
+    });
+
+    heroTenurePills.forEach(pill => {
+        const radio = pill.querySelector('input[type="radio"]');
+        if (!radio) return;
+        radio.addEventListener('change', () => {
+            activeTenure = radio.value || 'All';
+            syncHeroControlsFromState();
+            if (window.location.pathname.includes('properties.html') && typeof renderProperties === 'function') {
+                renderProperties();
+            }
+        });
+    });
+
+    if (heroFiltersClearBtn) {
+        heroFiltersClearBtn.addEventListener('click', () => {
+            activeTenure = 'All';
+            rangeState = { budget: { min: '', max: '' }, buildup: { min: '', max: '' }, landarea: { min: '', max: '' } };
+            syncHeroControlsFromState(true);
+            if (window.location.pathname.includes('properties.html') && typeof renderProperties === 'function') {
+                renderProperties();
+            }
+        });
+    }
+
+    if (heroFiltersApplyBtn) {
+        heroFiltersApplyBtn.addEventListener('click', () => {
+            setHeroFiltersOpen(false);
+            if (window.location.pathname.includes('properties.html') && typeof renderProperties === 'function') {
+                renderProperties();
+                const browseSec = document.getElementById('browse-properties');
+                if (browseSec) browseSec.scrollIntoView({ behavior: 'smooth' });
+            }
+        });
+    }
+
+    syncHeroControlsFromState(true);
+
+    if (heroLocationSelect && heroSectionSelect) {
+        heroLocationSelect.addEventListener('change', () => {
+            heroSectionSelect.value = 'All';
+            if (typeof populateHeroSectionDropdown === 'function') {
+                populateHeroSectionDropdown();
+            }
+        });
+    }
+
     if (searchForm) {
         searchForm.addEventListener('submit', (e) => {
             e.preventDefault();
+            setHeroLocationOpen(false);
+            setHeroSectionOpen(false);
+            setHeroFiltersOpen(false);
+            setHeroTypeOpen(false);
             const heroKw = document.getElementById('heroKeywordInput');
             const kwVal = heroKw ? heroKw.value.trim() : '';
             const locVal = heroLocationSelect ? heroLocationSelect.value : 'All';
+            const secVal = heroSectionSelect ? heroSectionSelect.value : 'All';
             const typeVal = heroTypeSelect ? heroTypeSelect.value : 'All';
 
             if (window.location.pathname.includes('properties.html')) {
                 activeKeyword = kwVal;
                 activeCity = locVal;
-                activeType = typeVal;
-                activeSection = 'All';
+                activeType = typeVal || 'All';
+                activeSection = secVal;
                 activePark = 'All';
+                activeIntent = heroIntentValue || 'All';
                 
                 const propKwInput = document.getElementById('property-keyword-search');
                 if (propKwInput) propKwInput.value = kwVal;
@@ -1153,11 +2201,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 const browseSection = document.getElementById('browse-properties');
                 if (browseSection) browseSection.scrollIntoView({ behavior: 'smooth' });
             } else {
+                const stripNum = (s) => String(s || '').replace(/[^0-9.]/g, '').trim();
                 const query = new URLSearchParams();
+                if (heroIntentValue && heroIntentValue !== 'All') query.set('intent', heroIntentValue);
                 if (kwVal) query.set('keyword', kwVal);
                 if (locVal && locVal !== 'All') query.set('location', locVal);
-                if (typeVal && typeVal !== 'All') query.set('type', typeVal);
-                window.location.href = `properties.html?${query.toString()}`;
+                if (secVal && secVal !== 'All') query.set('section', secVal);
+                if (typeVal && typeVal !== 'All') {
+                    if (typeVal.includes(',')) query.set('types', typeVal);
+                    else query.set('type', typeVal);
+                }
+                if (activeTenure && activeTenure !== 'All' && activeTenure !== 'Both') query.set('tenure', activeTenure);
+                if (stripNum(rangeState.budget.min)) query.set('budgetMin', stripNum(rangeState.budget.min));
+                if (stripNum(rangeState.budget.max)) query.set('budgetMax', stripNum(rangeState.budget.max));
+                if (stripNum(rangeState.buildup.min)) query.set('buildupMin', stripNum(rangeState.buildup.min));
+                if (stripNum(rangeState.buildup.max)) query.set('buildupMax', stripNum(rangeState.buildup.max));
+                if (stripNum(rangeState.landarea.min)) query.set('landMin', stripNum(rangeState.landarea.min));
+                if (stripNum(rangeState.landarea.max)) query.set('landMax', stripNum(rangeState.landarea.max));
+                window.location.href = `properties.html?${query.toString()}#browse-properties`;
             }
         });
     }
@@ -1283,36 +2344,57 @@ document.addEventListener('DOMContentLoaded', () => {
         return !!(found && typeof found === 'object' && found.hidden);
     }
 
-    function populateSectionDropdown() {
-        if (!sectionSelectFilter) return;
-        
-        sectionSelectFilter.innerHTML = '';
-        
+    /**
+     * Populates a section <select> element with sorted sections for the given city.
+     */
+    function populateSectionSelectOptions(selectEl, city, defaultLabel, selectedValue) {
+        if (!selectEl) return null;
+
+        selectEl.innerHTML = '';
+
         const defaultOpt = document.createElement('option');
         defaultOpt.value = 'All';
-        defaultOpt.textContent = activeCity === 'All' ? 'All Sections' : `All Sections in ${activeCity}`;
-        sectionSelectFilter.appendChild(defaultOpt);
-        
+        defaultOpt.textContent = defaultLabel;
+        selectEl.appendChild(defaultOpt);
+
         const availableSections = new Set();
         getPublicActiveProperties().forEach(p => {
-            if (activeCity === 'All' || p.location === activeCity) {
+            if (city === 'All' || p.location === city) {
                 if (p.park && isParkHidden(p.location, p.park)) return;
                 const sec = getSectionForProperty(p);
                 if (sec) availableSections.add(sec);
             }
         });
-        
-        Array.from(availableSections).sort().forEach(secName => {
-            const opt = document.createElement('option');
-            opt.value = secName;
-            opt.textContent = secName;
-            sectionSelectFilter.appendChild(opt);
-        });
-        
-        if (activeSection !== 'All' && !availableSections.has(activeSection)) {
-            activeSection = 'All';
-        }
-        sectionSelectFilter.value = activeSection;
+
+        Array.from(availableSections)
+            .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }))
+            .forEach(secName => {
+                const opt = document.createElement('option');
+                opt.value = secName;
+                opt.textContent = secName;
+                selectEl.appendChild(opt);
+            });
+
+        const resolvedValue = (selectedValue && selectedValue !== 'All' && availableSections.has(selectedValue))
+            ? selectedValue
+            : 'All';
+        selectEl.value = resolvedValue;
+        return resolvedValue;
+    }
+
+    function populateHeroSectionDropdown() {
+        if (!heroSectionSelect) return;
+        const targetCity = heroLocationSelect ? heroLocationSelect.value : activeCity;
+        const previousVal = activeSection !== 'All' ? activeSection : heroSectionSelect.value;
+        populateSectionSelectOptions(heroSectionSelect, targetCity, 'All Sections', previousVal);
+        if (typeof renderHeroLocationPopover === 'function') renderHeroLocationPopover();
+        if (typeof renderHeroSectionPopover === 'function') renderHeroSectionPopover('');
+    }
+
+    function populateSectionDropdown() {
+        if (!sectionSelectFilter) return;
+        const defaultLabel = activeCity === 'All' ? 'All Sections' : `All Sections in ${activeCity}`;
+        activeSection = populateSectionSelectOptions(sectionSelectFilter, activeCity, defaultLabel, activeSection) || 'All';
     }
 
     function populateParkDropdown() {
@@ -1349,8 +2431,25 @@ document.addEventListener('DOMContentLoaded', () => {
             parkSelectFilter.appendChild(opt);
         });
         
+        const normActivePark = (activePark || '').trim().toLowerCase();
         if (activePark !== 'All' && !availableParks.has(activePark)) {
-            activePark = 'All';
+            const matchedCanon = Array.from(availableParks).find(p => p.trim().toLowerCase() === normActivePark);
+            if (matchedCanon) {
+                activePark = matchedCanon;
+            } else {
+                const isCoveredPark = Object.values(parks || {}).some(list => Array.isArray(list) && list.some(pk => {
+                    const pName = typeof pk === 'string' ? pk : (pk && pk.name ? pk.name : '');
+                    return pName && pName.trim().toLowerCase() === normActivePark && !(pk && typeof pk === 'object' && pk.hidden);
+                }));
+                if (isCoveredPark) {
+                    const extraOpt = document.createElement('option');
+                    extraOpt.value = activePark;
+                    extraOpt.textContent = activePark;
+                    parkSelectFilter.appendChild(extraOpt);
+                } else {
+                    activePark = 'All';
+                }
+            }
         }
         
         parkSelectFilter.value = activePark;
@@ -1361,15 +2460,58 @@ document.addEventListener('DOMContentLoaded', () => {
         populateSectionDropdown();
         populateParkDropdown();
 
-        cityFilters.forEach(c => {
+        document.querySelectorAll('.city-filter-card').forEach(c => {
             if (c.getAttribute('data-city') === activeCity) c.classList.add('active');
             else c.classList.remove('active');
         });
 
+        const selectedTypesList = expandTypeTokensToSubtypes(activeType);
+        const groups = getPropertyTypeGroups();
+
+        // Determine if all selected types belong to a single multi-subtype category (Factory / Warehouse / Land)
+        const matchingGroups = groups.filter(g =>
+            g.subtypes.some(sub => selectedTypesList.some(s => s.toLowerCase() === sub.toLowerCase()))
+        );
+        const activeSingleGroup = matchingGroups.length === 1 ? matchingGroups[0] : null;
+
         typeFilters.forEach(b => {
-            if (b.getAttribute('data-type') === activeType) b.classList.add('active');
-            else b.classList.remove('active');
+            const btnType = (b.getAttribute('data-type') || '').trim();
+            const btnLower = btnType.toLowerCase();
+            if (btnLower === 'all') {
+                b.classList.toggle('active', selectedTypesList.length === 0);
+                return;
+            }
+            if (btnLower.startsWith('shoplot')) {
+                b.classList.toggle('active', selectedTypesList.some(s => s.toLowerCase().startsWith('shoplot')));
+                return;
+            }
+            const group = groups.find(g => g.category.toLowerCase() === btnLower);
+            if (group) {
+                const isThisGroupActive = activeSingleGroup && activeSingleGroup.category === group.category;
+                b.classList.toggle('active', Boolean(isThisGroupActive));
+            } else {
+                b.classList.toggle('active', selectedTypesList.some(s => s.toLowerCase() === btnLower));
+            }
         });
+
+        const subFiltersContainer = document.getElementById('type-subfilters');
+        if (subFiltersContainer) {
+            if (activeSingleGroup && activeSingleGroup.subtypes.length > 1) {
+                const allGroupSelected = activeSingleGroup.subtypes.every(sub =>
+                    selectedTypesList.some(s => s.toLowerCase() === sub.toLowerCase())
+                );
+                const allBtnHtml = `<button type="button" class="type-subfilter-btn${allGroupSelected ? ' active' : ''}" data-subtype="${escapeHtml(activeSingleGroup.category)}">All ${escapeHtml(activeSingleGroup.category)}</button>`;
+                const subBtnsHtml = activeSingleGroup.subtypes.map(sub => {
+                    const isSubOnly = !allGroupSelected && selectedTypesList.some(s => s.toLowerCase() === sub.toLowerCase());
+                    return `<button type="button" class="type-subfilter-btn${isSubOnly ? ' active' : ''}" data-subtype="${escapeHtml(sub)}">${escapeHtml(sub)}</button>`;
+                }).join('');
+                subFiltersContainer.innerHTML = allBtnHtml + subBtnsHtml;
+                subFiltersContainer.style.display = 'flex';
+            } else {
+                subFiltersContainer.innerHTML = '';
+                subFiltersContainer.style.display = 'none';
+            }
+        }
 
         if (intentBtns.length > 0) {
             intentBtns.forEach(b => {
@@ -1389,10 +2531,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (heroLocationSelect && activeCity !== 'All') heroLocationSelect.value = activeCity;
-        if (heroTypeSelect && activeType !== 'All') heroTypeSelect.value = activeType;
+        populateHeroSectionDropdown();
+        if (heroSectionSelect && activeSection !== 'All') heroSectionSelect.value = activeSection;
+        if (typeof syncHeroLocationPopoverUI === 'function') syncHeroLocationPopoverUI();
+        if (typeof syncHeroSectionPopoverUI === 'function') syncHeroSectionPopoverUI();
+        if (typeof syncHeroTypeUI === 'function') syncHeroTypeUI();
+
+        heroIntentValue = activeIntent || 'All';
+        syncHeroControlsFromState();
     }
 
     syncFilterUI();
+
+    const tenureSelectFilter = document.getElementById('tenure-select-filter');
+    if (tenureSelectFilter) {
+        tenureSelectFilter.value = activeTenure || 'All';
+        tenureSelectFilter.addEventListener('change', (e) => {
+            activeTenure = e.target.value || 'All';
+            syncHeroControlsFromState();
+            renderProperties();
+        });
+    }
 
     if (citySelectFilter) {
         citySelectFilter.addEventListener('change', (e) => {
@@ -1443,6 +2602,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 btn.style.boxShadow = 'var(--shadow-sm)';
                 
                 activeIntent = btn.getAttribute('data-intent');
+                heroIntentValue = activeIntent || 'All';
+                syncHeroControlsFromState();
                 renderProperties();
             });
         });
@@ -1464,7 +2625,10 @@ document.addEventListener('DOMContentLoaded', () => {
             activeSection = 'All';
             activePark = 'All';
             activeIntent = 'All';
+            heroIntentValue = 'All';
+            activeTenure = 'All';
             activeSort = 'date-desc';
+            rangeState = { budget: { min: '', max: '' }, buildup: { min: '', max: '' }, landarea: { min: '', max: '' } };
 
             activeKeyword = '';
             const propKwInput = document.getElementById('property-keyword-search');
@@ -1474,8 +2638,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (citySelectFilter) citySelectFilter.value = 'All';
             if (heroLocationSelect) heroLocationSelect.value = 'All';
+            if (heroSectionSelect) heroSectionSelect.value = 'All';
             if (heroTypeSelect) heroTypeSelect.value = 'All';
             if (sortSelect) sortSelect.value = 'date-desc';
+            if (tenureSelectFilter) tenureSelectFilter.value = 'All';
 
             const rangeCriterionEl = document.getElementById('range-filter-criterion');
             const rangeMinEl = document.getElementById('range-filter-min');
@@ -1512,6 +2678,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            if (splitMapCtrl) splitMapCtrl.clearMoveSearch();
             renderProperties();
         });
     }
@@ -1561,25 +2728,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (rangeCriterionSelect) {
         rangeCriterionSelect.addEventListener('change', () => {
+            syncHeroControlsFromState(false);
             renderProperties();
         });
     }
 
-    [rangeMinInput, rangeMaxInput].forEach(inputEl => {
+    function syncToolbarRangeToState(inputEl, bound) {
+        formatNumberInputWithCommas(inputEl);
+        const curCrit = rangeCriterionSelect ? rangeCriterionSelect.value : 'budget';
+        if (rangeState[curCrit]) {
+            rangeState[curCrit][bound] = inputEl.value;
+            syncHeroControlsFromState(false);
+        }
+        renderProperties();
+    }
+
+    [['min', rangeMinInput], ['max', rangeMaxInput]].forEach(([bound, inputEl]) => {
         if (!inputEl) return;
-        inputEl.addEventListener('input', () => {
-            formatNumberInputWithCommas(inputEl);
-            renderProperties();
-        });
-        inputEl.addEventListener('blur', () => {
-            formatNumberInputWithCommas(inputEl);
-            renderProperties();
-        });
+        inputEl.addEventListener('input', () => syncToolbarRangeToState(inputEl, bound));
+        inputEl.addEventListener('blur', () => syncToolbarRangeToState(inputEl, bound));
         inputEl.addEventListener('keyup', (e) => {
-            if (e.key === 'Enter') {
-                formatNumberInputWithCommas(inputEl);
-                renderProperties();
-            }
+            if (e.key === 'Enter') syncToolbarRangeToState(inputEl, bound);
         });
     });
 
@@ -1590,20 +2759,19 @@ document.addEventListener('DOMContentLoaded', () => {
         return parseFloat(cleaned) || 0;
     }
 
+    function parseAreaToSqft(areaStr) {
+        if (!areaStr || areaStr === 'N/A') return 0;
+        const lower = String(areaStr).toLowerCase();
+        const cleaned = parseFloat(lower.replace(/[^0-9.]/g, '')) || 0;
+        return lower.includes('acre') ? cleaned * 43560 : cleaned;
+    }
+
     function parseBuildUpValue(sizeStr) {
-        if (!sizeStr || sizeStr === 'N/A') return 0;
-        const cleaned = String(sizeStr).replace(/[^0-9.]/g, '');
-        return parseFloat(cleaned) || 0;
+        return parseAreaToSqft(sizeStr);
     }
 
     function parseLandAreaSqftValue(landAreaStr) {
-        if (!landAreaStr || landAreaStr === 'N/A') return 0;
-        const lower = String(landAreaStr).toLowerCase();
-        const cleaned = parseFloat(lower.replace(/[^0-9.]/g, '')) || 0;
-        if (lower.includes('acre')) {
-            return cleaned * 43560; // 1 Acre = 43,560 sqft
-        }
-        return cleaned;
+        return parseAreaToSqft(landAreaStr);
     }
     function getPropertyUnitCount(prop) {
         if (!prop || prop.status === 'Pending' || prop.status === 'Inactive') return 0;
@@ -2278,7 +3446,7 @@ Could you please share more information and arrange a viewing appointment? Thank
                                 <div class="selected-property-img-wrapper" style="position: relative; cursor: pointer;" oncontextmenu="return false;" ondragstart="return false;">
                                     ${ribbonHtml}
                                     ${topRightBadgeHtml}
-                                    <img src="${prop.images && prop.images.length > 0 ? prop.images[0] : prop.image || 'assets/images/hero.jpg'}" alt="${prop.title}" style="width: 100%; height: 210px; object-fit: cover; pointer-events: none; -webkit-user-drag: none; user-select: none;" oncontextmenu="return false;" ondragstart="return false;">
+                                    <img src="${prop.images && prop.images.length > 0 ? prop.images[0] : prop.image || 'assets/images/hero.jpg'}" alt="${prop.title}" loading="lazy" decoding="async" style="width: 100%; height: 210px; object-fit: cover; pointer-events: none; -webkit-user-drag: none; user-select: none;" oncontextmenu="return false;" ondragstart="return false;">
                                     ${getWatermarkOverlayHtml()}
                                     <div style="position: absolute; bottom: 0.75rem; left: 1rem; background: rgba(0, 0, 0, 0.75); color: var(--white); backdrop-filter: blur(4px); padding: 0.25rem 0.75rem; border-radius: 6px; font-weight: 600; font-size: 0.8rem;">
                                         ${escapeHtml(prop.type)}
@@ -2425,20 +3593,32 @@ Could you please share more information and arrange a viewing appointment? Thank
                         const scrollToFormBtn = selectedInfo.querySelector('#scroll-to-lead-form-btn');
                         if (scrollToFormBtn) {
                             scrollToFormBtn.addEventListener('click', () => {
-                                const leadFormEl = document.getElementById('lead-form');
+                                const formTarget = document.getElementById('contact-inquiry-form') || document.getElementById('lead-form');
                                 const nameInput = document.getElementById('leadName');
-                                if (window.innerWidth <= 768 && leadFormEl) {
-                                    const headerOffset = 80;
-                                    const elementPosition = leadFormEl.getBoundingClientRect().top;
-                                    const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                                    window.scrollTo({
-                                        top: offsetPosition,
-                                        behavior: 'smooth'
-                                    });
+                                let didScroll = false;
+                                if (formTarget) {
+                                    const rect = formTarget.getBoundingClientRect();
+                                    const needsScroll = window.innerWidth <= 768 || rect.top < 72 || rect.top > window.innerHeight * 0.65;
+                                    if (needsScroll) {
+                                        const navEl = document.querySelector('.navbar');
+                                        const headerOffset = (navEl ? navEl.offsetHeight : 64) + 16;
+                                        const offsetPosition = rect.top + (window.scrollY || window.pageYOffset) - headerOffset;
+                                        window.scrollTo({
+                                            top: Math.max(0, offsetPosition),
+                                            behavior: 'smooth'
+                                        });
+                                        didScroll = true;
+                                    }
                                 }
                                 setTimeout(() => {
-                                    if (nameInput) nameInput.focus();
-                                }, 300);
+                                    if (nameInput) {
+                                        try {
+                                            nameInput.focus({ preventScroll: true });
+                                        } catch (_) {
+                                            nameInput.focus();
+                                        }
+                                    }
+                                }, didScroll ? 320 : 60);
                             });
                         }
 
@@ -2768,8 +3948,12 @@ Could you please share more information and arrange a viewing appointment? Thank
         });
     };
 
-    function renderProperties() {
+    function renderProperties(renderOpts = {}) {
         updateCityBadges();
+        const storedAgentsList = safeJsonParse('industria_agents', []);
+        if (homeMapCtrl && typeof homeMapCtrl.update === 'function') {
+            homeMapCtrl.update(properties, parks, storedAgentsList);
+        }
         if (!propertyList) return;
         propertyList.innerHTML = '';
         
@@ -2903,30 +4087,42 @@ Could you please share more information and arrange a viewing appointment? Thank
         const propKwInput = document.getElementById('property-keyword-search');
         const searchKw = propKwInput ? propKwInput.value.toLowerCase().trim() : (activeKeyword || '').toLowerCase().trim();
 
-        const rangeCriterionEl = document.getElementById('range-filter-criterion');
-        const rangeMinEl = document.getElementById('range-filter-min');
-        const rangeMaxEl = document.getElementById('range-filter-max');
+        const toNumBound = (str) => {
+            const s = String(str || '').replace(/[^0-9.]/g, '').trim();
+            if (!s) return null;
+            const n = parseFloat(s);
+            return isNaN(n) ? null : n;
+        };
 
-        const rangeCriterion = rangeCriterionEl ? rangeCriterionEl.value : 'budget';
-        const rangeMinValStr = rangeMinEl ? rangeMinEl.value.replace(/[^0-9.]/g, '').trim() : '';
-        const rangeMaxValStr = rangeMaxEl ? rangeMaxEl.value.replace(/[^0-9.]/g, '').trim() : '';
+        const activeRanges = [
+            { key: 'budget', label: 'Budget', unit: 'RM', min: toNumBound(rangeState.budget.min), max: toNumBound(rangeState.budget.max), getter: (p) => parsePriceValue(p.price) },
+            { key: 'buildup', label: 'Build Up', unit: 'sqft', min: toNumBound(rangeState.buildup.min), max: toNumBound(rangeState.buildup.max), getter: (p) => parseBuildUpValue(p.size || p.builtUp) },
+            { key: 'landarea', label: 'Land Area', unit: 'sqft', min: toNumBound(rangeState.landarea.min), max: toNumBound(rangeState.landarea.max), getter: (p) => parseLandAreaSqftValue(p.landArea) }
+        ];
+        const hasAnyRangeFilter = activeRanges.some(r => r.min !== null || r.max !== null);
+        const normActiveTenure = String(activeTenure || 'All').trim().toLowerCase();
+        const isTenureFiltered = normActiveTenure !== '' && normActiveTenure !== 'all' && normActiveTenure !== 'both';
 
-        const rangeMin = rangeMinValStr !== '' ? parseFloat(rangeMinValStr) : null;
-        const rangeMax = rangeMaxValStr !== '' ? parseFloat(rangeMaxValStr) : null;
-        const hasRangeFilter = (rangeMin !== null && !isNaN(rangeMin)) || (rangeMax !== null && !isNaN(rangeMax));
+        const normFilterCity = (activeCity || '').trim().toLowerCase();
+        const normFilterType = (activeType || '').trim().toLowerCase();
+        const normFilterSection = (activeSection || '').trim().toLowerCase();
 
         let filtered = properties.filter(prop => {
-            const matchCity = activeCity === 'All' || prop.location === activeCity;
-            const matchType = activeType === 'All' || 
-                prop.type === activeType || 
-                (activeType === 'Factory' && prop.type && prop.type.toLowerCase().includes('factory'));
+            const propCity = (prop.location || '').trim().toLowerCase();
+            const matchCity = activeCity === 'All' || propCity === normFilterCity;
+
+            const matchType = matchesPropertyTypeFilter(prop.type, activeType);
             
-            const propSec = getSectionForProperty(prop);
-            const matchSection = activeSection === 'All' || propSec === activeSection || prop.section === activeSection;
-            const matchPark = activePark === 'All' || prop.park === activePark;
+            const propSec = (getSectionForProperty(prop) || '').trim().toLowerCase();
+            const propRawSec = (prop.section || '').trim().toLowerCase();
+            const matchSection = activeSection === 'All' || propSec === normFilterSection || propRawSec === normFilterSection;
+            const matchPark = activePark === 'All' || (prop.park || '').trim().toLowerCase() === activePark.trim().toLowerCase();
             
             const propIntent = prop.intent || (prop.price && prop.price.toLowerCase().includes('mo') ? 'Rent' : 'Sale');
             const matchIntent = activeIntent === 'All' || propIntent.toLowerCase() === activeIntent.toLowerCase();
+
+            const propTenure = String(prop.tenure || prop.leaseType || '').trim().toLowerCase();
+            const matchTenure = !isTenureFiltered || propTenure === normActiveTenure || propTenure.includes(normActiveTenure);
 
             const searchHaystack = [
                 prop.title, prop.location, prop.section, prop.park, prop.type, prop.price, prop.tenure, prop.landArea, prop.builtUp, prop.size, prop.power, prop.ceilingHeight, prop.floorLoading, prop.specs, prop.road, prop.description
@@ -2934,26 +4130,15 @@ Could you please share more information and arrange a viewing appointment? Thank
 
             const matchKw = matchesFlexibleSearch(searchHaystack, searchKw);
 
-            let matchRange = true;
-            if (hasRangeFilter) {
-                let propVal = 0;
-                if (rangeCriterion === 'budget') {
-                    propVal = parsePriceValue(prop.price);
-                } else if (rangeCriterion === 'buildup') {
-                    propVal = parseBuildUpValue(prop.size || prop.builtUp);
-                } else if (rangeCriterion === 'landarea') {
-                    propVal = parseLandAreaSqftValue(prop.landArea);
-                }
+            const matchRange = activeRanges.every(r => {
+                if (r.min === null && r.max === null) return true;
+                const propVal = r.getter(prop);
+                if (r.min !== null && propVal < r.min) return false;
+                if (r.max !== null && propVal > r.max) return false;
+                return true;
+            });
 
-                if (rangeMin !== null && !isNaN(rangeMin) && propVal < rangeMin) {
-                    matchRange = false;
-                }
-                if (rangeMax !== null && !isNaN(rangeMax) && propVal > rangeMax) {
-                    matchRange = false;
-                }
-            }
-
-            return matchCity && matchType && matchSection && matchPark && matchIntent && matchKw && matchRange && prop.status !== 'Pending' && prop.status !== 'Inactive';
+            return matchCity && matchType && matchSection && matchPark && matchIntent && matchTenure && matchKw && matchRange && prop.status !== 'Pending' && prop.status !== 'Inactive';
         });
 
         // Ensure direct shared property is always visible in results
@@ -2975,7 +4160,29 @@ Could you please share more information and arrange a viewing appointment? Thank
             });
         }
 
-        const isFiltered = activeCity !== 'All' || activeType !== 'All' || activeSection !== 'All' || activePark !== 'All' || activeIntent !== 'All' || searchKw !== '' || hasRangeFilter;
+        const baseFiltered = filtered.slice();
+        const isMapMoveFilter = !!(splitMapCtrl && splitMapCtrl.isMoveSearchActive());
+        if (isMapMoveFilter) {
+            filtered = splitMapCtrl.filterByCurrentBounds(filtered, parks);
+            if (targetProp && renderOpts && !renderOpts.isMapMove && !filtered.some(p => String(p.id) === String(directPropId))) {
+                filtered.unshift(targetProp);
+            }
+        }
+
+        if (splitMapCtrl) {
+            splitMapCtrl.updateMarkers(baseFiltered, parks, {
+                allProps: properties,
+                agents: storedAgentsList,
+                activeCity,
+                activeSection,
+                activePark,
+                skipFitBounds: !!(renderOpts && renderOpts.isMapMove),
+                markersUnchanged: !!(renderOpts && renderOpts.isMapMove),
+                visibleProps: filtered
+            });
+        }
+
+        const isFiltered = activeCity !== 'All' || activeType !== 'All' || activeSection !== 'All' || activePark !== 'All' || activeIntent !== 'All' || isTenureFiltered || searchKw !== '' || hasAnyRangeFilter || isMapMoveFilter;
         
         if (resultsCountEl) {
             if (targetProp) {
@@ -2985,24 +4192,21 @@ Could you please share more information and arrange a viewing appointment? Thank
                 if (activeCity !== 'All') filterLabels.push(activeCity);
                 if (activeSection !== 'All') filterLabels.push(activeSection);
                 if (activePark !== 'All') filterLabels.push(activePark);
-                if (activeType !== 'All') filterLabels.push(activeType);
+                if (activeType !== 'All') filterLabels.push(getHeroTypeDisplayText(expandTypeTokensToSubtypes(activeType)));
                 if (activeIntent !== 'All') filterLabels.push(`For ${activeIntent}`);
+                if (isTenureFiltered) filterLabels.push(activeTenure);
                 if (searchKw !== '') filterLabels.push(`"${searchKw}"`);
+                if (isMapMoveFilter) filterLabels.push('Map Area');
 
-                if (hasRangeFilter) {
-                    let rangeLabelName = 'Budget';
-                    let rangeUnit = 'RM';
-                    if (rangeCriterion === 'buildup') { rangeLabelName = 'Build Up'; rangeUnit = 'sqft'; }
-                    else if (rangeCriterion === 'landarea') { rangeLabelName = 'Land Area'; rangeUnit = 'sqft'; }
-
-                    if (rangeMin !== null && rangeMax !== null) {
-                        filterLabels.push(`${rangeLabelName}: ${rangeMin.toLocaleString()} - ${rangeMax.toLocaleString()} ${rangeUnit}`);
-                    } else if (rangeMin !== null) {
-                        filterLabels.push(`${rangeLabelName}: ≥ ${rangeMin.toLocaleString()} ${rangeUnit}`);
-                    } else if (rangeMax !== null) {
-                        filterLabels.push(`${rangeLabelName}: ≤ ${rangeMax.toLocaleString()} ${rangeUnit}`);
+                activeRanges.forEach(r => {
+                    if (r.min !== null && r.max !== null) {
+                        filterLabels.push(`${r.label}: ${r.min.toLocaleString()} - ${r.max.toLocaleString()} ${r.unit}`);
+                    } else if (r.min !== null) {
+                        filterLabels.push(`${r.label}: ≥ ${r.min.toLocaleString()} ${r.unit}`);
+                    } else if (r.max !== null) {
+                        filterLabels.push(`${r.label}: ≤ ${r.max.toLocaleString()} ${r.unit}`);
                     }
-                }
+                });
 
                 resultsCountEl.textContent = `Showing ${filtered.length} ${filtered.length === 1 ? 'property' : 'properties'} (${filterLabels.join(', ')})`;
             } else {
@@ -3142,6 +4346,10 @@ Could you please share more information and arrange a viewing appointment? Thank
         propertiesToDisplay.forEach(prop => {
             const article = window.createStandardPropertyCard(prop, { directPropId });
             if (article) {
+                if (splitMapCtrl) {
+                    article.addEventListener('mouseenter', () => splitMapCtrl.highlightPark(prop.park || prop.title, prop.location));
+                    article.addEventListener('mouseleave', () => splitMapCtrl.highlightPark(null));
+                }
                 propertyList.appendChild(article);
             }
         });
@@ -3180,7 +4388,124 @@ Could you please share more information and arrange a viewing appointment? Thank
         }, 20600);
     }
 
-    // --- 7. CITY & PARK DROPDOWNS ---
+    // --- 7. DYNAMIC LOCATIONS, CITY CARDS & PARK DROPDOWNS ---
+    function renderDynamicLocationsUI() {
+        const visibleLocs = getConfiguredLocations(false);
+        const allLocs = getConfiguredLocations(true);
+        const activeProps = typeof getPublicActiveProperties === 'function' ? getPublicActiveProperties() : [];
+
+        // 7a. Render Mainpage / Browse Location Filter Cards (#city-filters)
+        const cityFiltersContainer = document.getElementById('city-filters');
+        if (cityFiltersContainer) {
+            const totalCards = 1 + visibleLocs.length;
+            cityFiltersContainer.classList.toggle('has-many-cities', totalCards > 5);
+
+            const allCardHtml = `
+                <div class="city-filter-card${activeCity === 'All' ? ' active' : ''}" data-city="All">
+                    <img src="assets/images/drone_all.jpg" alt="Industrial properties and factories in Klang Valley" loading="lazy">
+                    <span class="city-count-badge" data-city-count="All"><span class="city-badge-full">0 Available</span><span class="city-badge-short">0</span></span>
+                    <span class="city-label"><i class="fa-solid fa-layer-group mobile-all-icon" style="display: none; font-size: 0.72rem; margin-right: 2px;"></i><span class="city-label-full">All Locations</span><span class="city-label-short">All Locations</span></span>
+                </div>
+            `;
+
+            const cityCardsHtml = visibleLocs.map(loc => {
+                const city = loc.city;
+                const shortText = loc.shortLabel || city;
+                const cardImg = resolveLocationCardImage(loc, activeProps);
+                const isActive = activeCity === city;
+                const isCustomLabel = isActive && activePark && activePark !== 'All';
+                const fullText = isCustomLabel ? activePark : city;
+                const mobileText = isCustomLabel ? activePark : shortText;
+                return `
+                    <div class="city-filter-card${isActive ? ' active' : ''}" data-city="${escapeHtml(city)}">
+                        <img src="${escapeHtml(cardImg)}" alt="Industrial factories and warehouses in ${escapeHtml(city)}" loading="lazy" onerror="this.onerror=null;this.src='assets/images/drone_all.jpg';">
+                        <span class="city-count-badge" data-city-count="${escapeHtml(city)}"><span class="city-badge-full">0 Available</span><span class="city-badge-short">0</span></span>
+                        <span class="city-label" data-default="${escapeHtml(city)}"><span class="city-label-full">${escapeHtml(fullText)} <i class="fa-solid fa-chevron-down" style="font-size: 0.7em; margin-left: 4px;"></i></span><span class="city-label-short">${escapeHtml(mobileText)}</span></span>
+                        <select class="city-park-select" data-city="${escapeHtml(city)}" aria-label="Select Industrial Park in ${escapeHtml(city)}">
+                            <option value="" disabled selected hidden style="display:none;"></option>
+                            <option value="All">All Parks in ${escapeHtml(city)}</option>
+                        </select>
+                    </div>
+                `;
+            }).join('');
+
+            cityFiltersContainer.innerHTML = allCardHtml + cityCardsHtml;
+        }
+
+        // 7b. Populate Location Dropdowns (#heroLocationSelect, #city-select-filter, #modalOwnerLocation)
+        const syncLocationSelect = (el, emptyVal, emptyLabel, extraOpts = []) => {
+            if (!el) return;
+            const prevVal = el.value;
+            const seen = new Set();
+            const opts = [`<option value="${escapeHtml(emptyVal)}">${escapeHtml(emptyLabel)}</option>`];
+            visibleLocs.forEach(loc => {
+                const norm = loc.city.trim().toLowerCase();
+                if (!seen.has(norm)) {
+                    seen.add(norm);
+                    opts.push(`<option value="${escapeHtml(loc.city)}">${escapeHtml(loc.city)}</option>`);
+                }
+            });
+            extraOpts.forEach(eo => {
+                opts.push(`<option value="${escapeHtml(eo.value)}">${escapeHtml(eo.label)}</option>`);
+            });
+            if (prevVal && prevVal !== emptyVal && !seen.has(prevVal.trim().toLowerCase()) && !extraOpts.some(eo => eo.value === prevVal)) {
+                opts.push(`<option value="${escapeHtml(prevVal)}">${escapeHtml(prevVal)}</option>`);
+            }
+            el.innerHTML = opts.join('');
+            if (prevVal !== undefined && Array.from(el.options).some(o => o.value === prevVal)) {
+                el.value = prevVal;
+            } else {
+                el.value = emptyVal;
+            }
+        };
+
+        syncLocationSelect(heroLocationSelect, 'All', 'All Locations');
+        if (typeof renderHeroLocationPopover === 'function') renderHeroLocationPopover();
+        if (typeof renderHeroSectionPopover === 'function') renderHeroSectionPopover('');
+        syncLocationSelect(document.getElementById('city-select-filter'), 'All', 'All Locations');
+        syncLocationSelect(document.getElementById('modalOwnerLocation'), '', 'Select Location', [{ value: 'Other Selangor Area', label: 'Other Selangor Area' }]);
+
+        // 7c. Update Homepage Map City Pills (.home-map-city-pills)
+        const mapPillsWrap = document.querySelector('.home-map-city-pills');
+        if (mapPillsWrap) {
+            const currentMapActive = (mapPillsWrap.querySelector('.home-map-city-btn.active') || {}).getAttribute
+                ? (mapPillsWrap.querySelector('.home-map-city-btn.active').getAttribute('data-city') || 'All')
+                : 'All';
+            const btns = [`<button type="button" class="home-map-city-btn${currentMapActive === 'All' ? ' active' : ''}" data-city="All">All Klang Valley</button>`];
+            visibleLocs.forEach(loc => {
+                const isAct = currentMapActive === loc.city;
+                btns.push(`<button type="button" class="home-map-city-btn${isAct ? ' active' : ''}" data-city="${escapeHtml(loc.city)}">${escapeHtml(loc.city)}</button>`);
+            });
+            mapPillsWrap.innerHTML = btns.join('');
+        }
+
+        // 7d. Update Navbar Dropdown & Footer Coverage Areas
+        const navCityGrid = document.querySelector('.dropdown-cities-grid');
+        if (navCityGrid) {
+            navCityGrid.innerHTML = visibleLocs.map(loc => `
+                <a href="location.html?city=${encodeURIComponent(loc.slug)}" class="dropdown-city-item">
+                    <span class="dropdown-city-dot"></span>
+                    <span>${escapeHtml(loc.city)}</span>
+                </a>
+            `).join('');
+        }
+
+        document.querySelectorAll('.footer-links').forEach(col => {
+            const heading = col.querySelector('h4');
+            const list = col.querySelector('ul');
+            if (heading && list && heading.textContent.trim().toLowerCase().includes('coverage')) {
+                list.innerHTML = visibleLocs.map(loc => `
+                    <li><a href="location.html?city=${encodeURIComponent(loc.slug)}">${escapeHtml(loc.city)}</a></li>
+                `).join('');
+            }
+        });
+
+        populateCityParkDropdowns();
+        if (typeof updateCityBadges === 'function') updateCityBadges();
+        if (typeof syncFilterUI === 'function') syncFilterUI();
+    }
+    window.renderDynamicLocationsUI = renderDynamicLocationsUI;
+
     function populateCityParkDropdowns() {
         const activeProps = getPublicActiveProperties();
         document.querySelectorAll('.city-park-select').forEach(select => {
@@ -3236,14 +4561,14 @@ Could you please share more information and arrange a viewing appointment? Thank
         });
     }
 
-    populateCityParkDropdowns();
+    renderDynamicLocationsUI();
 
     function selectCityFilter(cityName, shouldScroll = true) {
         if (!cityName) return;
         const targetCard = document.querySelector(`.city-filter-card[data-city="${cityName}"]`);
         if (!targetCard) return;
 
-        cityFilters.forEach(c => c.classList.remove('active'));
+        document.querySelectorAll('.city-filter-card').forEach(c => c.classList.remove('active'));
         targetCard.classList.add('active');
         activeCity = cityName;
         activePark = 'All';
@@ -3256,9 +4581,8 @@ Could you please share more information and arrange a viewing appointment? Thank
         document.querySelectorAll('.city-label').forEach(l => {
             const defaultText = l.getAttribute('data-default');
             if (defaultText) {
-                const shortCityMap = { 'Petaling Jaya': 'PJ', 'Subang Jaya': 'Subang', 'Shah Alam': 'Shah Alam', 'Klang': 'Klang' };
-                const shortText = shortCityMap[defaultText] || defaultText;
-                l.innerHTML = `<span class="city-label-full">${defaultText} <i class="fa-solid fa-chevron-down" style="font-size: 0.7em; margin-left: 4px;"></i></span><span class="city-label-short">${shortText}</span>`;
+                const shortText = getShortLabelForCity(defaultText);
+                l.innerHTML = `<span class="city-label-full">${escapeHtml(defaultText)} <i class="fa-solid fa-chevron-down" style="font-size: 0.7em; margin-left: 4px;"></i></span><span class="city-label-short">${escapeHtml(shortText)}</span>`;
             }
         });
 
@@ -3293,80 +4617,97 @@ Could you please share more information and arrange a viewing appointment? Thank
         }
     }
 
-    if (cityFilters.length > 0) {
-        cityFilters.forEach(card => {
+    const cityFiltersWrapper = document.getElementById('city-filters');
+    if (cityFiltersWrapper) {
+        cityFiltersWrapper.addEventListener('click', (e) => {
+            if (e.target.tagName === 'SELECT') return;
+            const card = e.target.closest('.city-filter-card');
+            if (!card) return;
             const city = card.getAttribute('data-city');
-            const select = card.querySelector('.city-park-select');
-            const label = card.querySelector('.city-label');
+            selectCityFilter(city, false);
+            scrollToFeaturedProperties();
+        });
 
-            card.addEventListener('click', (e) => {
-                if (e.target.tagName === 'SELECT') return;
-                selectCityFilter(city, false);
-                scrollToFeaturedProperties();
+        const resetParkSelectValue = (e) => {
+            const sel = e.target.closest('.city-park-select');
+            if (sel) sel.value = '';
+        };
+        cityFiltersWrapper.addEventListener('pointerdown', resetParkSelectValue);
+        cityFiltersWrapper.addEventListener('mousedown', resetParkSelectValue);
+        cityFiltersWrapper.addEventListener('touchstart', resetParkSelectValue, { passive: true });
+        cityFiltersWrapper.addEventListener('focus', resetParkSelectValue, true);
+
+        cityFiltersWrapper.addEventListener('change', (e) => {
+            const select = e.target.closest('.city-park-select');
+            if (!select) return;
+            const card = select.closest('.city-filter-card');
+            if (!card) return;
+            const city = card.getAttribute('data-city');
+            const label = card.querySelector('.city-label');
+            const chosenValue = select.value;
+            if (!chosenValue) return;
+
+            document.querySelectorAll('.city-filter-card').forEach(c => c.classList.remove('active'));
+            card.classList.add('active');
+            activeCity = city;
+            activePark = chosenValue;
+            activeSection = 'All';
+
+            document.querySelectorAll('.city-park-select').forEach(s => {
+                s.value = '';
+            });
+            document.querySelectorAll('.city-label').forEach(l => {
+                if (l !== label) {
+                    const defaultText = l.getAttribute('data-default');
+                    if (defaultText) {
+                        const shortText = getShortLabelForCity(defaultText);
+                        l.innerHTML = `<span class="city-label-full">${escapeHtml(defaultText)} <i class="fa-solid fa-chevron-down" style="font-size: 0.7em; margin-left: 4px;"></i></span><span class="city-label-short">${escapeHtml(shortText)}</span>`;
+                    }
+                }
             });
 
-            if (select) {
-                const prepareSelectForPick = () => {
-                    select.value = '';
-                };
-                select.addEventListener('pointerdown', prepareSelectForPick);
-                select.addEventListener('mousedown', prepareSelectForPick);
-                select.addEventListener('touchstart', prepareSelectForPick, { passive: true });
-                select.addEventListener('focus', prepareSelectForPick);
-
-                select.addEventListener('change', (e) => {
-                    const chosenValue = e.target.value;
-                    if (!chosenValue) return;
-
-                    cityFilters.forEach(c => c.classList.remove('active'));
-                    card.classList.add('active');
-                    activeCity = city;
-                    activePark = chosenValue;
-                    activeSection = 'All';
-
-                    document.querySelectorAll('.city-park-select').forEach(s => {
-                        s.value = '';
-                    });
-                    document.querySelectorAll('.city-label').forEach(l => {
-                        if (l !== label) {
-                            const defaultText = l.getAttribute('data-default');
-                            if (defaultText) {
-                                const shortCityMap = { 'Petaling Jaya': 'PJ', 'Subang Jaya': 'Subang', 'Shah Alam': 'Shah Alam', 'Klang': 'Klang' };
-                                const shortText = shortCityMap[defaultText] || defaultText;
-                                l.innerHTML = `<span class="city-label-full">${defaultText} <i class="fa-solid fa-chevron-down" style="font-size: 0.7em; margin-left: 4px;"></i></span><span class="city-label-short">${shortText}</span>`;
-                            }
-                        }
-                    });
-
-                    const defaultCityName = label.getAttribute('data-default') || city;
-                    const shortCityMap = { 'Petaling Jaya': 'PJ', 'Subang Jaya': 'Subang', 'Shah Alam': 'Shah Alam', 'Klang': 'Klang' };
-                    const shortCityName = shortCityMap[defaultCityName] || defaultCityName;
-                    if (activePark === 'All') {
-                        label.innerHTML = `<span class="city-label-full">${defaultCityName} <i class="fa-solid fa-chevron-down" style="font-size: 0.7em; margin-left: 4px;"></i></span><span class="city-label-short">${shortCityName}</span>`;
-                    } else {
-                        label.innerHTML = `<span class="city-label-full">${activePark} <i class="fa-solid fa-chevron-down" style="font-size: 0.7em; margin-left: 4px;"></i></span><span class="city-label-short">${activePark}</span>`;
-                    }
-
-                    syncFilterUI();
-                    renderProperties();
-                    scrollToFeaturedProperties();
-
-                    setTimeout(() => {
-                        select.value = '';
-                    }, 100);
-                });
+            if (label) {
+                const defaultCityName = label.getAttribute('data-default') || city;
+                const shortCityName = getShortLabelForCity(defaultCityName);
+                if (activePark === 'All') {
+                    label.innerHTML = `<span class="city-label-full">${escapeHtml(defaultCityName)} <i class="fa-solid fa-chevron-down" style="font-size: 0.7em; margin-left: 4px;"></i></span><span class="city-label-short">${escapeHtml(shortCityName)}</span>`;
+                } else {
+                    label.innerHTML = `<span class="city-label-full">${escapeHtml(activePark)} <i class="fa-solid fa-chevron-down" style="font-size: 0.7em; margin-left: 4px;"></i></span><span class="city-label-short">${escapeHtml(activePark)}</span>`;
+                }
             }
+
+            syncFilterUI();
+            renderProperties();
+            scrollToFeaturedProperties();
+
+            setTimeout(() => {
+                select.value = '';
+            }, 100);
         });
+    }
+
+    if (document.getElementById('city-filters') || typeFilters.length > 0) {
 
         if (typeFilters.length > 0) {
             typeFilters.forEach(btn => {
                 btn.addEventListener('click', () => {
-                    typeFilters.forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    activeType = btn.getAttribute('data-type');
+                    activeType = btn.getAttribute('data-type') || 'All';
+                    syncFilterUI();
                     renderProperties();
                     scrollToFeaturedProperties();
                 });
+            });
+        }
+
+        const subFiltersContainer = document.getElementById('type-subfilters');
+        if (subFiltersContainer) {
+            subFiltersContainer.addEventListener('click', (e) => {
+                const subBtn = e.target.closest('.type-subfilter-btn');
+                if (!subBtn) return;
+                activeType = subBtn.getAttribute('data-subtype') || 'All';
+                syncFilterUI();
+                renderProperties();
+                scrollToFeaturedProperties();
             });
         }
     }

@@ -57,11 +57,19 @@
         return getPropertyPublicUrl(propId);
     }
 
-    // Derive search query string based on road, park, location
+    function extractFirstRoadName(roadStr) {
+        if (window.IndustraMap && typeof window.IndustraMap.extractPrimaryRoad === 'function') {
+            return window.IndustraMap.extractPrimaryRoad(roadStr);
+        }
+        return String(roadStr || '').split(/\s*[,;|]\s*/)[0].trim();
+    }
+
+    // Derive search query string based on first road, park, location
     function getPropertyLocationQuery(prop) {
         if (!prop) return 'Selangor, Malaysia';
         const parts = [];
-        if (prop.road && String(prop.road).trim()) parts.push(String(prop.road).trim());
+        const firstRoad = extractFirstRoadName(prop.road);
+        if (firstRoad) parts.push(firstRoad);
         if (prop.park && String(prop.park).trim()) parts.push(String(prop.park).trim());
         if (prop.location && String(prop.location).trim()) parts.push(String(prop.location).trim());
         parts.push('Selangor');
@@ -816,8 +824,9 @@
         if (mapUrlInput) mapUrlInput.value = chosenMapUrl;
         if (openEarthBtn) openEarthBtn.href = chosenMapUrl;
         if (mapRoadBadge) {
-            if (prop.road && String(prop.road).trim()) {
-                mapRoadBadge.textContent = `Road: ${prop.road}`;
+            const firstRoad = extractFirstRoadName(prop.road);
+            if (firstRoad) {
+                mapRoadBadge.textContent = `Road: ${firstRoad}`;
             } else if (prop.park && String(prop.park).trim()) {
                 mapRoadBadge.textContent = `Park: ${prop.park}`;
             } else {

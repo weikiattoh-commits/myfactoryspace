@@ -268,19 +268,39 @@
     }
 
     // Determine current city slug from URL (?city=shah-alam)
-    function resolveCurrentCity() {
+    function resolveCurrentCity(allData) {
+        const dataMap = allData || getLocationSettings();
         const params = new URLSearchParams(window.location.search);
         let slug = (params.get('city') || '').toLowerCase().trim();
-        if (!slug || !DEFAULT_LOCATION_DATA[slug]) {
-            // Check hash or path
+        if (!slug || !dataMap[slug]) {
             const hash = window.location.hash.replace('#', '').toLowerCase();
-            if (DEFAULT_LOCATION_DATA[hash]) {
+            if (dataMap[hash]) {
                 slug = hash;
             } else {
                 slug = 'petaling-jaya'; // Default flagship city
             }
         }
         return slug;
+    }
+
+    function renderLocationSubNavBar(allData, activeSlug) {
+        const navInner = document.querySelector('.city-nav-inner');
+        if (!navInner) return;
+        const visibleLocs = Object.values(allData).filter(loc => loc && loc.city && loc.showOnMainpage !== false);
+        const iconMap = {
+            'petaling-jaya': 'fa-city',
+            'subang-jaya': 'fa-warehouse',
+            'shah-alam': 'fa-industry',
+            'klang': 'fa-anchor'
+        };
+        const labelHtml = `<span style="font-weight: 800; font-size: 0.85rem; color: #64748b; text-transform: uppercase; margin-right: 4px; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-location-dot" style="color: var(--primary);"></i> Cities:</span>`;
+        const linksHtml = visibleLocs.map(loc => {
+            const ic = iconMap[loc.slug] || 'fa-map-location-dot';
+            const isAct = loc.slug === activeSlug ? ' active' : '';
+            return `<a href="location.html?city=${encodeURIComponent(loc.slug)}" class="city-nav-btn${isAct}" id="city-nav-${escapeHtml(loc.slug)}"><i class="fa-solid ${ic}"></i> ${escapeHtml(loc.city)}</a>`;
+        }).join('');
+        const allBtnHtml = `<a href="properties.html" class="city-nav-btn" style="margin-left: auto;"><i class="fa-solid fa-magnifying-glass"></i> View All Klang Valley</a>`;
+        navInner.innerHTML = labelHtml + linksHtml + allBtnHtml;
     }
 
     // Update Schema.org JSON-LD structured data for Googlebot SEO
@@ -486,8 +506,25 @@
     // Hydrate the location page UI
     window.renderLocationPage = function renderLocationPage() {
         const allData = getLocationSettings();
-        const citySlug = resolveCurrentCity();
-        const data = allData[citySlug] || DEFAULT_LOCATION_DATA['petaling-jaya'];
+        const citySlug = resolveCurrentCity(allData);
+        const rawCityData = allData[citySlug] || DEFAULT_LOCATION_DATA['petaling-jaya'];
+        const data = Object.assign({
+            state: 'Selangor',
+            heroImage: rawCityData.cardImage || 'assets/images/drone_all.jpg',
+            keyLogistics: [
+                { title: 'Highway Connectivity', desc: `Direct expressway links connecting ${rawCityData.city} industrial parks to Klang Valley distribution corridors.` },
+                { title: 'Port & Airport Access', desc: 'Convenient commercial haulage routes to Port Klang terminals, KLIA Cargo, and Subang Airport (SZB).' },
+                { title: 'Industrial Infrastructure', desc: '3-phase high-amp power supply, heavy floor loading slabs, and wide articulated truck access roads.' },
+                { title: 'Workforce & Ecosystem', desc: 'Established surrounding commercial townships, skilled technical talent, and supplier networks.' }
+            ],
+            faqs: [
+                { q: `What industrial properties are available in ${rawCityData.city}?`, a: `${rawCityData.city} offers factories, logistics warehouses, and industrial land plots suited for manufacturing, storage, and regional distribution.` },
+                { q: `How do I arrange a site viewing in ${rawCityData.city}?`, a: 'Select any property below or contact our specialist team via WhatsApp for full technical specs and viewing scheduling.' }
+            ]
+        }, rawCityData);
+        if (!data.heroImage) data.heroImage = data.cardImage || 'assets/images/drone_all.jpg';
+
+        renderLocationSubNavBar(allData, data.slug);
 
         // Gather all merged industrial parks (from Settings + Dashboard > Parks)
         const allParks = getMergedCityParks(data.city, data.slug, data.industrialParks);
@@ -847,10 +884,23 @@
         }
     });
 
+    async function syncLocationSettingsAndRender() {
+        renderLocationPage();
+        if (window.IndustraSupabase && typeof window.IndustraSupabase.fetchSiteSetting === 'function') {
+            try {
+                const sbLocs = await window.IndustraSupabase.fetchSiteSetting('location_landing_settings');
+                if (sbLocs && typeof sbLocs === 'object') {
+                    localStorage.setItem(LOCATION_SETTINGS_KEY, JSON.stringify(sbLocs));
+                    renderLocationPage();
+                }
+            } catch (e) {}
+        }
+    }
+
     // Initialize when DOM is ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', renderLocationPage);
+        document.addEventListener('DOMContentLoaded', syncLocationSettingsAndRender);
     } else {
-        renderLocationPage();
+        syncLocationSettingsAndRender();
     }
 })();

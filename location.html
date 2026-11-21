@@ -72,7 +72,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
     
     <!-- Core Stylesheet -->
-    <link rel="stylesheet" href="css/styles.css?v=84">
+    <link rel="stylesheet" href="css/styles.css?v=109">
 
     <!-- Corporate Branding Initializer (Zero-Flicker Synchronous Engine) -->
     <script>
@@ -528,9 +528,6 @@
             </script>
             <ul class="nav-links" id="nav-links">
                 <li><a href="index.html">Home</a></li>
-                <li><a href="index.html#about">Why Choose Us</a></li>
-                <li><a href="index.html#services">Services</a></li>
-                <li><a href="index.html#who-we-are">Who Are We</a></li>
                 <li class="nav-item-dropdown">
                     <a href="properties.html" class="nav-dropdown-toggle active">
                         Properties <i class="fa-solid fa-chevron-down nav-dropdown-arrow"></i>
@@ -574,6 +571,10 @@
                         </a>
                     </div>
                 </li>
+                <li><a href="index.html#services">Services</a></li>
+                <li><a href="insights.html">Insights</a></li>
+                <li><a href="index.html#about">Why Choose Us</a></li>
+                <li><a href="index.html#who-we-are">Who Are We</a></li>
                 <li><a href="index.html#owner-section">Property Owners</a></li>
                 <li><a href="index.html#contact">Contact</a></li>
             </ul>
@@ -779,6 +780,7 @@
                     <ul>
                         <li><a href="index.html">Home</a></li>
                         <li><a href="properties.html">Properties</a></li>
+                        <li><a href="insights.html">Market Insights</a></li>
                         <li><a href="index.html#about">About Us</a></li>
                         <li><a href="index.html#services">Services</a></li>
                     </ul>
@@ -873,13 +875,26 @@
                             <span class="lead-input-icon"><i class="fa-solid fa-warehouse"></i></span>
                             <select id="modalOwnerType" class="form-control" required>
                                 <option value="">Select Type</option>
-                                <option value="Shoplot (Near Factory)">Shoplot (Near Factory)</option>
-                                <option value="Terrace Factory">Terrace Factory</option>
-                                <option value="Cluster Factory">Cluster Factory</option>
-                                <option value="Semi-Detached Factory">Semi-Detached Factory</option>
-                                <option value="Detached Factory">Detached Factory</option>
-                                <option value="Warehouse">Warehouse</option>
-                                <option value="Land">Land</option>
+                                <optgroup label="Factory">
+                                    <option value="Detached Factory">Detached Factory</option>
+                                    <option value="Semi-Detached Factory">Semi-Detached Factory</option>
+                                    <option value="Terrace Factory">Terrace Factory</option>
+                                    <option value="Cluster Factory">Cluster Factory</option>
+                                </optgroup>
+                                <optgroup label="Warehouse">
+                                    <option value="Detached Warehouse">Detached Warehouse</option>
+                                    <option value="Semi-Detached Warehouse">Semi-Detached Warehouse</option>
+                                    <option value="Shared Warehouse">Shared Warehouse</option>
+                                    <option value="Multi-Storey Warehouse">Multi-Storey Warehouse</option>
+                                </optgroup>
+                                <optgroup label="Land">
+                                    <option value="Industrial Land">Industrial Land</option>
+                                    <option value="Commercial Land">Commercial Land</option>
+                                    <option value="Agricultural Land">Agricultural Land</option>
+                                </optgroup>
+                                <optgroup label="Shoplot">
+                                    <option value="Shoplot (Near Factory)">Shoplot (Near Factory)</option>
+                                </optgroup>
                             </select>
                             <span class="lead-select-chevron"><i class="fa-solid fa-chevron-down"></i></span>
                         </div>
@@ -910,10 +925,10 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/supabase-client.js?v=37"></script>
+    <script src="js/supabase-client.js?v=38"></script>
     <script src="js/property-share.js?v=44"></script>
-    <script src="js/scripts.js?v=72"></script>
-    <script src="js/location-landing.js?v=29"></script>
+    <script src="js/scripts.js?v=87"></script>
+    <script src="js/location-landing.js?v=30"></script>
     <script src="js/visit-tracker.js?v=2"></script>
 </body>
 </html>

@@ -32,8 +32,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
     
     <!-- Styles -->
-    <link rel="stylesheet" href="css/styles.css?v=84">
-    <link rel="stylesheet" href="css/dashboard.css?v=68">
+    <link rel="stylesheet" href="css/styles.css?v=108">
+    <link rel="stylesheet" href="css/dashboard.css?v=84">
 
     <!-- Corporate Branding Initializer (Zero-Flicker Synchronous Engine) -->
     <script>
@@ -101,18 +101,9 @@
     })();
     </script>
     
-    <!-- Chart.js -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Cropper.js -->
+    <!-- Cropper & Leaflet Stylesheets (Non-script assets) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
-
-    <!-- HEIC to ANY -->
-    <script src="https://unpkg.com/heic2any"></script>
-
-    <!-- SortableJS for Drag and Drop -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="anonymous">
 
     <!-- Early-boot: restore default agents if localStorage is empty or missing -->
     <script>
@@ -142,7 +133,7 @@
         })();
     </script>
 </head>
-<body class="sidebar-minimized">
+<body class="dashboard-body sidebar-minimized">
     <script>
     (function() {
         try {
@@ -194,6 +185,9 @@
             </a>
             <a href="#" class="sidebar-link" id="nav-landing-page" data-tooltip="Landing Page" onclick="event.preventDefault(); switchView('landing-page');">
                 <i class="fa-solid fa-earth-americas"></i> <span class="sidebar-link-text">Landing Page</span>
+            </a>
+            <a href="#" class="sidebar-link" id="nav-insights" data-tooltip="Insights" onclick="event.preventDefault(); switchView('insights');">
+                <i class="fa-solid fa-newspaper"></i> <span class="sidebar-link-text">Insights</span>
             </a>
             <div class="sidebar-item-group">
                 <a href="#" class="sidebar-link" id="nav-settings" data-tooltip="Settings" onclick="toggleSettingsMenu(event);">
@@ -469,7 +463,7 @@
                                 <i class="fa-solid fa-clipboard-user" style="color: var(--primary);"></i>
                                 <h3>Recent Owner List Requests</h3>
                             </div>
-                            <a href="#" onclick="event.preventDefault(); switchView('owner-list');" class="btn btn-outline" style="padding: 0.35rem 0.85rem; font-size: 0.82rem; border-radius: 20px; font-weight: 600;">
+                            <a href="#" onclick="event.preventDefault(); switchView('owner-list');" class="btn btn-sm btn-outline">
                                 View All Owner List <i class="fa-solid fa-arrow-right"></i>
                             </a>
                         </div>
@@ -497,7 +491,7 @@
                                 <i class="fa-solid fa-address-book" style="color: var(--primary);"></i>
                                 <h3>Recent Lead List Inquiries</h3>
                             </div>
-                            <a href="#" onclick="event.preventDefault(); switchView('leads');" class="btn btn-outline" style="padding: 0.35rem 0.85rem; font-size: 0.82rem; border-radius: 20px; font-weight: 600;">
+                            <a href="#" onclick="event.preventDefault(); switchView('leads');" class="btn btn-sm btn-outline">
                                 View All Lead List <i class="fa-solid fa-arrow-right"></i>
                             </a>
                         </div>
@@ -563,7 +557,7 @@
                                     <span style="color: #b45309; font-size: 0.8rem; margin-left: 4px;">These properties have no park assigned or belong to an unassigned park without a specialist agent.</span>
                                 </div>
                             </div>
-                            <button class="btn btn-outline" type="button" onclick="switchPropertiesTab('unassigned')" style="font-size: 0.78rem; padding: 0.3rem 0.75rem; border-color: #f59e0b; color: #b45309; background: #fff;">
+                            <button class="btn btn-sm btn-warning-outline" type="button" onclick="switchPropertiesTab('unassigned')">
                                 <i class="fa-solid fa-table-list"></i> View Unassigned Properties Table &rarr;
                             </button>
                         </div>
@@ -620,15 +614,31 @@
                                 <option value="Shah Alam">Shah Alam</option>
                                 <option value="Klang">Klang</option>
                             </select>
-                            <select id="property-type-filter" class="form-control filter-select" style="min-width: 155px;">
+                            <select id="property-type-filter" class="form-control filter-select" style="min-width: 175px;">
                                 <option value="All">All Property Types</option>
-                                <option value="Warehouse">Warehouse</option>
-                                <option value="Factory">Factory</option>
-                                <option value="Detached Factory">Detached Factory</option>
-                                <option value="Semi-Detached Factory">Semi-Detached Factory</option>
-                                <option value="Terrace Factory">Terrace Factory</option>
-                                <option value="Shoplot (near factory)">Shoplot (near factory)</option>
-                                <option value="Land">Land</option>
+                                <optgroup label="Categories (All)">
+                                    <option value="Factory">All Factory</option>
+                                    <option value="Warehouse">All Warehouse</option>
+                                    <option value="Land">All Land</option>
+                                    <option value="Shoplot (Near Factory)">Shoplot (Near Factory)</option>
+                                </optgroup>
+                                <optgroup label="Factory">
+                                    <option value="Detached Factory">Detached Factory</option>
+                                    <option value="Semi-Detached Factory">Semi-Detached Factory</option>
+                                    <option value="Terrace Factory">Terrace Factory</option>
+                                    <option value="Cluster Factory">Cluster Factory</option>
+                                </optgroup>
+                                <optgroup label="Warehouse">
+                                    <option value="Detached Warehouse">Detached Warehouse</option>
+                                    <option value="Semi-Detached Warehouse">Semi-Detached Warehouse</option>
+                                    <option value="Shared Warehouse">Shared Warehouse</option>
+                                    <option value="Multi-Storey Warehouse">Multi-Storey Warehouse</option>
+                                </optgroup>
+                                <optgroup label="Land">
+                                    <option value="Industrial Land">Industrial Land</option>
+                                    <option value="Commercial Land">Commercial Land</option>
+                                    <option value="Agricultural Land">Agricultural Land</option>
+                                </optgroup>
                             </select>
                             <select id="property-intent-filter" class="form-control filter-select" style="min-width: 135px;">
                                 <option value="All">All Intents (Sale/Rent)</option>
@@ -714,15 +724,31 @@
                                 <option value="Shah Alam">Shah Alam</option>
                                 <option value="Klang">Klang</option>
                             </select>
-                            <select id="unassigned-property-type-filter" class="form-control filter-select" style="min-width: 155px;">
+                            <select id="unassigned-property-type-filter" class="form-control filter-select" style="min-width: 175px;">
                                 <option value="All">All Property Types</option>
-                                <option value="Warehouse">Warehouse</option>
-                                <option value="Factory">Factory</option>
-                                <option value="Detached Factory">Detached Factory</option>
-                                <option value="Semi-Detached Factory">Semi-Detached Factory</option>
-                                <option value="Terrace Factory">Terrace Factory</option>
-                                <option value="Shoplot (near factory)">Shoplot (near factory)</option>
-                                <option value="Land">Land</option>
+                                <optgroup label="Categories (All)">
+                                    <option value="Factory">All Factory</option>
+                                    <option value="Warehouse">All Warehouse</option>
+                                    <option value="Land">All Land</option>
+                                    <option value="Shoplot (Near Factory)">Shoplot (Near Factory)</option>
+                                </optgroup>
+                                <optgroup label="Factory">
+                                    <option value="Detached Factory">Detached Factory</option>
+                                    <option value="Semi-Detached Factory">Semi-Detached Factory</option>
+                                    <option value="Terrace Factory">Terrace Factory</option>
+                                    <option value="Cluster Factory">Cluster Factory</option>
+                                </optgroup>
+                                <optgroup label="Warehouse">
+                                    <option value="Detached Warehouse">Detached Warehouse</option>
+                                    <option value="Semi-Detached Warehouse">Semi-Detached Warehouse</option>
+                                    <option value="Shared Warehouse">Shared Warehouse</option>
+                                    <option value="Multi-Storey Warehouse">Multi-Storey Warehouse</option>
+                                </optgroup>
+                                <optgroup label="Land">
+                                    <option value="Industrial Land">Industrial Land</option>
+                                    <option value="Commercial Land">Commercial Land</option>
+                                    <option value="Agricultural Land">Agricultural Land</option>
+                                </optgroup>
                             </select>
                             <select id="unassigned-property-intent-filter" class="form-control filter-select" style="min-width: 135px;">
                                 <option value="All">All Intents (Sale/Rent)</option>
@@ -818,7 +844,7 @@
                                     <span style="color: #b45309; font-size: 0.8rem; margin-left: 4px;">These parks do not have a specialist agent assigned yet.</span>
                                 </div>
                             </div>
-                            <button class="btn btn-outline" type="button" onclick="switchParksTab('unassigned')" style="font-size: 0.78rem; padding: 0.3rem 0.75rem; border-color: #f59e0b; color: #b45309; background: #fff;">
+                            <button class="btn btn-sm btn-warning-outline" type="button" onclick="switchParksTab('unassigned')">
                                 <i class="fa-solid fa-table-list"></i> View Unassigned Parks Table &rarr;
                             </button>
                         </div>
@@ -1348,11 +1374,11 @@
                             <p class="page-subtitle">Configure dedicated high-ranking city landing pages, aerial drone imagery, industrial parks, and AI SEO summaries.</p>
                         </div>
                     </div>
-                    <div style="display: flex; gap: 0.6rem; align-items: center;">
-                        <a href="location.html?city=petaling-jaya" target="_blank" rel="noopener noreferrer" class="btn btn-outline" id="btn-preview-location-live-top" style="display: inline-flex; align-items: center; gap: 6px;">
-                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview Live ↗
+                    <div class="page-title-actions">
+                        <a href="location.html?city=petaling-jaya" target="_blank" rel="noopener noreferrer" class="btn btn-outline" id="btn-preview-location-live-top">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview Live
                         </a>
-                        <button type="button" class="btn btn-primary" onclick="saveLocationPageData()" style="display: inline-flex; align-items: center; gap: 6px;">
+                        <button type="button" class="btn btn-primary" onclick="saveLocationPageData()">
                             <i class="fa-solid fa-floppy-disk"></i> Save Landing Page
                         </button>
                     </div>
@@ -1360,6 +1386,22 @@
 
                 <!-- Container 3: Locations (City Landing Pages) - Neat & Simplified -->
                 <div id="properties-locations-container" class="loc-editor">
+                    <!-- Administrator-Only Locations & Mainpage Card Management Bar -->
+                    <div id="admin-locations-toolbar" class="loc-admin-toolbar" style="display: none;">
+                        <div class="loc-admin-toolbar-info">
+                            <span class="loc-admin-badge"><i class="fa-solid fa-shield-halved"></i> Administrator Only</span>
+                            <span class="loc-admin-toolbar-text">Add new Klang Valley locations, configure mainpage filter cards &amp; card photos, or control visibility.</span>
+                        </div>
+                        <div class="loc-admin-toolbar-actions">
+                            <button type="button" class="btn btn-sm btn-outline" id="btn-edit-current-location" onclick="openLocationManageModal(currentEditingCitySlug)">
+                                <i class="fa-solid fa-pen-to-square"></i> Edit Card &amp; Photo
+                            </button>
+                            <button type="button" class="btn btn-sm btn-primary" id="btn-add-new-location" onclick="openLocationManageModal()">
+                                <i class="fa-solid fa-plus"></i> Add Location
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- City Switcher -->
                     <div class="loc-city-switch" id="location-city-subtabs" role="tablist" aria-label="Select city">
                         <button type="button" class="loc-city-pill active" id="loc-tab-btn-pj" onclick="switchLocationCityTab('petaling-jaya')">
@@ -1379,7 +1421,10 @@
                     <!-- Active City Header -->
                     <div class="loc-city-head">
                         <div class="loc-city-head-text">
-                            <h3 id="loc-editor-city-title">Petaling Jaya</h3>
+                            <div style="display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;">
+                                <h3 id="loc-editor-city-title">Petaling Jaya</h3>
+                                <span id="loc-mainpage-visibility-pill" class="loc-vis-pill is-visible"><i class="fa-solid fa-eye"></i> Shown on Mainpage</span>
+                            </div>
                             <code id="loc-editor-live-url">/location.html?city=petaling-jaya</code>
                         </div>
                         <a href="location.html?city=petaling-jaya" target="_blank" rel="noopener noreferrer" class="loc-live-btn" id="btn-preview-location-live" title="Open live page in new tab">
@@ -1387,115 +1432,604 @@
                         </a>
                     </div>
 
-                    <!-- 1. Hero Photo -->
-                    <section class="loc-card">
-                        <div class="loc-card-head">
-                            <h4><i class="fa-solid fa-image"></i> Hero Photo</h4>
-                            <span class="loc-hint">1920 × 800 px</span>
-                        </div>
-                        <div class="loc-hero-preview">
-                            <img id="loc-preview-hero-img" src="assets/images/drone_pj.jpg" alt="Hero photo preview">
-                            <span class="loc-hero-tag"><i class="fa-solid fa-drone"></i> <span id="loc-preview-badge-label">Aerial Drone View</span></span>
-                        </div>
-                        <div class="loc-btn-pair">
-                            <label class="loc-btn loc-btn-light" title="Upload photo (1920 × 800 px recommended)">
-                                <i class="fa-solid fa-cloud-arrow-up"></i> Upload
-                                <input type="file" id="loc-file-input" accept="image/*" hidden onchange="handleLocationImageFile(this)">
-                            </label>
-                            <button type="button" class="loc-btn loc-btn-light" onclick="generateAiDroneView()" title="Use AI aerial drone view of this city">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> AI Drone View
-                            </button>
-                        </div>
-                        <details class="loc-more">
-                            <summary>Use image URL</summary>
-                            <input type="text" id="loc-input-hero-image" class="form-control" placeholder="assets/images/drone_pj.jpg or https://..." onchange="updateLocationHeroPreview(this.value)">
-                        </details>
-                    </section>
-
-                    <!-- 2. Headline -->
-                    <section class="loc-card">
-                        <div class="loc-card-head">
-                            <h4><i class="fa-solid fa-heading"></i> Headline</h4>
-                        </div>
-                        <label class="loc-label" for="loc-input-headline">Main headline</label>
-                        <input type="text" id="loc-input-headline" class="form-control" placeholder="e.g. Petaling Jaya Industrial Properties &amp; Warehouses">
-                        <label class="loc-label" for="loc-input-tagline">Tagline</label>
-                        <input type="text" id="loc-input-tagline" class="form-control" placeholder="e.g. Prime Klang Valley Industrial Real Estate">
-                    </section>
-
-                    <!-- 3. Industrial Parks -->
-                    <section class="loc-card">
-                        <div class="loc-card-head">
-                            <h4><i class="fa-solid fa-industry"></i> Industrial Parks</h4>
-                            <span class="loc-count" id="loc-parks-count-badge">0 parks</span>
-                        </div>
-                        <div id="loc-parks-editor-chips" class="loc-chips">
-                            <!-- Populated dynamically -->
-                        </div>
-                        <div class="loc-add-row">
-                            <input type="text" id="loc-input-add-park" class="form-control" placeholder="Add industrial park..." onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addLocationPark(); }">
-                            <button type="button" class="loc-btn loc-btn-icon" onclick="addLocationPark()" aria-label="Add park" title="Add park">
-                                <i class="fa-solid fa-plus"></i>
-                            </button>
-                        </div>
-                    </section>
-
-                    <!-- 4. SEO -->
-                    <section class="loc-card">
-                        <div class="loc-card-head">
-                            <h4><i class="fa-brands fa-google"></i> Google SEO</h4>
-                        </div>
-                        <div class="loc-snippet">
-                            <div class="loc-snippet-site">
-                                <img id="loc-google-mock-fav" src="/assets/icons/favicon-48x48.png" alt="">
-                                <div>
-                                    <div class="loc-snippet-domain">myfactoryspace.com</div>
-                                    <div class="loc-snippet-url" id="loc-google-mock-url">https://www.myfactoryspace.com/location.html?city=petaling-jaya</div>
+                    <!-- Structured 2-Column Enterprise Editor Grid -->
+                    <div class="loc-editor-grid">
+                        <!-- Left Column: Visual Media & Headlines -->
+                        <div class="loc-editor-col">
+                            <!-- 1. Hero Photo -->
+                            <section class="loc-card">
+                                <div class="loc-card-head">
+                                    <h4><i class="fa-solid fa-image"></i> Hero Photo</h4>
+                                    <span class="loc-hint">1920 &times; 800 px</span>
                                 </div>
-                            </div>
-                            <div class="loc-snippet-title" id="loc-google-mock-title">Petaling Jaya Industrial Properties, Factories &amp; Warehouses | MyFactorySpace</div>
-                            <div class="loc-snippet-desc" id="loc-google-mock-desc">Find verified industrial factories, warehouses, and commercial plots for sale and rent in Petaling Jaya.</div>
-                        </div>
-                        <button type="button" class="loc-btn loc-btn-ai" onclick="generateLocationAiSeo()" id="btn-generate-ai-seo">
-                            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Generate with AI
-                        </button>
-                        <details class="loc-more">
-                            <summary>Advanced SEO settings</summary>
-                            <div class="loc-field-head">
-                                <label class="loc-label" for="loc-input-meta-title">Meta title</label>
-                                <span id="loc-meta-title-count" class="loc-counter">0/60</span>
-                            </div>
-                            <input type="text" id="loc-input-meta-title" class="form-control" oninput="updateLocationGoogleMockup()">
-                            <div class="loc-field-head">
-                                <label class="loc-label" for="loc-input-meta-desc">Meta description</label>
-                                <span id="loc-meta-desc-count" class="loc-counter">0/160</span>
-                            </div>
-                            <textarea id="loc-input-meta-desc" class="form-control" rows="2" oninput="updateLocationGoogleMockup()"></textarea>
-                            <label class="loc-label" for="loc-input-seo-summary">SEO overview article</label>
-                            <textarea id="loc-input-seo-summary" class="form-control" rows="4" placeholder="Regional industrial summary..."></textarea>
-                            <label class="loc-label" for="loc-input-stat-highways"><i class="fa-solid fa-road"></i> Highways</label>
-                            <input type="text" id="loc-input-stat-highways" class="form-control" placeholder="Federal, NPE, LDP">
-                            <div class="loc-two-col">
-                                <div>
-                                    <label class="loc-label" for="loc-input-stat-port"><i class="fa-solid fa-anchor"></i> Port Klang</label>
-                                    <input type="text" id="loc-input-stat-port" class="form-control" placeholder="30 Mins">
+                                <div class="loc-hero-preview">
+                                    <img id="loc-preview-hero-img" src="assets/images/drone_pj.jpg" alt="Hero photo preview">
+                                    <span class="loc-hero-tag"><i class="fa-solid fa-drone"></i> <span id="loc-preview-badge-label">Aerial Drone View</span></span>
                                 </div>
-                                <div>
-                                    <label class="loc-label" for="loc-input-stat-airport"><i class="fa-solid fa-plane-departure"></i> Airport</label>
-                                    <input type="text" id="loc-input-stat-airport" class="form-control" placeholder="18 Km to SZB">
+                                <div class="loc-btn-pair">
+                                    <label class="loc-btn loc-btn-light" title="Upload photo (1920 × 800 px recommended)">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload Photo
+                                        <input type="file" id="loc-file-input" accept="image/*" hidden onchange="handleLocationImageFile(this)">
+                                    </label>
+                                    <button type="button" class="loc-btn loc-btn-light" onclick="generateAiDroneView()" title="Use AI aerial drone view of this city">
+                                        <i class="fa-solid fa-wand-magic-sparkles"></i> AI Drone View
+                                    </button>
                                 </div>
-                            </div>
-                        </details>
-                    </section>
+                                <details class="loc-more">
+                                    <summary>Use custom image URL</summary>
+                                    <input type="text" id="loc-input-hero-image" class="form-control" placeholder="assets/images/drone_pj.jpg or https://..." onchange="updateLocationHeroPreview(this.value)">
+                                </details>
+                            </section>
 
-                    <!-- Sticky Save Bar -->
+                            <!-- 2. Headline -->
+                            <section class="loc-card">
+                                <div class="loc-card-head">
+                                    <h4><i class="fa-solid fa-heading"></i> Page Headline &amp; Tagline</h4>
+                                </div>
+                                <label class="loc-label" for="loc-input-headline">Main headline</label>
+                                <input type="text" id="loc-input-headline" class="form-control" placeholder="e.g. Petaling Jaya Industrial Properties &amp; Warehouses">
+                                <label class="loc-label" for="loc-input-tagline">Tagline</label>
+                                <input type="text" id="loc-input-tagline" class="form-control" placeholder="e.g. Prime Klang Valley Industrial Real Estate">
+                            </section>
+                        </div>
+
+                        <!-- Right Column: Industrial Parks & Search SEO -->
+                        <div class="loc-editor-col">
+                            <!-- 3. Industrial Parks -->
+                            <section class="loc-card">
+                                <div class="loc-card-head">
+                                    <h4><i class="fa-solid fa-industry"></i> Covered Industrial Parks</h4>
+                                    <span class="loc-count" id="loc-parks-count-badge">0 parks</span>
+                                </div>
+                                <div id="loc-parks-editor-chips" class="loc-chips">
+                                    <!-- Populated dynamically -->
+                                </div>
+                                <div class="loc-add-row">
+                                    <input type="text" id="loc-input-add-park" class="form-control" placeholder="Add industrial park name..." onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addLocationPark(); }">
+                                    <button type="button" class="loc-btn loc-btn-icon" onclick="addLocationPark()" aria-label="Add park" title="Add park">
+                                        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </section>
+
+                            <!-- 4. SEO -->
+                            <section class="loc-card">
+                                <div class="loc-card-head">
+                                    <h4><i class="fa-brands fa-google"></i> Google Search SEO</h4>
+                                </div>
+                                <div class="loc-snippet">
+                                    <div class="loc-snippet-site">
+                                        <img id="loc-google-mock-fav" src="/assets/icons/favicon-48x48.png" alt="">
+                                        <div>
+                                            <div class="loc-snippet-domain">myfactoryspace.com</div>
+                                            <div class="loc-snippet-url" id="loc-google-mock-url">https://www.myfactoryspace.com/location.html?city=petaling-jaya</div>
+                                        </div>
+                                    </div>
+                                    <div class="loc-snippet-title" id="loc-google-mock-title">Petaling Jaya Industrial Properties, Factories &amp; Warehouses | MyFactorySpace</div>
+                                    <div class="loc-snippet-desc" id="loc-google-mock-desc">Find verified industrial factories, warehouses, and commercial plots for sale and rent in Petaling Jaya.</div>
+                                </div>
+                                <button type="button" class="loc-btn loc-btn-ai" onclick="generateLocationAiSeo()" id="btn-generate-ai-seo">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Generate SEO with AI
+                                </button>
+                                <details class="loc-more">
+                                    <summary>Advanced SEO &amp; Logistics Metrics</summary>
+                                    <div class="loc-field-head">
+                                        <label class="loc-label" for="loc-input-meta-title">Meta title</label>
+                                        <span id="loc-meta-title-count" class="loc-counter">0/60</span>
+                                    </div>
+                                    <input type="text" id="loc-input-meta-title" class="form-control" oninput="updateLocationGoogleMockup()">
+                                    <div class="loc-field-head">
+                                        <label class="loc-label" for="loc-input-meta-desc">Meta description</label>
+                                        <span id="loc-meta-desc-count" class="loc-counter">0/160</span>
+                                    </div>
+                                    <textarea id="loc-input-meta-desc" class="form-control" rows="2" oninput="updateLocationGoogleMockup()"></textarea>
+                                    <label class="loc-label" for="loc-input-seo-summary">SEO overview article</label>
+                                    <textarea id="loc-input-seo-summary" class="form-control" rows="4" placeholder="Regional industrial summary..."></textarea>
+                                    <label class="loc-label" for="loc-input-stat-highways"><i class="fa-solid fa-road"></i> Highways</label>
+                                    <input type="text" id="loc-input-stat-highways" class="form-control" placeholder="Federal, NPE, LDP">
+                                    <div class="loc-two-col">
+                                        <div>
+                                            <label class="loc-label" for="loc-input-stat-port"><i class="fa-solid fa-anchor"></i> Port Klang</label>
+                                            <input type="text" id="loc-input-stat-port" class="form-control" placeholder="30 Mins">
+                                        </div>
+                                        <div>
+                                            <label class="loc-label" for="loc-input-stat-airport"><i class="fa-solid fa-plane-departure"></i> Airport</label>
+                                            <input type="text" id="loc-input-stat-airport" class="form-control" placeholder="18 Km to SZB">
+                                        </div>
+                                    </div>
+                                </details>
+                            </section>
+                        </div>
+                    </div>
+
+                    <!-- Docked Enterprise Save Bar -->
                     <div class="loc-save-bar">
-                        <a href="location.html?city=petaling-jaya" target="_blank" rel="noopener noreferrer" class="loc-btn loc-btn-light" id="loc-btn-view-live-bottom">
-                            <i class="fa-solid fa-eye"></i> Preview
+                        <span class="loc-save-bar-note">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Changes publish directly to Supabase &amp; live city landing pages.
+                        </span>
+                        <div class="loc-save-bar-actions">
+                            <a href="location.html?city=petaling-jaya" target="_blank" rel="noopener noreferrer" class="loc-btn loc-btn-light" id="loc-btn-view-live-bottom">
+                                <i class="fa-solid fa-eye"></i> Preview
+                            </a>
+                            <button type="button" class="loc-btn loc-btn-primary" onclick="saveLocationPageData()">
+                                <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Market Insights CRM View (Initially Hidden) -->
+            <div id="insights-view" style="display: none;">
+                <div class="page-title">
+                    <div class="page-title-left">
+                        <div class="page-title-icon theme-blue">
+                            <i class="fa-solid fa-newspaper"></i>
+                        </div>
+                        <div>
+                            <h2>Market Insights &amp; Editorial</h2>
+                            <p class="page-subtitle">Publish industrial property guides, compliance checklists, and automate articles tailored to MyFactorySpace inventory</p>
+                        </div>
+                    </div>
+                    <div class="page-title-actions">
+                        <a href="insights.html" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview Insights
                         </a>
-                        <button type="button" class="loc-btn loc-btn-primary" onclick="saveLocationPageData()">
-                            <i class="fa-solid fa-floppy-disk"></i> Save Changes
+                        <button type="button" class="btn btn-outline" id="btn-focus-url-capture" onclick="focusInsightsUrlCapture()">
+                            <i class="fa-solid fa-link"></i> Capture From Link
                         </button>
+                        <button type="button" class="btn btn-ai-outline" id="btn-auto-generate-insight" onclick="generateAutomatedInsightArticle({ manual: true })">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Generate Article
+                        </button>
+                        <button type="button" class="btn btn-primary" id="btn-new-insight" onclick="openInsightEditorModal()">
+                            <i class="fa-solid fa-plus"></i> Add Insight
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Insights KPI Strip -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #eff6ff; color: #2563eb;"><i class="fa-solid fa-newspaper"></i></div>
+                        <div>
+                            <div class="stat-value" id="insights-kpi-total">0</div>
+                            <div class="stat-label">Total Articles</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #ecfdf5; color: #059669;"><i class="fa-solid fa-circle-check"></i></div>
+                        <div>
+                            <div class="stat-value" id="insights-kpi-published">0</div>
+                            <div class="stat-label">Published Live</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #fffbeb; color: #d97706;"><i class="fa-solid fa-file-pen"></i></div>
+                        <div>
+                            <div class="stat-value" id="insights-kpi-drafts">0</div>
+                            <div class="stat-label">Drafts</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: #f5f3ff; color: #7c3aed;"><i class="fa-solid fa-robot"></i></div>
+                        <div>
+                            <div class="stat-value" id="insights-kpi-auto">0</div>
+                            <div class="stat-label">Auto-Generated</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent Access Control Card (Administrator Only) -->
+                <details class="card insights-access-card" id="insights-access-card" style="display: none; margin-bottom: 1.15rem;">
+                    <summary class="insights-access-summary">
+                        <span class="insights-access-summary-left">
+                            <span class="insights-access-icon"><i class="fa-solid fa-user-lock"></i></span>
+                            <span>
+                                <strong style="font-size: 0.94rem; color: var(--text-dark);">Agent Access Permissions</strong>
+                                <span style="display: block; font-size: 0.77rem; color: #64748b;">Only Administrators and selected Specialist Agents / CRM Users below can view &amp; manage Dashboard &gt; Insights.</span>
+                            </span>
+                        </span>
+                        <span class="insights-access-summary-right">
+                            <span class="badge-pill insights-access-count-pill" id="insights-access-summary-badge">0 Agents Selected</span>
+                            <i class="fa-solid fa-chevron-down" style="color: #64748b; font-size: 0.8rem;"></i>
+                        </span>
+                    </summary>
+                    <div class="insights-access-body">
+                        <div class="insights-access-toolbar">
+                            <span style="font-size: 0.78rem; color: #475569;">
+                                <i class="fa-solid fa-shield-halved" style="color: #2563eb; margin-right: 4px;"></i>
+                                <strong>Administrator</strong> accounts always retain full Insights access. Check specific agents/users to grant access:
+                            </span>
+                            <div style="display: flex; gap: 0.45rem; flex-wrap: wrap;">
+                                <button type="button" class="btn btn-sm btn-outline" onclick="setAllInsightsAccess(true)">
+                                    <i class="fa-solid fa-check-double"></i> Select All
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline" onclick="setAllInsightsAccess(false)">
+                                    <i class="fa-solid fa-ban"></i> Clear All
+                                </button>
+                            </div>
+                        </div>
+                        <div class="insights-access-grid" id="insights-access-grid"></div>
+                    </div>
+                </details>
+
+                <!-- Automated Article Generation & 3-Source Publisher Command Deck -->
+                <div class="card insights-automation-card" id="insights-automation-card" style="margin-bottom: 1.15rem;">
+                    <div class="card-body" style="padding: 1.05rem 1.25rem;">
+                        <div class="insights-auto-row">
+                            <div class="insights-auto-title-wrap">
+                                <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
+                                    <span class="insights-auto-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> Smart Editorial Automation</span>
+                                    <span class="insights-pro-badge"><i class="fa-solid fa-diagram-project"></i> Publisher Specialized Edition</span>
+                                    <span class="capture-original-pill"><i class="fa-solid fa-layer-group"></i> 3 Content Sources</span>
+                                </div>
+                                <p style="margin: 0.35rem 0 0; font-size: 0.81rem; color: #475569;">
+                                    Generates clear-cut, executive-ready MyFactorySpace articles paired with interactive <strong>Mind Maps</strong> &amp; <strong>HD Enhanced Infographic Photos</strong> &mdash; choose to pull from <strong>Inventory, Specs &amp; Parks</strong>, <strong>Internet Public</strong>, or a <strong>Website Link Given</strong>.
+                                </p>
+                            </div>
+                            <div class="insights-auto-controls">
+                                <select id="insights-auto-edition" class="form-control" style="min-width: 185px;" aria-label="Publisher Edition Style">
+                                    <option value="specialized">Specialized Executive Brief</option>
+                                    <option value="investor">Investor &amp; Yield Playbook</option>
+                                    <option value="compliance">Technical &amp; Compliance Blueprint</option>
+                                </select>
+                                <label class="insights-toggle-chip" for="insights-auto-include-mindmap">
+                                    <input type="checkbox" id="insights-auto-include-mindmap" checked>
+                                    <span><i class="fa-solid fa-diagram-project" style="color: #059669;"></i> Mind Map</span>
+                                </label>
+                                <label class="insights-toggle-chip" for="insights-auto-include-infographic">
+                                    <input type="checkbox" id="insights-auto-include-infographic" checked>
+                                    <span><i class="fa-solid fa-camera-retro" style="color: #2563eb;"></i> HD Infographic Photo</span>
+                                </label>
+                                <select id="insights-auto-cadence" class="form-control" style="min-width: 140px;" aria-label="Automation Cadence">
+                                    <option value="off">Manual Only (Off)</option>
+                                    <option value="weekly">Weekly (7 Days)</option>
+                                    <option value="biweekly">Bi-Weekly (14 Days)</option>
+                                    <option value="monthly">Monthly (30 Days)</option>
+                                </select>
+                                <select id="insights-auto-mode" class="form-control" style="min-width: 150px;" aria-label="Auto-Generated Publish Mode">
+                                    <option value="Draft">Save as Draft</option>
+                                    <option value="Published">Auto-Publish Live</option>
+                                </select>
+                                <button type="button" class="btn btn-outline" onclick="saveInsightsAutomationSettings()">
+                                    <i class="fa-solid fa-floppy-disk"></i> Save Schedule
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 3-Option Content Source Selector (Accessible Single-Row Tablist) -->
+                        <div class="insights-source-switcher">
+                            <span class="insights-source-switcher-label">
+                                <i class="fa-solid fa-sliders"></i> Choose Content Source:
+                            </span>
+                            <div class="insights-source-tablist" id="insights-source-tablist" role="tablist" focusgroup="tablist nomemory" aria-label="Choose Article Content Source">
+                                <button type="button" role="tab" id="tab-source-inventory" class="insights-source-tab" aria-selected="true" focusgroupstart data-source="inventory" onclick="selectInsightsContentSource('inventory')">
+                                    <i class="fa-solid fa-warehouse" aria-hidden="true"></i>
+                                    <span class="source-tab-text">
+                                        <strong>1. Inventory, Specs &amp; Parks</strong>
+                                        <small>Live CRM listings &amp; benchmarks</small>
+                                    </span>
+                                </button>
+                                <button type="button" role="tab" id="tab-source-internet" class="insights-source-tab" aria-selected="false" data-source="internet" onclick="selectInsightsContentSource('internet')">
+                                    <i class="fa-solid fa-earth-asia" aria-hidden="true"></i>
+                                    <span class="source-tab-text">
+                                        <strong>2. Internet Public</strong>
+                                        <small>Live Malaysia industrial news</small>
+                                    </span>
+                                </button>
+                                <button type="button" role="tab" id="tab-source-website" class="insights-source-tab" aria-selected="false" data-source="website" onclick="selectInsightsContentSource('website')">
+                                    <i class="fa-solid fa-link" aria-hidden="true"></i>
+                                    <span class="source-tab-text">
+                                        <strong>3. Website Link Given</strong>
+                                        <small>Capture URL photos &amp; info text</small>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 3 Content Source Panels (hidden="until-found" on inactive panels; styles on inner wrappers) -->
+                        <div class="insights-source-panels">
+                            <!-- OPTION 1 PANEL: Inventory, Specs & Parks -->
+                            <div id="panel-source-inventory" role="tabpanel" aria-labelledby="tab-source-inventory">
+                                <div class="insights-source-panel-inner">
+                                    <div class="insights-pro-launchbar" style="margin-top: 0;">
+                                        <span class="insights-pro-launch-label">
+                                            <i class="fa-solid fa-warehouse" style="color: #059669;"></i> Live Inventory Blueprint:
+                                        </span>
+                                        <div class="insights-auto-controls" style="flex: 1; justify-content: flex-end;">
+                                            <select id="insights-auto-focus-city" class="form-control" style="min-width: 155px;" aria-label="Target Focus City">
+                                                <option value="">Auto-Rotate All Cities</option>
+                                                <option value="Klang Valley">All Klang Valley</option>
+                                                <option value="Petaling Jaya">Petaling Jaya</option>
+                                                <option value="Subang Jaya">Subang Jaya</option>
+                                                <option value="Shah Alam">Shah Alam</option>
+                                                <option value="Klang">Klang</option>
+                                            </select>
+                                            <select id="insights-auto-focus-topic" class="form-control" style="min-width: 215px;" aria-label="Specialized Topic Blueprint">
+                                                <option value="auto">Auto-Pick Next Best Topic</option>
+                                                <option value="city-snapshot">City Market Snapshot &amp; Pricing</option>
+                                                <option value="park-deepdive">Industrial Park Deep-Dive</option>
+                                                <option value="warehouse-format">Warehouse Format Comparison</option>
+                                                <option value="power-floor">TNB Power &amp; Floor Load Spec Guide</option>
+                                                <option value="bomba-doe">BOMBA, DOE &amp; CCC Compliance</option>
+                                                <option value="land-vs-factory">Industrial Land vs Ready Factory</option>
+                                            </select>
+                                            <button type="button" class="btn btn-ai" id="btn-generate-specialized-insight" onclick="generateAutomatedInsightArticle({ manual: true, useStudioFilters: true, forceSource: 'inventory' })">
+                                                <i class="fa-solid fa-sparkles"></i> Generate from Inventory &amp; Parks
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- OPTION 2 PANEL: Internet Public News & Market Trends -->
+                            <div id="panel-source-internet" role="tabpanel" aria-labelledby="tab-source-internet" hidden="until-found">
+                                <div class="insights-source-panel-inner">
+                                    <div class="public-source-box">
+                                        <div class="public-source-top">
+                                            <div>
+                                                <span class="capture-field-label" style="margin-bottom: 0.15rem;">
+                                                    <i class="fa-solid fa-earth-asia" style="color: #0284c7;"></i> Live Malaysia &amp; Klang Valley Public Industrial News
+                                                </span>
+                                                <span class="capture-field-hint" style="margin-bottom: 0;">Discovers fresh public news &amp; market reports (The Star, EdgeProp, Bernama, FMT, etc.), extracts photos &amp; facts, and rewrites into your original MyFactorySpace article.</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="public-topic-chips" role="group" aria-label="Quick Public Topic Presets">
+                                            <button type="button" class="public-topic-chip" onclick="setPublicNewsPreset('Malaysia Klang Valley industrial property warehouse factory')">Klang Valley Industrial</button>
+                                            <button type="button" class="public-topic-chip" onclick="setPublicNewsPreset('Selangor logistics warehouse rental demand Malaysia')">Warehouse &amp; Logistics</button>
+                                            <button type="button" class="public-topic-chip" onclick="setPublicNewsPreset('Malaysia MIDA manufacturing FDI factory investment Selangor')">Factory FDI &amp; MIDA</button>
+                                            <button type="button" class="public-topic-chip" onclick="setPublicNewsPreset('Port Klang WCE industrial park logistics Malaysia')">Port Klang &amp; WCE</button>
+                                            <button type="button" class="public-topic-chip" onclick="setPublicNewsPreset('Malaysia industrial land data centre ESG green factory')">Industrial Land &amp; ESG</button>
+                                        </div>
+
+                                        <div class="public-search-row">
+                                            <input type="text" id="insights-public-query" class="form-control" style="flex: 1 1 280px;" value="Malaysia Klang Valley industrial property warehouse factory" placeholder="Search public industrial topic (e.g. Selangor logistics warehouse, Shah Alam factory FDI)">
+                                            <select id="insights-public-city" class="form-control capture-select" aria-label="Public News Corridor Focus">
+                                                <option value="">All Klang Valley / Malaysia</option>
+                                                <option value="Petaling Jaya">Petaling Jaya</option>
+                                                <option value="Subang Jaya">Subang Jaya</option>
+                                                <option value="Shah Alam">Shah Alam</option>
+                                                <option value="Klang">Klang</option>
+                                            </select>
+                                            <select id="insights-public-angle" class="form-control capture-select" aria-label="Public News Rewrite Angle">
+                                                <option value="executive">MyFactorySpace Executive Brief</option>
+                                                <option value="investor">Investor &amp; Yield Analysis</option>
+                                                <option value="buyer">Tenant &amp; Factory Buyer Guide</option>
+                                                <option value="digest">Market News Breakdown</option>
+                                            </select>
+                                            <button type="button" class="btn btn-outline" id="btn-search-public-news" onclick="discoverPublicNewsForInsights()">
+                                                <i class="fa-solid fa-magnifying-glass"></i> Search Public News
+                                            </button>
+                                            <button type="button" class="btn btn-ai" id="btn-generate-public-insight" onclick="generateFromInternetPublic({ manual: true })">
+                                                <i class="fa-solid fa-sparkles"></i> Auto-Generate from Public News
+                                            </button>
+                                        </div>
+
+                                        <div id="insights-public-results-wrap" class="public-results-wrap" hidden>
+                                            <div class="public-results-head">
+                                                <span id="insights-public-results-meta" style="font-size: 0.77rem; font-weight: 700; color: #1e293b;"></span>
+                                                <button type="button" class="btn btn-xs btn-outline" onclick="clearPublicNewsResults()">Hide List</button>
+                                            </div>
+                                            <div id="insights-public-results-list" class="public-results-grid"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- OPTION 3 PANEL: Website Link Given (URL Capture + Paste Fallback) -->
+                            <div id="panel-source-website" role="tabpanel" aria-labelledby="tab-source-website" hidden="until-found">
+                                <div class="insights-source-panel-inner">
+                                    <div class="website-source-box">
+                                        <div class="capture-card-head">
+                                            <div>
+                                                <span class="capture-field-label" style="margin-bottom: 0.15rem;">
+                                                    <i class="fa-solid fa-link" style="color: #2563eb;"></i> Capture from a Specific Website Link Given
+                                                </span>
+                                                <span class="capture-field-hint" style="margin-bottom: 0;">Paste any news, property portal, or industry article link to capture its photos &amp; key facts, then rewrite into an original myfactoryspace.com edition.</span>
+                                            </div>
+                                            <div class="capture-mode-tabs" role="tablist" aria-label="Website capture input method">
+                                                <button type="button" role="tab" id="btn-capture-mode-url" class="capture-mode-tab is-active" aria-selected="true" onclick="switchInsightsCaptureMode('url')">
+                                                    <i class="fa-solid fa-link"></i> Website Link
+                                                </button>
+                                                <button type="button" role="tab" id="btn-capture-mode-manual" class="capture-mode-tab" aria-selected="false" onclick="switchInsightsCaptureMode('manual')">
+                                                    <i class="fa-solid fa-paste"></i> Paste Text / Notes
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Sub-mode A: Capture from Website URL -->
+                                        <form id="insights-url-capture-form" class="capture-url-form" onsubmit="handleInsightsUrlCaptureSubmit(event)" novalidate>
+                                            <div class="capture-url-field-wrap">
+                                                <label for="insights-capture-url" class="capture-field-label">Reference Website Link</label>
+                                                <span id="insights-capture-url-hint" class="capture-field-hint">Format: https://example.com/news-article &mdash; extracts headline, photos &amp; key market figures safely without copying verbatim.</span>
+                                                <div class="capture-url-input-row">
+                                                    <div class="capture-url-input-box">
+                                                        <input
+                                                            type="url"
+                                                            id="insights-capture-url"
+                                                            name="captureUrl"
+                                                            class="form-control"
+                                                            required
+                                                            pattern="https?://.+"
+                                                            autocomplete="url"
+                                                            aria-invalid="false"
+                                                            aria-describedby="insights-capture-url-hint"
+                                                            data-error="insights-capture-url-error"
+                                                            placeholder="https://www.theedgemalaysia.com/... or any industrial news / article URL"
+                                                        >
+                                                        <div id="insights-capture-url-error" class="capture-error-msg">
+                                                            <span role="img" aria-label="Error">&#9888;&#65039;</span> Enter a full website link starting with https:// or http://.
+                                                        </div>
+                                                    </div>
+                                                    <select id="insights-capture-angle" class="form-control capture-select" aria-label="MyFactorySpace Rewrite Angle">
+                                                        <option value="executive">MyFactorySpace Executive Brief</option>
+                                                        <option value="investor">Investor &amp; Yield Analysis</option>
+                                                        <option value="buyer">Tenant &amp; Factory Buyer Guide</option>
+                                                        <option value="digest">Market News Breakdown</option>
+                                                    </select>
+                                                    <select id="insights-capture-city" class="form-control capture-select" aria-label="Target Klang Valley Corridor">
+                                                        <option value="">Auto-Detect City</option>
+                                                        <option value="Klang Valley">All Klang Valley</option>
+                                                        <option value="Petaling Jaya">Petaling Jaya</option>
+                                                        <option value="Subang Jaya">Subang Jaya</option>
+                                                        <option value="Shah Alam">Shah Alam</option>
+                                                        <option value="Klang">Klang</option>
+                                                    </select>
+                                                    <button type="submit" class="btn btn-primary" id="btn-capture-url-submit">
+                                                        <i class="fa-solid fa-cloud-arrow-down"></i> Capture Link
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </form>
+
+                                        <!-- Sub-mode B: Paste Text / Notes Fallback -->
+                                        <div id="insights-manual-capture-panel" class="capture-manual-panel" hidden>
+                                            <div class="capture-manual-grid">
+                                                <div class="form-group" style="margin-bottom: 0;">
+                                                    <label for="insights-manual-title" class="capture-field-label">Topic / Reference Headline</label>
+                                                    <input type="text" id="insights-manual-title" class="form-control" placeholder="e.g. Selangor Industrial Land &amp; Warehouse Demand Outlook 2026">
+                                                </div>
+                                                <div class="form-group" style="margin-bottom: 0;">
+                                                    <label for="insights-manual-url" class="capture-field-label">Source Link (Optional)</label>
+                                                    <input type="url" id="insights-manual-url" class="form-control" placeholder="https://...">
+                                                </div>
+                                            </div>
+                                            <div class="form-group" style="margin-bottom: 0;">
+                                                <label for="insights-manual-text" class="capture-field-label">Paste Article Highlights, Press Release, or WhatsApp Notes</label>
+                                                <textarea id="insights-manual-text" class="form-control" rows="4" placeholder="Paste key paragraphs, stats (RM psf, sq ft, MIDA approvals, highway upgrades), or bullet points here..."></textarea>
+                                            </div>
+                                            <div class="capture-manual-footer">
+                                                <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                                                    <label class="btn btn-sm btn-outline">
+                                                        <i class="fa-solid fa-image"></i>
+                                                        <span id="insights-manual-photo-label">Attach Reference Photo (Optional)</span>
+                                                        <input type="file" id="insights-manual-photo-file" accept="image/*" hidden onchange="handleManualCapturePhotoUpload(this)">
+                                                    </label>
+                                                    <span id="insights-manual-photo-status" style="font-size: 0.76rem; color: #64748b;"></span>
+                                                </div>
+                                                <button type="button" class="btn btn-primary" onclick="prepareManualCapturePreview()">
+                                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Analyze &amp; Preview Draft Inputs
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Shared Live Status / Error Feedback Banner (Options 2 & 3) -->
+                        <div id="insights-capture-status" class="capture-status-banner" role="status" aria-live="polite" hidden></div>
+
+                        <!-- Shared Captured Preview & Photo Picker Workspace (Options 2 & 3) -->
+                        <div id="insights-capture-workspace" class="capture-workspace" hidden>
+                            <div class="capture-source-summary" id="insights-capture-source-summary"></div>
+
+                            <div class="capture-workspace-grid">
+                                <!-- Left: Captured Photos Picker -->
+                                <div class="capture-workspace-col">
+                                    <div class="capture-col-head">
+                                        <h4><i class="fa-solid fa-images" style="color: #2563eb;"></i> Select Photo for Cover &amp; HD Infographic</h4>
+                                        <span id="insights-capture-photo-count" class="capture-count-chip">0 photos</span>
+                                    </div>
+                                    <div class="capture-photos-grid" id="insights-capture-photos-grid"></div>
+                                    <div class="capture-options-stack">
+                                        <label class="insights-toggle-chip is-compact" for="insights-capture-rehost-photo">
+                                            <input type="checkbox" id="insights-capture-rehost-photo" checked>
+                                            <span>Save chosen photo to MyFactorySpace Cloud Storage (CORS-safe for HD Infographic)</span>
+                                        </label>
+                                        <label class="insights-toggle-chip is-compact" for="insights-capture-include-credit">
+                                            <input type="checkbox" id="insights-capture-include-credit" checked>
+                                            <span>Include editorial "Source inspiration" link at bottom of draft</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <!-- Right: Extracted Facts & Custom MyFactorySpace Angle -->
+                                <div class="capture-workspace-col">
+                                    <div class="capture-col-head">
+                                        <h4><i class="fa-solid fa-list-check" style="color: #059669;"></i> Captured Facts &amp; Signals</h4>
+                                        <span id="insights-capture-facts-count" class="capture-count-chip">0 highlights</span>
+                                    </div>
+                                    <ul class="capture-facts-list" id="insights-capture-facts-list"></ul>
+                                    <div class="form-group" style="margin-bottom: 0; margin-top: 0.65rem;">
+                                        <label for="insights-capture-custom-notes" class="capture-field-label">
+                                            Add Your Own MyFactorySpace Take / Local Spec Notes <span style="font-weight: 400; color: #64748b;">(Optional)</span>
+                                        </label>
+                                        <textarea id="insights-capture-custom-notes" class="form-control" rows="2" placeholder="e.g. Mention our ready 200-Amp Semi-D factories in Shah Alam Sekitar 26 &amp; advise buyers to verify BOMBA hydrant pressure."></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="capture-workspace-actions">
+                                <button type="button" class="btn btn-sm btn-outline" onclick="clearInsightsUrlCapture()">
+                                    <i class="fa-solid fa-rotate-left"></i> Clear Preview
+                                </button>
+                                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                    <button type="button" class="btn btn-sm btn-outline" id="btn-capture-save-draft" onclick="buildDraftFromCapturedSource({ openEditor: false })">
+                                        <i class="fa-solid fa-file-pen"></i> Save to Drafts
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-ai" id="btn-capture-rewrite-open" onclick="buildDraftFromCapturedSource({ openEditor: true })">
+                                        <i class="fa-solid fa-sparkles"></i> Rewrite into MyFactorySpace Draft &amp; Open Editor
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="insights-auto-meta" id="insights-auto-status-meta">
+                            Active Source: Inventory, Specs &amp; Parks &middot; Ready to generate Mind Map + HD Infographic Photo articles.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Toolbar -->
+                <div class="toolbar-card">
+                    <div class="filter-toolbar" style="display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; width: 100%;">
+                        <select id="insights-category-filter" class="form-control filter-select" style="min-width: 170px;" onchange="renderInsightsAdminTable()">
+                            <option value="All">All Categories</option>
+                            <option value="Industry Guide">Industry Guide</option>
+                            <option value="Sector Analysis">Sector Analysis</option>
+                            <option value="Legal & Compliance">Legal &amp; Compliance</option>
+                            <option value="Location Focus">Location Focus</option>
+                            <option value="Key Industrial Areas">Key Industrial Areas</option>
+                            <option value="Case Studies">Case Studies</option>
+                        </select>
+                        <select id="insights-status-filter" class="form-control filter-select" style="min-width: 135px;" onchange="renderInsightsAdminTable()">
+                            <option value="All">All Statuses</option>
+                            <option value="Published">Published</option>
+                            <option value="Draft">Draft</option>
+                        </select>
+                        <div class="search-box-wrapper" style="flex: 1; min-width: 220px;">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="insights-admin-search" class="form-control search-input-field" placeholder="Search insight title, city, category, slug..." oninput="renderInsightsAdminTable()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Insights Table -->
+                <div class="card table-card">
+                    <div class="card-header enterprise-table-header">
+                        <div class="card-header-title">
+                            <i class="fa-solid fa-list-check" style="color: var(--primary);"></i>
+                            <h3>Published &amp; Draft Insights</h3>
+                        </div>
+                        <span class="enterprise-table-meta">Synced to Supabase &amp; insights.html</span>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 72px;">Cover</th>
+                                    <th>Title &amp; URL Slug</th>
+                                    <th>Category</th>
+                                    <th>Focus Area / Type</th>
+                                    <th>Published &amp; Read Time</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="insights-table-body"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1556,10 +2090,10 @@
                             </div>
                         </div>
                         <div style="display: flex; align-items: center; gap: 0.6rem;">
-                            <button type="button" class="btn btn-outline" onclick="expandAllSettingsCards()" style="display: inline-flex; align-items: center; gap: 6px; padding: 0.45rem 0.9rem; font-size: 0.82rem; font-weight: 600; border-radius: 8px;" title="Expand all sections">
+                            <button type="button" class="btn btn-sm btn-outline" onclick="expandAllSettingsCards()" title="Expand all sections">
                                 <i class="fa-solid fa-up-right-and-down-left-from-center" style="font-size: 0.75rem; color: var(--primary);"></i> Expand All
                             </button>
-                            <button type="button" class="btn btn-outline" onclick="collapseAllSettingsCards()" style="display: inline-flex; align-items: center; gap: 6px; padding: 0.45rem 0.9rem; font-size: 0.82rem; font-weight: 600; border-radius: 8px;" title="Minimize / Collapse all sections">
+                            <button type="button" class="btn btn-sm btn-outline" onclick="collapseAllSettingsCards()" title="Minimize / Collapse all sections">
                                 <i class="fa-solid fa-down-left-and-up-right-to-center" style="font-size: 0.75rem; color: #64748b;"></i> Minimize All
                             </button>
                         </div>
@@ -1589,7 +2123,7 @@
                                     <div id="gen-overview-clock" style="font-family: monospace; font-size: 1.1rem; font-weight: 800; color: var(--primary-dark);">--:--:--</div>
                                     <small id="gen-overview-date" style="color: var(--text-muted); font-size: 0.78rem;">-- --- ----</small>
                                 </div>
-                                <button type="button" class="btn btn-outline" onclick="switchSettingsSubtab('timezone')" style="display: inline-flex; align-items: center; gap: 6px; padding: 0.6rem 1.1rem; font-size: 0.85rem; font-weight: 600; border-radius: 8px; white-space: nowrap;">
+                                <button type="button" class="btn btn-outline" onclick="switchSettingsSubtab('timezone')">
                                     <i class="fa-solid fa-clock"></i> Manage Time Zone <i class="fa-solid fa-arrow-right" style="font-size: 0.75rem; margin-left: 2px;"></i>
                                 </button>
                             </div>
@@ -1973,7 +2507,7 @@
                                         </div>
                                         <div style="display: flex; gap: 0.5rem; align-items: center;">
                                             <span class="status-badge" style="background: var(--accent); color: var(--primary-dark); font-weight: 700; padding: 0.35rem 0.85rem; border-radius: 20px;">Active Theme</span>
-                                            <button type="button" class="btn btn-primary" style="padding: 0.45rem 0.9rem; font-size: 0.82rem; border-radius: 8px;">Sample Button</button>
+                                            <button type="button" class="btn btn-sm btn-primary">Sample Button</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1982,10 +2516,10 @@
                             
                             <!-- Full-width Card Footer -->
                             <div class="card-footer">
-                                <button type="button" class="btn btn-outline" id="reset-branding-btn" onclick="resetBrandingToDefault()" style="padding: 0.65rem 1.25rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px;">
+                                <button type="button" class="btn btn-outline" id="reset-branding-btn" onclick="resetBrandingToDefault()">
                                     <i class="fa-solid fa-rotate-left"></i> Reset Defaults
                                 </button>
-                                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.5rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px;">
+                                <button type="submit" class="btn btn-primary">
                                     <i class="fa-solid fa-floppy-disk"></i> Save Branding & UI Colors
                                 </button>
                             </div>
@@ -2399,7 +2933,7 @@
                                 </div>
                             </div>
                             <div class="card-footer">
-                                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.5rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px;">
+                                <button type="submit" class="btn btn-primary">
                                     <i class="fa-solid fa-floppy-disk"></i> Save Property Features Settings
                                 </button>
                             </div>
@@ -2489,7 +3023,7 @@ across Selangor's prime industrial belt.</textarea>
                             </div>
 
                             <div class="card-footer">
-                                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.5rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px;">
+                                <button type="submit" class="btn btn-primary">
                                     <i class="fa-solid fa-floppy-disk"></i> Save About Settings
                                 </button>
                             </div>
@@ -2591,7 +3125,7 @@ to your operational requirements.</textarea>
                             </div>
 
                             <div class="card-footer">
-                                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.5rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px;">
+                                <button type="submit" class="btn btn-primary">
                                     <i class="fa-solid fa-floppy-disk"></i> Save Services Settings
                                 </button>
                             </div>
@@ -2743,7 +3277,7 @@ corporate buyer matching and fast transaction closing.</textarea>
                             </div>
 
                             <div class="card-footer">
-                                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.5rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px;">
+                                <button type="submit" class="btn btn-primary">
                                     <i class="fa-solid fa-floppy-disk"></i> Save Property Owner Settings
                                 </button>
                             </div>
@@ -2781,7 +3315,8 @@ corporate buyer matching and fast transaction closing.</textarea>
                                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.25rem; margin-bottom: 1.25rem;">
                                     <div class="form-group" style="margin-bottom: 0;">
                                         <label style="font-weight: 600; font-size: 0.88rem; margin-bottom: 0.4rem; display: block; color: var(--text-dark);">Phone Number</label>
-                                        <input type="text" id="setting-phone" class="form-control" placeholder="e.g. +60 3 1234 5678" style="padding: 0.68rem 0.9rem; font-size: 0.9rem;">
+                                        <input type="text" id="setting-phone" class="form-control" placeholder="e.g. +60 17-600 8088" style="padding: 0.68rem 0.9rem; font-size: 0.9rem;">
+                                        <small style="display: block; margin-top: 0.35rem; font-size: 0.76rem; color: #64748b;"><i class="fa-brands fa-whatsapp" style="color: #25D366; margin-right: 4px;"></i> Also powers the <strong>Reach Us on WhatsApp</strong> button in the Property Listing Request banner.</small>
                                     </div>
                                     <div class="form-group" style="margin-bottom: 0;">
                                         <label style="font-weight: 600; font-size: 0.88rem; margin-bottom: 0.4rem; display: block; color: var(--text-dark);">Email Address</label>
@@ -2834,8 +3369,86 @@ corporate buyer matching and fast transaction closing.</textarea>
                                 </div>
                             </div>
                             <div class="card-footer">
-                                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.5rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px;">
+                                <button type="submit" class="btn btn-primary">
                                     <i class="fa-solid fa-floppy-disk"></i> Save Contact Information
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Interactive Map & Google Maps Integration Card -->
+                    <div class="card settings-card collapsible-card is-minimized" id="card-settings-maps" style="margin-bottom: 2rem;">
+                        <div class="card-header" onclick="toggleSettingsCard('card-settings-maps')">
+                            <div class="card-header-title">
+                                <div style="width: 42px; height: 42px; border-radius: 12px; background: #dbeafe; color: #2563eb; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0;">
+                                    <i class="fa-solid fa-map-location-dot"></i>
+                                </div>
+                                <div>
+                                    <h3>Interactive Map &amp; Google Maps API</h3>
+                                    <small style="color: var(--text-muted); font-size: 0.83rem;">Enable genuine Google Maps (&ldquo;Map data &copy;2026 Google&rdquo;) with a billing-enabled API key, or keep free keyless Esri/OSM maps.</small>
+                                </div>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.65rem;">
+                                <span id="setting-gmaps-status-pill" class="badge-pill" style="background: #ecfdf5; color: #047857; font-size: 0.74rem; font-weight: 700; padding: 3px 10px; border-radius: 12px; border: 1px solid #a7f3d0;">Free Map Active</span>
+                                <span class="badge-pill minimized-pill-indicator" style="background: #f1f5f9; color: #64748b; font-size: 0.75rem; font-weight: 700; padding: 3px 8px; border-radius: 12px; border: 1px solid #e2e8f0;">
+                                    <i class="fa-solid fa-compress" style="font-size: 0.7rem;"></i> Minimized
+                                </span>
+                                <button type="button" class="card-collapse-btn" onclick="event.stopPropagation(); toggleSettingsCard('card-settings-maps')" title="Minimize / Expand section" aria-label="Minimize / Expand Interactive Map Settings" aria-expanded="false">
+                                    <span class="collapse-btn-text">Expand</span>
+                                    <i class="fa-solid fa-chevron-down collapse-icon"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <form id="settings-maps-form">
+                            <div class="card-body" style="display: flex; flex-direction: column; gap: 1.1rem;">
+                                <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 12px; padding: 0.9rem 1.05rem; font-size: 0.84rem; color: #1e3a8a; line-height: 1.55;">
+                                    <strong><i class="fa-solid fa-circle-info" style="margin-right: 5px;"></i> How it works:</strong>
+                                    When a valid Google Cloud <strong>Maps JavaScript API Key</strong> (with billing enabled) is entered below, public maps automatically upgrade to genuine <strong>Google Maps</strong> (showing <em>Map data &copy;2026 Google</em>, Google Satellite/Street tiles, and Google&rsquo;s native Keyboard Shortcuts). If blank or invalid, the site automatically falls back to free, watermark-free <strong>Esri Street &amp; Satellite</strong> maps.
+                                </div>
+
+                                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.95rem 1.1rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap;">
+                                    <div style="display: flex; align-items: flex-start; gap: 0.85rem; flex: 1; min-width: 240px;">
+                                        <div style="width: 40px; height: 40px; border-radius: 10px; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0;">
+                                            <i class="fa-solid fa-file-pdf"></i>
+                                        </div>
+                                        <div>
+                                            <div style="font-weight: 700; font-size: 0.9rem; color: var(--text-dark); margin-bottom: 0.2rem;">
+                                                Step-by-Step Setup Guide (PDF &mdash; Free Tier)
+                                            </div>
+                                            <div style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.45;">
+                                                Complete 6-step walkthrough covering the 10,000/month free quota, HTTP referrer restrictions, 300/day hard cap, USD 1 budget alert &amp; Dashboard setup.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;">
+                                        <a href="assets/docs/Google-Maps-API-Key-Setup-Guide.pdf" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline">
+                                            <i class="fa-solid fa-eye"></i> View Guide (PDF)
+                                        </a>
+                                        <a href="assets/docs/Google-Maps-API-Key-Setup-Guide.pdf" download="MyFactorySpace-Google-Maps-API-Key-Setup-Guide.pdf" class="btn btn-sm btn-danger">
+                                            <i class="fa-solid fa-download"></i> Download PDF
+                                        </a>
+                                    </div>
+                                </div>
+
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="setting-google-maps-api-key" style="font-weight: 600; font-size: 0.88rem; margin-bottom: 0.45rem; display: block; color: var(--text-dark);">Google Maps JavaScript API Key <span style="font-weight: 400; color: var(--text-muted); font-size: 0.8rem;">(Optional)</span></label>
+                                    <div style="display: flex; gap: 0.5rem; align-items: stretch; flex-wrap: wrap;">
+                                        <div style="position: relative; flex: 1; min-width: 240px;">
+                                            <input type="password" id="setting-google-maps-api-key" class="form-control" autocomplete="off" placeholder="AIzaSy... (Leave empty for free Esri Street &amp; Satellite map)" style="padding: 0.68rem 2.7rem 0.68rem 0.9rem; font-size: 0.9rem; font-family: monospace;">
+                                            <button type="button" id="toggle-gmaps-key-vis" title="Show / Hide API Key" aria-label="Show or hide Google Maps API key" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #64748b; cursor: pointer; padding: 6px;">
+                                                <i class="fa-regular fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <button type="button" id="btn-clear-gmaps-key" class="btn btn-outline">Clear Key</button>
+                                    </div>
+                                    <small style="display: block; margin-top: 0.45rem; color: #64748b; font-size: 0.78rem;">
+                                        Tip: In Google Cloud Console, restrict this key via <strong>HTTP referrers</strong> to your domain (e.g. <code>https://www.myfactoryspace.com/*</code>) and enable the <strong>Maps JavaScript API</strong>.
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fa-solid fa-floppy-disk"></i> Save Map Settings
                                 </button>
                             </div>
                         </form>
@@ -2949,10 +3562,10 @@ corporate buyer matching and fast transaction closing.</textarea>
                                     <!-- Upload and Actions Row -->
                                     <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
                                         <input type="file" id="setting-watermark-logo" class="form-control" accept="image/png,image/jpeg,image/heic" style="flex: 1; min-width: 200px;">
-                                        <button type="button" id="btn-crop-watermark-logo" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1rem; white-space: nowrap;">
+                                        <button type="button" id="btn-crop-watermark-logo" class="btn btn-outline">
                                             <i class="fa-solid fa-crop-simple"></i> Crop / Re-crop Logo
                                         </button>
-                                        <button type="button" id="btn-remove-watermark-logo" class="btn btn-outline" style="display: none; align-items: center; gap: 0.4rem; padding: 0.6rem 1rem; color: #dc2626; border-color: #fca5a5;">
+                                        <button type="button" id="btn-remove-watermark-logo" class="btn btn-danger-outline" style="display: none;">
                                             <i class="fa-solid fa-trash-can"></i> Remove Logo
                                         </button>
                                     </div>
@@ -2978,10 +3591,10 @@ corporate buyer matching and fast transaction closing.</textarea>
                             </div>
 
                             <div class="card-footer" style="flex-wrap: wrap; gap: 0.75rem;">
-                                <button type="button" id="btn-apply-watermark-all" class="btn btn-outline" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.25rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px;">
+                                <button type="button" id="btn-apply-watermark-all" class="btn btn-outline">
                                     <i class="fa-solid fa-wand-magic-sparkles"></i> Apply Watermark to All Properties
                                 </button>
-                                <button type="submit" id="btn-save-watermark" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.5rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px;">
+                                <button type="submit" id="btn-save-watermark" class="btn btn-primary">
                                     <i class="fa-solid fa-floppy-disk"></i> Save Watermark
                                 </button>
                             </div>
@@ -3067,10 +3680,10 @@ corporate buyer matching and fast transaction closing.</textarea>
                                             <i class="fa-solid fa-globe" style="color: var(--primary);"></i> Primary Operational Time Zone &amp; Location
                                         </div>
                                         <div style="display: flex; gap: 0.5rem;">
-                                            <button type="button" class="btn btn-outline" id="btn-detect-device-tz" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 600; border-radius: 6px;">
+                                            <button type="button" class="btn btn-sm btn-outline" id="btn-detect-device-tz">
                                                 <i class="fa-solid fa-location-crosshairs"></i> Detect Device
                                             </button>
-                                            <button type="button" class="btn btn-outline" id="btn-snap-gmt8" style="padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 600; border-radius: 6px;">
+                                            <button type="button" class="btn btn-sm btn-outline" id="btn-snap-gmt8">
                                                 <i class="fa-solid fa-rotate-left"></i> Set to GMT+8
                                             </button>
                                         </div>
@@ -3231,10 +3844,10 @@ corporate buyer matching and fast transaction closing.</textarea>
 
                             </div>
                             <div class="card-footer" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-                                <button type="button" class="btn btn-outline" id="btn-reset-tz-defaults" onclick="resetTimezoneSettings()" style="padding: 0.65rem 1.25rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px;">
+                                <button type="button" class="btn btn-outline" id="btn-reset-tz-defaults" onclick="resetTimezoneSettings()">
                                     <i class="fa-solid fa-rotate-left"></i> Reset Defaults (GMT+8)
                                 </button>
-                                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.5rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px;">
+                                <button type="submit" class="btn btn-primary">
                                     <i class="fa-solid fa-floppy-disk"></i> Save Time Zone Settings
                                 </button>
                             </div>
@@ -3299,7 +3912,7 @@ corporate buyer matching and fast transaction closing.</textarea>
                                 </div>
                             </div>
                             <div class="card-footer">
-                                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.5rem; background: #25D366; border-color: #25D366; font-weight: 600; border-radius: 8px;">
+                                <button type="submit" class="btn btn-whatsapp">
                                     <i class="fa-solid fa-floppy-disk"></i> Save Notifications Settings
                                 </button>
                             </div>
@@ -3322,13 +3935,13 @@ corporate buyer matching and fast transaction closing.</textarea>
                                 <span id="supabase-status-badge" class="badge-pill" style="background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;">
                                     <i class="fa-solid fa-circle-check"></i> Connected &amp; Active
                                 </span>
-                                <button type="button" class="btn btn-outline" onclick="checkSupabaseStorageUsage()" style="padding: 0.45rem 0.85rem; font-size: 0.82rem; border-radius: 8px;">
+                                <button type="button" class="btn btn-sm btn-outline" onclick="checkSupabaseStorageUsage()">
                                     <i class="fa-solid fa-arrows-rotate"></i> Refresh
                                 </button>
-                                <button type="button" class="btn btn-primary" onclick="exportSupabaseDatabase()" style="padding: 0.45rem 0.95rem; font-size: 0.82rem; border-radius: 8px; background: #059669; border-color: #059669; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer;">
+                                <button type="button" class="btn btn-sm btn-success" onclick="exportSupabaseDatabase()">
                                     <i class="fa-solid fa-cloud-arrow-down"></i> Export Database
                                 </button>
-                                <button type="button" class="btn btn-outline" onclick="openRestoreDatabaseModal(true)" style="padding: 0.45rem 0.95rem; font-size: 0.82rem; border-radius: 8px; border-color: #2563eb; color: #2563eb; background: #eff6ff; display: inline-flex; align-items: center; gap: 6px; font-weight: 600; cursor: pointer;">
+                                <button type="button" class="btn btn-sm btn-info-outline" onclick="openRestoreDatabaseModal(true)">
                                     <i class="fa-solid fa-cloud-arrow-up"></i> Restore Database
                                 </button>
                             </div>
@@ -3432,13 +4045,13 @@ corporate buyer matching and fast transaction closing.</textarea>
                                     Export or restore a complete, self-contained JSON snapshot of all live cloud tables (<code style="background: #e2e8f0; padding: 1px 4px; border-radius: 4px;">properties</code>, <code style="background: #e2e8f0; padding: 1px 4px; border-radius: 4px;">parks</code>, <code style="background: #e2e8f0; padding: 1px 4px; border-radius: 4px;">leads</code>, <code style="background: #e2e8f0; padding: 1px 4px; border-radius: 4px;">owner_listings</code>, <code style="background: #e2e8f0; padding: 1px 4px; border-radius: 4px;">agents</code>, <code style="background: #e2e8f0; padding: 1px 4px; border-radius: 4px;">app_users</code>, <code style="background: #e2e8f0; padding: 1px 4px; border-radius: 4px;">site_settings</code>, <code style="background: #e2e8f0; padding: 1px 4px; border-radius: 4px;">automation_templates</code>). Keep offline backups safe, or upload any backup JSON file here to preview, inspect table contents, and safely restore with smart merge or full rollback options.
                                 </p>
                                 <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
-                                    <button type="button" class="btn btn-primary" id="btn-export-supabase-db" onclick="exportSupabaseDatabase()" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.35rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px; background: #059669; border-color: #059669; cursor: pointer; box-shadow: 0 2px 6px rgba(5, 150, 105, 0.2);">
+                                    <button type="button" class="btn btn-success" id="btn-export-supabase-db" onclick="exportSupabaseDatabase()">
                                         <i class="fa-solid fa-cloud-arrow-down" id="export-db-icon"></i> <span id="export-db-label">Download Complete Database Backup (.json)</span>
                                     </button>
-                                    <button type="button" class="btn" id="btn-open-restore-modal" onclick="openRestoreDatabaseModal(true)" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.35rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px; background: #2563eb; color: #ffffff; border: 1px solid #2563eb; cursor: pointer; box-shadow: 0 2px 6px rgba(37, 99, 235, 0.2);">
+                                    <button type="button" class="btn btn-info" id="btn-open-restore-modal" onclick="openRestoreDatabaseModal(true)">
                                         <i class="fa-solid fa-cloud-arrow-up"></i> Restore Database from Backup (.json)
                                     </button>
-                                    <button type="button" class="btn btn-outline" onclick="copySupabaseSummaryJson()" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1rem; font-size: 0.85rem; font-weight: 600; border-radius: 8px;">
+                                    <button type="button" class="btn btn-outline" onclick="copySupabaseSummaryJson()">
                                         <i class="fa-solid fa-copy"></i> Copy Database Counts
                                     </button>
                                 </div>
@@ -3458,7 +4071,7 @@ corporate buyer matching and fast transaction closing.</textarea>
                                     <small style="color: var(--text-muted); font-size: 0.83rem;">Monitor current local database storage usage, view maximum file size specifications, and clear cached storage.</small>
                                 </div>
                             </div>
-                            <button type="button" class="btn" onclick="resetLocalStorageData()" style="background-color: #dc2626; color: #ffffff; border: none; padding: 0.55rem 1.1rem; border-radius: 8px; font-weight: 600; font-size: 0.84rem; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer; transition: all 0.2s ease;">
+                            <button type="button" class="btn btn-danger" onclick="resetLocalStorageData()">
                                 <i class="fa-solid fa-trash-can"></i> Clear LocalStorage
                             </button>
                         </div>
@@ -3550,7 +4163,7 @@ corporate buyer matching and fast transaction closing.</textarea>
                                             <label style="font-weight: 600; font-size: 0.88rem; margin-bottom: 0.4rem; display: block; color: var(--text-dark);">Location Path / Directory</label>
                                             <div style="display: flex; gap: 0.5rem; max-width: 500px;">
                                                 <input type="text" id="setting-server-path" class="form-control" placeholder="e.g. /var/www/uploads or C:\wamp\www\uploads" style="padding: 0.68rem 0.9rem; font-size: 0.9rem;">
-                                                <label class="btn btn-outline" style="white-space: nowrap; cursor: pointer; padding: 0.68rem 1rem; font-size: 0.88rem;">
+                                                <label class="btn btn-outline">
                                                     Browse... <input type="file" id="setting-server-browse" webkitdirectory directory style="display: none;">
                                                 </label>
                                             </div>
@@ -3571,7 +4184,7 @@ corporate buyer matching and fast transaction closing.</textarea>
                                 </div>
                             </div>
                             <div class="card-footer">
-                                <button type="submit" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.65rem 1.5rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px;">
+                                <button type="submit" class="btn btn-primary">
                                     <i class="fa-solid fa-floppy-disk"></i> Save Server Settings
                                 </button>
                             </div>
@@ -3596,13 +4209,13 @@ corporate buyer matching and fast transaction closing.</textarea>
                                     </div>
                                 </div>
                                 <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                                    <button type="button" class="btn btn-outline" id="btn-export-costing-pdf" onclick="exportCostingPdf()" style="padding: 0.48rem 0.95rem; font-size: 0.82rem; border-radius: 8px; background: #fff; border-color: #ef4444; color: #dc2626; font-weight: 600;">
+                                    <button type="button" class="btn btn-sm btn-danger-outline" id="btn-export-costing-pdf" onclick="exportCostingPdf()">
                                         <i class="fa-solid fa-file-pdf"></i> Export PDF Proposal
                                     </button>
-                                    <button type="button" class="btn btn-outline" id="btn-copy-costing-summary" onclick="copyCostingSummary()" style="padding: 0.48rem 0.95rem; font-size: 0.82rem; border-radius: 8px; background: #fff;">
+                                    <button type="button" class="btn btn-sm btn-outline" id="btn-copy-costing-summary" onclick="copyCostingSummary()">
                                         <i class="fa-solid fa-copy"></i> Copy Agent Fee Summary
                                     </button>
-                                    <button type="submit" class="btn btn-primary" style="padding: 0.48rem 1.05rem; font-size: 0.82rem; border-radius: 8px;">
+                                    <button type="submit" class="btn btn-sm btn-primary">
                                         <i class="fa-solid fa-floppy-disk"></i> Save Costing Reference
                                     </button>
                                 </div>
@@ -3909,7 +4522,7 @@ corporate buyer matching and fast transaction closing.</textarea>
                                 <span style="width: 38px; height: 38px; border-radius: 10px; background: var(--primary-light); color: var(--primary); display: inline-flex; align-items: center; justify-content: center;"><i class="fa-solid fa-book-open"></i></span>
                                 <span><strong style="font-size: 1.05rem; color: var(--text-dark);">Permission Level Guide</strong><br><span style="font-size: 0.8rem; color: var(--text-muted);">What each role can and cannot do — click to expand</span></span>
                             </span>
-                            <button type="button" class="btn btn-outline" onclick="event.preventDefault(); event.stopPropagation(); printPermissionGuide();" style="font-size: 0.82rem; padding: 0.45rem 0.9rem;"><i class="fa-solid fa-file-pdf"></i> Print / Save PDF</button>
+                            <button type="button" class="btn btn-sm btn-outline" onclick="event.preventDefault(); event.stopPropagation(); printPermissionGuide();"><i class="fa-solid fa-file-pdf"></i> Print / Save PDF</button>
                         </summary>
                         <div id="role-permission-guide-body" style="padding: 0 1.4rem 1.4rem;">
                             <style>
@@ -3926,8 +4539,8 @@ corporate buyer matching and fast transaction closing.</textarea>
                                 .role-summary strong { display: block; font-size: 0.92rem; margin-bottom: 0.25rem; }
                             </style>
                             <div class="role-summary">
-                                <div style="border-left: 4px solid #1e40af;"><strong style="color:#1e40af;">Administrator</strong>Full control. Manages users, roles, General/Time Zone/Server/Costing settings, SEO Landing Pages, and gives final approval on parks.</div>
-                                <div style="border-left: 4px solid #6d28d9;"><strong style="color:#6d28d9;">Supervisor</strong>Team lead. Manages listings, mainpage features, and SEO Landing Pages; approves Assistant park submissions. No user, Costing, or system settings.</div>
+                                <div style="border-left: 4px solid #1e40af;"><strong style="color:#1e40af;">Administrator</strong>Full control. Manages users, roles, General/Time Zone/Server/Costing settings, SEO Landing Pages, Mainpage Locations &amp; Card Photos, and gives final approval on parks.</div>
+                                <div style="border-left: 4px solid #6d28d9;"><strong style="color:#6d28d9;">Supervisor</strong>Team lead. Manages listings, mainpage features, and SEO Landing Pages; approves Assistant park submissions. No user, Costing, Location creation/card photo, or system settings.</div>
                                 <div style="border-left: 4px solid #065f46;"><strong style="color:#065f46;">Agent / Assistant</strong>Linked to one specialist agent (mandatory profile setup on first login if unassigned). Works only inside assigned parks; no Landing Page access.</div>
                                 <div style="border-left: 4px solid #334155;"><strong style="color:#334155;">Entry Support</strong>View &amp; data-entry only (exempt from first-login Specialist / Agent profile setup). Can browse listings/leads, but cannot edit properties, agents, or Landing Pages.</div>
                             </div>
@@ -3947,6 +4560,8 @@ corporate buyer matching and fast transaction closing.</textarea>
                                     <tr><td>Edit / delete parks, remove requests</td><td class="perm-yes">✔</td><td class="perm-no">✘</td><td class="perm-no">✘</td><td class="perm-no">✘</td></tr>
                                     <tr class="grp"><td colspan="5">Landing Pages (SEO &amp; City Directory)</td></tr>
                                     <tr><td>Access Dashboard &gt; Landing Page (edit SEO, Hero, City Parks)</td><td class="perm-yes">✔</td><td class="perm-yes">✔</td><td class="perm-no">✘</td><td class="perm-no">✘</td></tr>
+                                    <tr><td>Access Dashboard &gt; Insights (add, edit, auto-generate market articles)</td><td class="perm-yes">✔</td><td class="perm-part">Selected Only</td><td class="perm-part">Selected Only</td><td class="perm-part">Selected Only</td></tr>
+                                    <tr><td>Add / edit / delete Locations &amp; Mainpage Location Card Photos</td><td class="perm-yes">✔</td><td class="perm-no">✘</td><td class="perm-no">✘</td><td class="perm-no">✘</td></tr>
                                     <tr class="grp"><td colspan="5">Specialist Agents</td></tr>
                                     <tr><td>First-login mandatory &ldquo;Add Specialist / Agent&rdquo; setup (new unassigned accounts)</td><td class="perm-part">Required</td><td class="perm-part">Required</td><td class="perm-part">Required</td><td class="perm-yes">Exempt</td></tr>
                                     <tr><td>Edit agent profiles</td><td class="perm-yes">✔</td><td class="perm-part">Own profile only</td><td class="perm-part">Own profile only</td><td class="perm-no">✘</td></tr>
@@ -3965,7 +4580,7 @@ corporate buyer matching and fast transaction closing.</textarea>
                             </table>
                             </div>
                             <div style="margin-top: 1rem; font-size: 0.8rem; color: var(--text-muted); line-height: 1.55;">
-                                <strong>Handover notes:</strong> Always keep at least one active Administrator account. An Administrator cannot delete their own logged-in account. When a new user is created without a pre-linked Specialist / Agent (Administrator, Supervisor, Agent, or Assistant), they must complete the <em>Add Specialist / Agent</em> profile on first login &mdash; only the <em>Entry Support</em> role is exempt. <em>Dashboard &gt; Landing Page</em> is restricted to Administrator and Supervisor roles, while <em>Costing &amp; Agent Fee</em> and system settings remain Administrator-only.
+                                <strong>Handover notes:</strong> Always keep at least one active Administrator account. An Administrator cannot delete their own logged-in account. When a new user is created without a pre-linked Specialist / Agent (Administrator, Supervisor, Agent, or Assistant), they must complete the <em>Add Specialist / Agent</em> profile on first login &mdash; only the <em>Entry Support</em> role is exempt. <em>Dashboard &gt; Landing Page</em> SEO/park editing is open to Administrator and Supervisor roles, while <em>Dashboard &gt; Insights</em> is restricted to Administrators and explicitly selected agents/users via <em>Agent Access Permissions</em> or the <em>Admin Users Directory</em>. Adding/editing/deleting <em>Locations &amp; Mainpage Card Photos</em>, <em>Costing &amp; Agent Fee</em>, and system settings remain strictly Administrator-only.
                             </div>
                         </div>
                     </details>
@@ -4008,12 +4623,13 @@ corporate buyer matching and fast transaction closing.</textarea>
                             <table class="data-table admin-directory-table">
                                 <thead>
                                     <tr>
-                                        <th style="width: 22%; min-width: 175px;">User Account</th>
-                                        <th style="width: 16%; min-width: 145px;">System Role</th>
-                                        <th style="width: 22%; min-width: 195px;">Linked Specialist Agent</th>
-                                        <th style="width: 22%; min-width: 235px;">WhatsApp Number</th>
-                                        <th style="width: 10%; min-width: 130px; text-align: center;">Website Contact</th>
-                                        <th style="width: 8%; min-width: 85px; text-align: right;">Action</th>
+                                        <th style="width: 20%; min-width: 165px;">User Account</th>
+                                        <th style="width: 14%; min-width: 135px;">System Role</th>
+                                        <th style="width: 20%; min-width: 185px;">Linked Specialist Agent</th>
+                                        <th style="width: 19%; min-width: 215px;">WhatsApp Number</th>
+                                        <th style="width: 10%; min-width: 120px; text-align: center;">Website Contact</th>
+                                        <th style="width: 10%; min-width: 120px; text-align: center;">Insights Access</th>
+                                        <th style="width: 7%; min-width: 80px; text-align: right;">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody id="admin-users-table-body">
@@ -4256,7 +4872,7 @@ CREATE POLICY "Allow dashboard activity_logs access" ON public.activity_logs FOR
 NOTIFY pgrst, 'reload schema';</pre>
                                 </div>
                                 <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                                    <button type="button" class="btn btn-primary" onclick="copyActivitySqlSnippet()" style="font-size: 0.82rem; padding: 0.5rem 0.95rem; white-space: nowrap;">
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="copyActivitySqlSnippet()">
                                         <i class="fa-regular fa-copy" style="margin-right: 5px;"></i> Copy SQL
                                     </button>
                                 </div>
@@ -4289,10 +4905,10 @@ NOTIFY pgrst, 'reload schema';</pre>
                                 <option value="Approve">Approve / Reject</option>
                                 <option value="Login">Login</option>
                             </select>
-                            <button type="button" class="btn btn-outline" onclick="if (typeof loadActivityLogsFromSupabase === 'function') loadActivityLogsFromSupabase(true);" style="padding: 0.5rem 0.9rem; font-size: 0.84rem;" title="Refresh from Supabase">
+                            <button type="button" class="btn btn-sm btn-outline" onclick="if (typeof loadActivityLogsFromSupabase === 'function') loadActivityLogsFromSupabase(true);" title="Refresh from Supabase">
                                 <i class="fa-solid fa-rotate"></i> Refresh
                             </button>
-                            <button type="button" class="btn btn-outline" onclick="if (typeof exportActivityLogsCsv === 'function') exportActivityLogsCsv();" style="padding: 0.5rem 0.9rem; font-size: 0.84rem;" title="Download Activity Log CSV">
+                            <button type="button" class="btn btn-sm btn-outline" onclick="if (typeof exportActivityLogsCsv === 'function') exportActivityLogsCsv();" title="Download Activity Log CSV">
                                 <i class="fa-solid fa-file-csv" style="color: #059669;"></i> Export CSV
                             </button>
                         </div>
@@ -4443,7 +5059,10 @@ NOTIFY pgrst, 'reload schema';</pre>
                                             </div>
                                         </div>
                                         <div class="form-group" style="margin-bottom: 0; grid-column: span 1;">
-                                            <label>Road / Street Address</label>
+                                            <label style="display: flex; align-items: center; justify-content: space-between; gap: 0.4rem;">
+                                                <span>Road / Street Address</span>
+                                                <span id="prop-primary-road-pin-badge" style="display: none; font-size: 0.7rem; color: #047857; background: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 999px; padding: 1px 8px; font-weight: 700; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="1st road captured for Map Pin"></span>
+                                            </label>
                                             <div class="input-prefix-box">
                                                 <span class="input-prefix-icon"><i class="fa-solid fa-road"></i></span>
                                                 <input type="text" id="propRoad" class="form-control" placeholder="e.g. Jalan Subang 1">
@@ -4460,18 +5079,45 @@ NOTIFY pgrst, 'reload schema';</pre>
                                         </div>
                                     </div>
 
+                                    <!-- Map Pin Coordinates (Optional) -->
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                                            <span>Map Pin Coordinates <span style="font-weight: normal; color: var(--text-muted); font-size: 0.76rem;">(Optional &mdash; auto-resolved if empty)</span></span>
+                                            <button type="button" id="btn-pick-prop-coords" class="btn btn-xs btn-outline">
+                                                <i class="fa-solid fa-map-pin" style="color: var(--primary);"></i> Pin on Map
+                                            </button>
+                                        </label>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;">
+                                            <input type="text" id="propLat" class="form-control" placeholder="Latitude (e.g. 3.043200)" inputmode="decimal">
+                                            <input type="text" id="propLng" class="form-control" placeholder="Longitude (e.g. 101.583300)" inputmode="decimal">
+                                        </div>
+                                    </div>
+
                                     <!-- Property Type & Tenure -->
                                     <div style="display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 0.75rem;">
                                         <div class="form-group" style="margin-bottom: 0;">
                                             <label>Property Type <span class="req-star" style="color: #ef4444; font-weight: 700;">*</span></label>
                                             <select id="propType" class="form-control" required>
-                                                <option value="Shoplot (Near Factory)">Shoplot (Near Factory)</option>
-                                                <option value="Terrace Factory">Terrace Factory</option>
-                                                <option value="Cluster Factory">Cluster Factory</option>
-                                                <option value="Semi-Detached Factory">Semi-Detached Factory</option>
-                                                <option value="Detached Factory">Detached Factory</option>
-                                                <option value="Warehouse">Warehouse</option>
-                                                <option value="Land">Land</option>
+                                                <optgroup label="Factory">
+                                                    <option value="Detached Factory">Detached Factory</option>
+                                                    <option value="Semi-Detached Factory">Semi-Detached Factory</option>
+                                                    <option value="Terrace Factory">Terrace Factory</option>
+                                                    <option value="Cluster Factory">Cluster Factory</option>
+                                                </optgroup>
+                                                <optgroup label="Warehouse">
+                                                    <option value="Detached Warehouse">Detached Warehouse</option>
+                                                    <option value="Semi-Detached Warehouse">Semi-Detached Warehouse</option>
+                                                    <option value="Shared Warehouse">Shared Warehouse</option>
+                                                    <option value="Multi-Storey Warehouse">Multi-Storey Warehouse</option>
+                                                </optgroup>
+                                                <optgroup label="Land">
+                                                    <option value="Industrial Land">Industrial Land</option>
+                                                    <option value="Commercial Land">Commercial Land</option>
+                                                    <option value="Agricultural Land">Agricultural Land</option>
+                                                </optgroup>
+                                                <optgroup label="Shoplot">
+                                                    <option value="Shoplot (Near Factory)">Shoplot (Near Factory)</option>
+                                                </optgroup>
                                             </select>
                                         </div>
                                         <div class="form-group" style="margin-bottom: 0;">
@@ -4670,7 +5316,7 @@ NOTIFY pgrst, 'reload schema';</pre>
                                         <i class="fa-solid fa-message" style="color: #0284c7;"></i>
                                         REMARK &amp; DESCRIPTION
                                     </div>
-                                    <button type="button" id="btn-ai-summarize-desc" onclick="summarizeDescriptionToOutline()" class="btn btn-sm" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; font-weight: 600; border: none; border-radius: 20px; padding: 3px 10px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 4px rgba(79, 70, 229, 0.2); cursor: pointer;">
+                                    <button type="button" id="btn-ai-summarize-desc" onclick="summarizeDescriptionToOutline()" class="btn btn-xs btn-ai">
                                         <i class="fa-solid fa-wand-magic-sparkles" style="color: #fde047;"></i> AI Summarize
                                     </button>
                                 </div>
@@ -4689,7 +5335,7 @@ NOTIFY pgrst, 'reload schema';</pre>
                     <!-- Bottom Action Bar: Cancel & Save Property -->
                     <div class="modal-action-footer">
                         <button type="button" class="btn btn-outline" id="cancel-btn">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="save-property-btn"><i class="fa-solid fa-floppy-disk" style="margin-right: 5px;"></i> Save Property</button>
+                        <button type="submit" class="btn btn-primary" id="save-property-btn"><i class="fa-solid fa-floppy-disk"></i> Save Property</button>
                     </div>
                 </form>
             </div>
@@ -4733,7 +5379,7 @@ NOTIFY pgrst, 'reload schema';</pre>
                         </div>
                         <div style="display: flex; gap: 0.5rem; align-items: center;">
                             <input type="text" id="ai-custom-prompt-input" class="form-control" placeholder="Add custom highlight (e.g. 40ft container access, solar rooftop)..." style="font-size: 0.82rem; width: 280px; padding: 0.45rem 0.75rem;">
-                            <button type="button" id="btn-re-generate-ai" onclick="generateAIOutlines()" class="btn btn-sm" style="background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #fff; font-size: 0.82rem; white-space: nowrap; font-weight: 600; padding: 0.45rem 0.9rem; border: none; border-radius: 8px; cursor: pointer;">
+                            <button type="button" id="btn-re-generate-ai" onclick="generateAIOutlines()" class="btn btn-sm btn-ai">
                                 <i class="fa-solid fa-arrows-rotate"></i> Re-Generate AI
                             </button>
                         </div>
@@ -4756,7 +5402,7 @@ NOTIFY pgrst, 'reload schema';</pre>
                         </div>
                         <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
                             <span style="font-size: 0.75rem; color: #64748b;"><i class="fa-solid fa-list-check"></i> Clean structured specs & investment facts</span>
-                            <button type="button" onclick="applyAISuggestion('v1')" class="btn btn-sm" style="background: #4f46e5; color: #ffffff; font-weight: 600; border-radius: 6px; font-size: 0.8rem; padding: 6px 14px; border: none; cursor: pointer;">
+                            <button type="button" onclick="applyAISuggestion('v1')" class="btn btn-sm btn-indigo">
                                 <i class="fa-solid fa-check"></i> Apply Version 1
                             </button>
                         </div>
@@ -4775,7 +5421,7 @@ NOTIFY pgrst, 'reload schema';</pre>
                         </div>
                         <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
                             <span style="font-size: 0.75rem; color: #64748b;"><i class="fa-solid fa-bullhorn"></i> Persuasive highlights for property portals</span>
-                            <button type="button" onclick="applyAISuggestion('v2')" class="btn btn-sm" style="background: #16a34a; color: #ffffff; font-weight: 600; border-radius: 6px; font-size: 0.8rem; padding: 6px 14px; border: none; cursor: pointer;">
+                            <button type="button" onclick="applyAISuggestion('v2')" class="btn btn-sm btn-success">
                                 <i class="fa-solid fa-check"></i> Apply Version 2
                             </button>
                         </div>
@@ -4794,7 +5440,7 @@ NOTIFY pgrst, 'reload schema';</pre>
                         </div>
                         <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
                             <span style="font-size: 0.75rem; color: #64748b;"><i class="fa-solid fa-ruler-combined"></i> Clear breakdown of heights, floor loads & power</span>
-                            <button type="button" onclick="applyAISuggestion('v3')" class="btn btn-sm" style="background: #d97706; color: #ffffff; font-weight: 600; border-radius: 6px; font-size: 0.8rem; padding: 6px 14px; border: none; cursor: pointer;">
+                            <button type="button" onclick="applyAISuggestion('v3')" class="btn btn-sm btn-amber">
                                 <i class="fa-solid fa-check"></i> Apply Version 3
                             </button>
                         </div>
@@ -4813,7 +5459,7 @@ NOTIFY pgrst, 'reload schema';</pre>
                         </div>
                         <div style="margin-top: 1rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #f1f5f9; padding-top: 0.75rem;">
                             <span style="font-size: 0.75rem; color: #64748b;"><i class="fa-solid fa-road"></i> Enriched with Selangor highway links & port perks</span>
-                            <button type="button" onclick="applyAISuggestion('v4')" class="btn btn-sm" style="background: #0284c7; color: #ffffff; font-weight: 600; border-radius: 6px; font-size: 0.8rem; padding: 6px 14px; border: none; cursor: pointer;">
+                            <button type="button" onclick="applyAISuggestion('v4')" class="btn btn-sm btn-sky">
                                 <i class="fa-solid fa-check"></i> Apply Version 4
                             </button>
                         </div>
@@ -4824,7 +5470,7 @@ NOTIFY pgrst, 'reload schema';</pre>
 
             <div class="modal-footer" style="padding: 1rem 1.75rem; background: #ffffff; border-top: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
                 <span style="font-size: 0.8rem; color: #64748b;"><i class="fa-solid fa-circle-info"></i> Clicking "Apply" updates the property description textarea instantly.</span>
-                <button type="button" onclick="closeAIModal()" class="btn btn-secondary" style="font-size: 0.85rem; padding: 6px 16px;">Cancel & Close</button>
+                <button type="button" onclick="closeAIModal()" class="btn btn-secondary">Cancel &amp; Close</button>
             </div>
         </div>
     </div>
@@ -4919,6 +5565,19 @@ NOTIFY pgrst, 'reload schema';</pre>
                                         </div>
                                     </div>
 
+                                    <div class="form-group" style="margin-bottom: 0;">
+                                        <label style="display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;">
+                                            <span>Map Pin Coordinates <span style="font-weight: normal; color: var(--text-muted); font-size: 0.76rem;">(Optional)</span></span>
+                                            <button type="button" id="btn-pick-park-coords" class="btn btn-xs btn-outline">
+                                                <i class="fa-solid fa-map-pin" style="color: var(--primary);"></i> Pin on Map
+                                            </button>
+                                        </label>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem;">
+                                            <input type="text" id="parkLat" class="form-control" placeholder="Latitude (e.g. 3.043200)" inputmode="decimal">
+                                            <input type="text" id="parkLng" class="form-control" placeholder="Longitude (e.g. 101.583300)" inputmode="decimal">
+                                        </div>
+                                    </div>
+
                                     <div class="form-group" id="park-status-group" style="margin-bottom: 0;">
                                         <label>Visibility Status</label>
                                         <select id="parkStatus" class="form-control">
@@ -4999,7 +5658,7 @@ NOTIFY pgrst, 'reload schema';</pre>
 
                     <div class="modal-action-footer">
                         <button type="button" class="btn btn-outline" id="cancel-park-btn">Cancel</button>
-                        <button type="submit" class="btn btn-primary" id="save-park-submit-btn"><i class="fa-solid fa-floppy-disk" style="margin-right: 5px;"></i> Save Park</button>
+                        <button type="submit" class="btn btn-primary" id="save-park-submit-btn"><i class="fa-solid fa-floppy-disk"></i> Save Park</button>
                     </div>
                 </form>
             </div>
@@ -5072,7 +5731,7 @@ NOTIFY pgrst, 'reload schema';</pre>
                                             </div>
                                             <div class="photo-upload-controls" style="gap: 0.35rem; display: flex; flex-direction: column;">
                                                 <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-                                                    <label for="agentPhoto" class="btn btn-outline photo-choose-btn" style="cursor:pointer; display:inline-flex; align-items:center; gap:0.4rem; padding: 0.4rem 0.85rem; font-size: 0.8rem; margin-bottom: 0; border-radius: 8px;">
+                                                    <label for="agentPhoto" class="btn btn-sm btn-outline photo-choose-btn" style="margin-bottom: 0;">
                                                         <i class="fa-solid fa-upload"></i> Choose File
                                                     </label>
                                                     <span id="agent-photo-filename" style="font-size:0.76rem; color:#64748b; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">No file chosen</span>
@@ -5175,9 +5834,9 @@ NOTIFY pgrst, 'reload schema';</pre>
                     </div>
 
                     <div class="modal-action-footer">
-                        <button type="button" class="btn btn-outline" id="agent-mandatory-logout-btn" style="display: none; color: #dc2626; border-color: #fecaca; background: #fef2f2;" onclick="if (typeof window.logout === 'function') window.logout();"><i class="fa-solid fa-right-from-bracket" style="margin-right: 5px;"></i> Log Out</button>
+                        <button type="button" class="btn btn-danger-outline" id="agent-mandatory-logout-btn" style="display: none;" onclick="if (typeof window.logout === 'function') window.logout();"><i class="fa-solid fa-right-from-bracket"></i> Log Out</button>
                         <button type="button" class="btn btn-outline" id="cancel-agent-btn">Cancel</button>
-                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk" style="margin-right: 5px;"></i> Save Agent</button>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Agent</button>
                     </div>
                 </form>
             </div>
@@ -5262,11 +5921,11 @@ NOTIFY pgrst, 'reload schema';</pre>
                 <!-- Aspect Ratio Preset Selector Bar -->
                 <div id="cropper-aspect-ratios" style="display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
                     <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted); margin-right: 4px;">Aspect Ratio:</span>
-                    <button type="button" class="btn btn-sm btn-outline cropper-ratio-btn" data-ratio="2" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">2:1 (Suggested Logo)</button>
-                    <button type="button" class="btn btn-sm btn-outline cropper-ratio-btn" data-ratio="3" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">3:1 (Wide)</button>
-                    <button type="button" class="btn btn-sm btn-outline cropper-ratio-btn" data-ratio="1" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">1:1 (Square)</button>
-                    <button type="button" class="btn btn-sm btn-outline cropper-ratio-btn" data-ratio="1.5" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">3:2 (Property)</button>
-                    <button type="button" class="btn btn-sm btn-outline cropper-ratio-btn" data-ratio="free" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">Free Crop</button>
+                    <button type="button" class="btn btn-sm btn-outline cropper-ratio-btn" data-ratio="2">2:1 (Suggested Logo)</button>
+                    <button type="button" class="btn btn-sm btn-outline cropper-ratio-btn" data-ratio="3">3:1 (Wide)</button>
+                    <button type="button" class="btn btn-sm btn-outline cropper-ratio-btn" data-ratio="1">1:1 (Square)</button>
+                    <button type="button" class="btn btn-sm btn-outline cropper-ratio-btn" data-ratio="1.5">3:2 (Property)</button>
+                    <button type="button" class="btn btn-sm btn-outline cropper-ratio-btn" data-ratio="free">Free Crop</button>
                 </div>
 
                 <div style="max-height: 400px; overflow: hidden; margin-bottom: 0.75rem; display: flex; justify-content: center; background-color: #1a1a2e; border-radius: 8px;">
@@ -5283,9 +5942,9 @@ NOTIFY pgrst, 'reload schema';</pre>
                     </span>
                 </div>
 
-                <div class="form-group" style="display: flex; flex-direction: row; justify-content: flex-end; gap: 1rem; margin-bottom: 0;">
-                    <button type="button" class="btn btn-outline" id="cancel-cropper-btn" style="width: auto; min-width: 120px; padding: 0.75rem 1.5rem;">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="save-crop-btn" style="width: auto; min-width: 120px; padding: 0.75rem 1.5rem;"><i class="fa-solid fa-crop-simple"></i> Crop &amp; Save</button>
+                <div class="form-group" style="display: flex; flex-direction: row; justify-content: flex-end; gap: 0.65rem; margin-bottom: 0;">
+                    <button type="button" class="btn btn-outline" id="cancel-cropper-btn">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="save-crop-btn"><i class="fa-solid fa-crop-simple"></i> Crop &amp; Save</button>
                 </div>
             </div>
         </div>
@@ -5318,7 +5977,7 @@ NOTIFY pgrst, 'reload schema';</pre>
                     </div>
                     <h4 style="margin: 0 0 0.35rem 0; font-size: 1.02rem; font-weight: 700; color: #1e293b;">Click to browse or drop your .json backup file here</h4>
                     <p style="margin: 0; font-size: 0.84rem; color: #64748b;">Supports snapshots exported from MyFactorySpace Supabase Cloud or LocalStorage fallback</p>
-                    <button type="button" class="btn btn-outline" style="margin-top: 0.85rem; padding: 0.45rem 1.1rem; font-size: 0.82rem; font-weight: 600; border-radius: 6px; pointer-events: none;">
+                    <button type="button" class="btn btn-sm btn-outline" style="margin-top: 0.85rem; pointer-events: none;">
                         <i class="fa-solid fa-folder-open"></i> Choose Backup File
                     </button>
                 </div>
@@ -5333,7 +5992,7 @@ NOTIFY pgrst, 'reload schema';</pre>
                                 <span style="font-weight: 700; font-size: 0.95rem; color: #0f172a;" id="restore-filename-display">backup.json</span>
                                 <span id="restore-filesize-display" class="badge-pill" style="background: #f1f5f9; color: #475569; font-size: 0.75rem;">0 KB</span>
                             </div>
-                            <button type="button" class="btn btn-sm btn-outline" onclick="resetRestoreFileSelection()" style="padding: 0.28rem 0.65rem; font-size: 0.78rem;">
+                            <button type="button" class="btn btn-sm btn-outline" onclick="resetRestoreFileSelection()">
                                 <i class="fa-solid fa-arrow-rotate-left"></i> Change File
                             </button>
                         </div>
@@ -5423,20 +6082,478 @@ NOTIFY pgrst, 'reload schema';</pre>
             </div>
 
             <div class="modal-footer" style="padding: 1rem 1.5rem; background: #ffffff; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; align-items: center; gap: 0.75rem;">
-                <button type="button" class="btn btn-outline" onclick="closeRestoreDatabaseModal()" id="btn-cancel-restore" style="padding: 0.65rem 1.25rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px;">Cancel</button>
-                <button type="button" class="btn btn-primary" id="btn-start-restore" onclick="executeDatabaseRestore()" disabled style="padding: 0.65rem 1.45rem; font-size: 0.88rem; font-weight: 600; border-radius: 8px; background: #2563eb; border-color: #2563eb; display: inline-flex; align-items: center; gap: 0.5rem; cursor: not-allowed; opacity: 0.6;">
+                <button type="button" class="btn btn-outline" onclick="closeRestoreDatabaseModal()" id="btn-cancel-restore">Cancel</button>
+                <button type="button" class="btn btn-info" id="btn-start-restore" onclick="executeDatabaseRestore()" disabled>
                     <i class="fa-solid fa-cloud-arrow-up"></i> Start Database Restore
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Supabase JS SDK & Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/supabase-client.js?v=37"></script>
-    <script src="js/property-share.js?v=44"></script>
-    <script src="js/dashboard.js?v=100"></script>
+    <!-- Add / Edit Market Insight Native Dialog -->
+    <dialog id="insight-editor-dialog" class="loc-admin-dialog insight-editor-dialog" closedby="any" aria-labelledby="insight-dialog-title">
+        <form id="insight-editor-form" class="loc-admin-dialog-form" onsubmit="saveInsightArticle(event)">
+            <div class="loc-admin-dialog-header">
+                <div style="display: flex; align-items: center; gap: 0.7rem;">
+                    <div class="loc-admin-dialog-icon"><i class="fa-solid fa-newspaper"></i></div>
+                    <div>
+                        <h3 id="insight-dialog-title">Add New Market Insight</h3>
+                        <p>Create or auto-draft an industrial real estate article synced with www.myfactoryspace.com</p>
+                    </div>
+                </div>
+                <button type="button" class="loc-admin-dialog-close" onclick="closeInsightEditorModal()" aria-label="Close dialog">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
 
-    <script src="js/dashboard-agents.js?v=4"></script>
+            <div class="loc-admin-dialog-body">
+                <input type="hidden" id="insight-edit-id" value="">
+
+                <div class="insight-pro-draft-bar">
+                    <div style="flex: 1 1 220px;">
+                        <span style="font-size: 0.8rem; color: #5b21b6; font-weight: 700; display: block;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> Publisher Specialized Auto-Drafter (3 Sources)
+                        </span>
+                        <span style="font-size: 0.74rem; color: #64748b;">Choose to draft from live inventory &amp; parks, Internet Public news, or any Website Link given.</span>
+                    </div>
+                    <div style="display: flex; gap: 0.45rem; flex-wrap: wrap; align-items: center;">
+                        <select id="insight-input-edition" name="insightEdition" class="form-control insight-compact-select" aria-label="Article Publisher Edition" onchange="refreshInsightVisualPreviews()">
+                            <option value="specialized">Specialized Executive Brief</option>
+                            <option value="investor">Investor &amp; Yield Playbook</option>
+                            <option value="compliance">Technical &amp; Compliance Blueprint</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-outline" id="btn-editor-from-public" onclick="autoFillInsightEditorFromInternetPublic()">
+                            <i class="fa-solid fa-earth-asia"></i> From Internet Public
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline" onclick="toggleInsightEditorQuickUrlBar()">
+                            <i class="fa-solid fa-link"></i> From Website Link
+                        </button>
+                        <button type="button" class="btn btn-sm btn-ai" onclick="autoFillInsightEditorFromInventory()">
+                            <i class="fa-solid fa-warehouse"></i> From Inventory &amp; Parks
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick URL Capture Inside Editor Modal -->
+                <div id="insight-editor-quick-url-row" class="insight-editor-quick-url-row" hidden>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; width: 100%;">
+                        <input type="url" id="insight-editor-quick-url-input" class="form-control insight-compact-input" style="flex: 1 1 260px;" placeholder="Paste website article link (https://...) to capture photo &amp; rewrite into this editor">
+                        <button type="button" class="btn btn-sm btn-primary" id="btn-editor-quick-capture" onclick="captureUrlDirectlyIntoEditor()">
+                            <i class="fa-solid fa-cloud-arrow-down"></i> Capture &amp; Fill Editor
+                        </button>
+                    </div>
+                    <div id="insight-editor-quick-url-status" style="font-size: 0.75rem; color: #475569; margin-top: 0.35rem; display: none;"></div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="insight-input-title">Article Title <span class="req-star" style="color: #ef4444;">*</span></label>
+                    <input type="text" id="insight-input-title" class="form-control" required autofocus placeholder="e.g. Shah Alam Sekitar 26 &amp; Section 15 Factory Rental Benchmarks 2026" oninput="autoSlugInsightTitle()">
+                </div>
+
+                <div class="loc-admin-form-grid">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="insight-input-slug">URL Slug <span class="req-star" style="color: #ef4444;">*</span></label>
+                        <input type="text" id="insight-input-slug" class="form-control" required placeholder="shah-alam-sekitar-26-factory-benchmarks">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="insight-input-category">Category <span class="req-star" style="color: #ef4444;">*</span></label>
+                        <select id="insight-input-category" class="form-control" required>
+                            <option value="Industry Guide">Industry Guide</option>
+                            <option value="Sector Analysis">Sector Analysis</option>
+                            <option value="Legal & Compliance">Legal &amp; Compliance</option>
+                            <option value="Location Focus">Location Focus</option>
+                            <option value="Key Industrial Areas">Key Industrial Areas</option>
+                            <option value="Case Studies">Case Studies</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="loc-admin-form-grid">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="insight-input-city">Target Location / Corridor</label>
+                        <select id="insight-input-city" class="form-control">
+                            <option value="Klang Valley">All Klang Valley</option>
+                            <option value="Petaling Jaya">Petaling Jaya</option>
+                            <option value="Subang Jaya">Subang Jaya</option>
+                            <option value="Shah Alam">Shah Alam</option>
+                            <option value="Klang">Klang</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="insight-input-type">Target Property Type</label>
+                        <select id="insight-input-type" class="form-control">
+                            <option value="All">All Industrial Types</option>
+                            <option value="Factory">All Factory</option>
+                            <option value="Detached Factory">Detached Factory</option>
+                            <option value="Semi-Detached Factory">Semi-Detached Factory</option>
+                            <option value="Terrace Factory">Terrace Factory</option>
+                            <option value="Cluster Factory">Cluster Factory</option>
+                            <option value="Warehouse">All Warehouse</option>
+                            <option value="Detached Warehouse">Detached Warehouse</option>
+                            <option value="Semi-Detached Warehouse">Semi-Detached Warehouse</option>
+                            <option value="Shared Warehouse">Shared Warehouse</option>
+                            <option value="Multi-Storey Warehouse">Multi-Storey Warehouse</option>
+                            <option value="Land">All Land</option>
+                            <option value="Industrial Land">Industrial Land</option>
+                            <option value="Commercial Land">Commercial Land</option>
+                            <option value="Agricultural Land">Agricultural Land</option>
+                            <option value="Shoplot (Near Factory)">Shoplot (Near Factory)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="loc-admin-form-grid">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="insight-input-author">Author / Specialist</label>
+                        <input type="text" id="insight-input-author" class="form-control" value="MyFactorySpace Editorial" placeholder="e.g. Marcus Chen">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="insight-input-date">Publish Date</label>
+                        <input type="date" id="insight-input-date" class="form-control">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="insight-input-status">Status</label>
+                        <select id="insight-input-status" class="form-control">
+                            <option value="Published">Published (Live)</option>
+                            <option value="Draft">Draft (Hidden)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <label class="loc-admin-checkbox-card" for="insight-input-featured">
+                    <input type="checkbox" id="insight-input-featured">
+                    <span>
+                        <strong>Feature in Top Hero Banner</strong>
+                        <small>Highlights this article at the very top of insights.html</small>
+                    </span>
+                </label>
+
+                <!-- Cover Image -->
+                <div class="loc-admin-photo-panel">
+                    <div style="display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 0.65rem;">
+                        <div>
+                            <h4 style="margin: 0; font-size: 0.9rem;">Article Cover Photo</h4>
+                            <p style="margin: 0; font-size: 0.76rem; color: #64748b;">Upload to cloud storage or pick a drone aerial preset.</p>
+                        </div>
+                        <label class="btn btn-sm btn-outline">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                            <span id="insight-upload-label">Upload Cover</span>
+                            <input type="file" id="insight-cover-file-input" accept="image/*" hidden onchange="handleInsightCoverUpload(this)">
+                        </label>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 160px 1fr; gap: 0.85rem; align-items: center;">
+                        <img id="insight-cover-preview" src="assets/images/drone_all.jpg" alt="Insight Cover Preview" style="width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 10px; border: 1px solid #cbd5e1;">
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <input type="text" id="insight-input-cover" class="form-control" value="assets/images/drone_all.jpg" oninput="document.getElementById('insight-cover-preview').src = this.value || 'assets/images/drone_all.jpg';" style="font-size: 0.82rem;">
+                            <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+                                <button type="button" class="btn btn-xs btn-outline" onclick="setInsightCoverPreset('assets/images/drone_all.jpg')">Aerial Hub</button>
+                                <button type="button" class="btn btn-xs btn-outline" onclick="setInsightCoverPreset('assets/images/drone_logistics_park.jpg')">Logistics Park</button>
+                                <button type="button" class="btn btn-xs btn-outline" onclick="setInsightCoverPreset('assets/images/drone_factory_estate.jpg')">Factory Estate</button>
+                                <button type="button" class="btn btn-xs btn-outline" onclick="setInsightCoverPreset('assets/images/drone_pj.jpg')">PJ</button>
+                                <button type="button" class="btn btn-xs btn-outline" onclick="setInsightCoverPreset('assets/images/drone_subang.jpg')">Subang</button>
+                                <button type="button" class="btn btn-xs btn-outline" onclick="setInsightCoverPreset('assets/images/drone_shahalam.jpg')">Shah Alam</button>
+                                <button type="button" class="btn btn-xs btn-outline" onclick="setInsightCoverPreset('assets/images/drone_klang.jpg')">Klang</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SPLIT STUDIO 1: Interactive Executive Mind Map Studio (Pure Diagram) -->
+                <div class="insight-visual-studio insight-mindmap-studio" id="insight-mindmap-studio">
+                    <div class="insight-studio-head">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;">
+                                <h4><i class="fa-solid fa-diagram-project" style="color: #059669;"></i> 1. Executive Mind Map Studio</h4>
+                                <label class="insights-toggle-chip is-compact" for="insight-show-mindmap">
+                                    <input type="checkbox" id="insight-show-mindmap" checked>
+                                    <span>Display on Article</span>
+                                </label>
+                            </div>
+                            <p>Clean, clutter-free 4-pillar hub-and-spoke mind map diagram rendered interactively on the article &amp; exportable as 1600&times;900 PNG.</p>
+                        </div>
+                        <div class="insight-studio-actions">
+                            <button type="button" class="btn btn-sm btn-ai-outline" onclick="autoRebuildInsightMindMap()">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Build Mind Map
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline" onclick="refreshInsightVisualPreviews()">
+                                <i class="fa-solid fa-rotate"></i> Refresh
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline" onclick="downloadCurrentInsightMindMapPng()">
+                                <i class="fa-solid fa-download"></i> Mind Map PNG
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="insight-studio-canvas-wrap is-light">
+                        <canvas id="insight-mindmap-canvas" width="1600" height="900" role="img" aria-label="Live preview of executive mind map diagram"></canvas>
+                    </div>
+
+                    <details class="insight-mm-editor-details">
+                        <summary><i class="fa-solid fa-sliders"></i> Customize Mind Map Hub &amp; 4 Pillars (Also feeds KPI strip below)</summary>
+                        <div class="loc-admin-form-grid" style="margin-top: 0.65rem;">
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="insight-mm-center-title">Mind Map Center Hub Title</label>
+                                <input type="text" id="insight-mm-center-title" class="form-control" placeholder="e.g. Shah Alam Industrial Hub" oninput="refreshInsightVisualPreviews()">
+                            </div>
+                            <div class="form-group" style="margin-bottom: 0;">
+                                <label for="insight-mm-center-sub">Center Subtitle / Badge</label>
+                                <input type="text" id="insight-mm-center-sub" class="form-control" placeholder="e.g. Live Benchmarks · 2026" oninput="refreshInsightVisualPreviews()">
+                            </div>
+                        </div>
+                        <div class="insight-mm-branches-grid">
+                            <div class="insight-mm-branch-box" style="--mm-top: #059669;">
+                                <span class="insight-mm-branch-label">Pillar 1 (Emerald)</span>
+                                <input type="text" id="insight-mm-b0-title" class="form-control" placeholder="Title (e.g. Pricing & Supply)" oninput="refreshInsightVisualPreviews()">
+                                <input type="text" id="insight-mm-b0-metric" class="form-control" placeholder="Key Metric (e.g. RM 18K–65K/mo)" oninput="refreshInsightVisualPreviews()">
+                                <textarea id="insight-mm-b0-points" class="form-control" rows="2" placeholder="1 short point per line (max 3)" oninput="refreshInsightVisualPreviews()"></textarea>
+                            </div>
+                            <div class="insight-mm-branch-box" style="--mm-top: #2563eb;">
+                                <span class="insight-mm-branch-label">Pillar 2 (Blue)</span>
+                                <input type="text" id="insight-mm-b1-title" class="form-control" placeholder="Title (e.g. Core Tech Specs)" oninput="refreshInsightVisualPreviews()">
+                                <input type="text" id="insight-mm-b1-metric" class="form-control" placeholder="Key Metric (e.g. 150–400 Amp)" oninput="refreshInsightVisualPreviews()">
+                                <textarea id="insight-mm-b1-points" class="form-control" rows="2" placeholder="1 short point per line (max 3)" oninput="refreshInsightVisualPreviews()"></textarea>
+                            </div>
+                            <div class="insight-mm-branch-box" style="--mm-top: #7c3aed;">
+                                <span class="insight-mm-branch-label">Pillar 3 (Violet)</span>
+                                <input type="text" id="insight-mm-b2-title" class="form-control" placeholder="Title (e.g. Key Industrial Parks)" oninput="refreshInsightVisualPreviews()">
+                                <input type="text" id="insight-mm-b2-metric" class="form-control" placeholder="Key Metric (e.g. Sekitar 26 · Sec 15)" oninput="refreshInsightVisualPreviews()">
+                                <textarea id="insight-mm-b2-points" class="form-control" rows="2" placeholder="1 short point per line (max 3)" oninput="refreshInsightVisualPreviews()"></textarea>
+                            </div>
+                            <div class="insight-mm-branch-box" style="--mm-top: #d97706;">
+                                <span class="insight-mm-branch-label">Pillar 4 (Amber)</span>
+                                <input type="text" id="insight-mm-b3-title" class="form-control" placeholder="Title (e.g. Quick Action Checks)" oninput="refreshInsightVisualPreviews()">
+                                <input type="text" id="insight-mm-b3-metric" class="form-control" placeholder="Key Metric (e.g. CCC · BOMBA · DOE)" oninput="refreshInsightVisualPreviews()">
+                                <textarea id="insight-mm-b3-points" class="form-control" rows="2" placeholder="1 short point per line (max 3)" oninput="refreshInsightVisualPreviews()"></textarea>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- SPLIT STUDIO 2: HD Enhanced Infographic Photo Studio (Photo-First Visual) -->
+                <div class="insight-visual-studio insight-infographic-studio" id="insight-infographic-studio">
+                    <div class="insight-studio-head">
+                        <div>
+                            <div style="display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap;">
+                                <h4><i class="fa-solid fa-camera-retro" style="color: #2563eb;"></i> 2. HD Enhanced Infographic Photo Studio</h4>
+                                <label class="insights-toggle-chip is-compact" for="insight-show-infographic">
+                                    <input type="checkbox" id="insight-show-infographic" checked>
+                                    <span>Display on Article</span>
+                                </label>
+                            </div>
+                            <p>Photo-first 1600&times;900 aerial editorial graphic with headline &amp; 4 frosted KPI cards — rendered separately from the Mind Map.</p>
+                        </div>
+                        <div class="insight-studio-actions">
+                            <button type="button" class="btn btn-sm btn-outline" onclick="refreshInsightVisualPreviews()">
+                                <i class="fa-solid fa-rotate"></i> Refresh Photo
+                            </button>
+                            <button type="button" class="btn btn-sm btn-primary" id="btn-attach-infographic-photo" onclick="saveInsightInfographicPhoto({ asCover: false })">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Attach Infographic Photo
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline" id="btn-apply-infographic-cover" onclick="saveInsightInfographicPhoto({ asCover: true })">
+                                <i class="fa-solid fa-image"></i> Set as Cover
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline" onclick="downloadCurrentInsightInfographicPng()">
+                                <i class="fa-solid fa-download"></i> Infographic PNG
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="insight-studio-canvas-wrap">
+                        <canvas id="insight-infographic-canvas" width="1600" height="900" role="img" aria-label="Live preview of HD enhanced infographic photo"></canvas>
+                    </div>
+
+                    <div class="insight-studio-url-row">
+                        <label for="insight-input-visual-photo" style="font-size: 0.76rem; font-weight: 700; color: #334155; white-space: nowrap;">
+                            <i class="fa-solid fa-link"></i> Attached Infographic Photo URL:
+                        </label>
+                        <input type="text" id="insight-input-visual-photo" class="form-control insight-compact-input" placeholder="Click 'Attach Infographic Photo' to upload to cloud storage, or leave empty to render live on article page">
+                        <button type="button" class="btn btn-xs btn-outline" onclick="document.getElementById('insight-input-visual-photo').value = '';">Clear</button>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="insight-input-excerpt">Standfirst / Summary Excerpt <span class="req-star" style="color: #ef4444;">*</span></label>
+                    <textarea id="insight-input-excerpt" class="form-control" rows="2" required placeholder="2-3 sentence summary shown in the Featured Hero and article header..."></textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="insight-input-takeaways">Key Takeaways <span style="font-weight: 400; color: var(--text-muted); font-size: 0.78rem;">(1 bullet per line)</span></label>
+                    <textarea id="insight-input-takeaways" class="form-control" rows="3" placeholder="Point 1&#10;Point 2&#10;Point 3"></textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="insight-input-body" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                        <span>Article Body <span style="font-weight: 400; color: var(--text-muted); font-size: 0.78rem;">(Supports ## Headings, **bold**, - bullets, | tables |, [link](url))</span></span>
+                    </label>
+                    <textarea id="insight-input-body" class="form-control" rows="9" required placeholder="## Section Heading&#10;Write your industrial market insights here..."></textarea>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label for="insight-input-faqs">FAQs <span style="font-weight: 400; color: var(--text-muted); font-size: 0.78rem;">(Format each FAQ as: Q: question | A: answer — one per line)</span></label>
+                    <textarea id="insight-input-faqs" class="form-control" rows="3" placeholder="Q: What power supply is typical? | A: Semi-detached factories offer 150-200 Amp 3-phase power."></textarea>
+                </div>
+            </div>
+
+            <div class="loc-admin-dialog-footer">
+                <button type="button" class="btn btn-outline" onclick="closeInsightEditorModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="btn-save-insight">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Insight
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Administrator-Only Manage Location & Mainpage Card Photo Dialog -->
+    <dialog id="manage-location-dialog" class="loc-admin-dialog" closedby="any" aria-labelledby="manage-loc-dialog-title">
+        <form id="manage-location-form" class="loc-admin-dialog-form" onsubmit="saveManagedLocation(event)">
+            <div class="loc-admin-dialog-header">
+                <div style="display: flex; align-items: center; gap: 0.7rem;">
+                    <div class="loc-admin-dialog-icon"><i class="fa-solid fa-map-location-dot"></i></div>
+                    <div>
+                        <h3 id="manage-loc-dialog-title">Add New Location</h3>
+                        <p id="manage-loc-dialog-subtitle">Administrator Only &mdash; Syncs across Mainpage Cards, Search Filters &amp; Property Forms</p>
+                    </div>
+                </div>
+                <button type="button" class="loc-admin-dialog-close" onclick="closeLocationManageModal()" aria-label="Close dialog">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="loc-admin-dialog-body">
+                <input type="hidden" id="manage-loc-editing-slug" value="">
+
+                <div class="loc-admin-form-grid">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="manage-loc-name">Location / City Name <span class="req-star" style="color: #ef4444;">*</span></label>
+                        <input type="text" id="manage-loc-name" class="form-control" required autofocus placeholder="e.g. Puchong, Rawang, Cyberjaya" oninput="updateManagedLocationPreview()">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="manage-loc-short">Mobile Short Label <span style="font-weight: 400; color: var(--text-muted); font-size: 0.78rem;">(Optional)</span></label>
+                        <input type="text" id="manage-loc-short" class="form-control" maxlength="16" placeholder="e.g. Puchong or PJ" oninput="updateManagedLocationPreview()">
+                    </div>
+                </div>
+
+                <div class="loc-admin-form-grid">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="manage-loc-state">State / Region</label>
+                        <input type="text" id="manage-loc-state" class="form-control" value="Selangor" placeholder="Selangor">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0; display: flex; align-items: flex-end;">
+                        <label class="loc-admin-checkbox-card" for="manage-loc-show-mainpage">
+                            <input type="checkbox" id="manage-loc-show-mainpage" checked>
+                            <span>
+                                <strong>Show on Mainpage &amp; Search</strong>
+                                <small>Display card in All Locations &amp; hero filter</small>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Card Photo Section -->
+                <div class="loc-admin-photo-panel">
+                    <div class="loc-admin-photo-head">
+                        <div>
+                            <h4><i class="fa-solid fa-image"></i> Mainpage Location Card Photo</h4>
+                            <p>Recommended: Landscape 16:9 aerial / exterior shot (auto-compressed &amp; uploaded to cloud storage).</p>
+                        </div>
+                    </div>
+
+                    <div class="loc-admin-preview-split">
+                        <!-- Live Mainpage Card Preview -->
+                        <div>
+                            <span class="loc-admin-mini-label">Live Mainpage Card Preview</span>
+                            <div class="loc-card-live-preview" id="manage-loc-card-preview">
+                                <img id="manage-loc-preview-img" src="assets/images/drone_all.jpg" alt="Location card preview">
+                                <span class="loc-card-preview-badge">0 Units Available</span>
+                                <span class="loc-card-preview-label">
+                                    <span id="manage-loc-preview-title">New Location</span>
+                                    <i class="fa-solid fa-chevron-down" style="font-size: 0.75em;"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Upload & URL Controls -->
+                        <div class="loc-admin-photo-controls">
+                            <span class="loc-admin-mini-label">Upload or Paste Photo URL</span>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                                <label class="btn btn-sm btn-outline">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                    <span id="manage-loc-upload-label">Upload Photo</span>
+                                    <input type="file" id="manage-loc-file-input" accept="image/*" hidden onchange="handleLocationCardImageUpload(this)">
+                                </label>
+                                <button type="button" class="btn btn-sm btn-outline" onclick="pickBestPropertyPhotoForManagedLocation()">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Auto-Pick from Listings
+                                </button>
+                            </div>
+                            <input type="text" id="manage-loc-card-image" class="form-control" placeholder="assets/images/drone_all.jpg or https://..." oninput="updateManagedLocationPreview()" style="font-size: 0.82rem;">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: #475569; cursor: pointer;">
+                                <input type="checkbox" id="manage-loc-sync-hero" checked>
+                                <span>Also sync this photo as the city Landing Page Hero image</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Existing Property Photos in this Location (if any) -->
+                    <div id="manage-loc-listing-photos-wrap" style="display: none; margin-top: 0.85rem;">
+                        <span class="loc-admin-mini-label">Photos from Existing Listings in This Location</span>
+                        <div id="manage-loc-listing-photos-grid" class="loc-admin-thumb-grid"></div>
+                    </div>
+
+                    <!-- Aerial / Industrial Preset Fallback Strip -->
+                    <div style="margin-top: 0.85rem;">
+                        <span class="loc-admin-mini-label">Quick Aerial &amp; Industrial Presets (Safe Fallback if No Drone Shot Yet)</span>
+                        <div id="manage-loc-presets-grid" class="loc-admin-thumb-grid">
+                            <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_all.jpg')" title="Klang Valley Aerial Hub">
+                                <img src="assets/images/drone_all.jpg" alt="Aerial Industrial Hub"><span>Aerial Hub</span>
+                            </button>
+                            <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_logistics_park.jpg')" title="Aerial Logistics Park">
+                                <img src="assets/images/drone_logistics_park.jpg" alt="Aerial Logistics Park"><span>Logistics Park</span>
+                            </button>
+                            <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_factory_estate.jpg')" title="Aerial Factory Estate">
+                                <img src="assets/images/drone_factory_estate.jpg" alt="Aerial Factory Estate"><span>Factory Estate</span>
+                            </button>
+                            <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_pj.jpg')" title="Urban Industrial Estate">
+                                <img src="assets/images/drone_pj.jpg" alt="Urban Industrial Estate"><span>Urban Estate</span>
+                            </button>
+                            <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_subang.jpg')" title="Hi-Tech Warehouses">
+                                <img src="assets/images/drone_subang.jpg" alt="Hi-Tech Warehouses"><span>Hi-Tech Hub</span>
+                            </button>
+                            <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_shahalam.jpg')" title="Heavy Industrial Zone">
+                                <img src="assets/images/drone_shahalam.jpg" alt="Heavy Industrial Zone"><span>Industrial Zone</span>
+                            </button>
+                            <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_klang.jpg')" title="Port & Logistics Corridor">
+                                <img src="assets/images/drone_klang.jpg" alt="Port Logistics Corridor"><span>Port Corridor</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="loc-admin-dialog-footer">
+                <button type="button" id="btn-delete-managed-loc" class="btn btn-danger-outline" onclick="deleteManagedLocation()" style="display: none; margin-right: auto;">
+                    <i class="fa-solid fa-trash-can"></i> Delete Location
+                </button>
+                <button type="button" class="btn btn-outline" onclick="closeLocationManageModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary" id="btn-save-managed-loc">
+                    <i class="fa-solid fa-floppy-disk"></i> Save Location
+                </button>
+            </div>
+        </form>
+    </dialog>
+
+    <!-- Vendor Libraries & Supabase SDK (loaded non-blocking at end of body) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.13/cropper.min.js"></script>
+    <script src="https://unpkg.com/heic2any"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js?v=40"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin="anonymous"></script>
+    <script src="js/property-share.js?v=45"></script>
+    <script src="js/property-map.js?v=8"></script>
+    <script src="js/insights-visuals.js?v=3"></script>
+    <script src="js/dashboard.js?v=119"></script>
+
+    <script src="js/dashboard-agents.js?v=5"></script>
 </body>
 </html>

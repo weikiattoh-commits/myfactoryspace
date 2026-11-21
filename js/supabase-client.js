@@ -15,8 +15,54 @@ if (window.supabase) {
     console.warn('⚠️ Supabase JS SDK not loaded yet. Ensure CDN script is included before supabase-client.js');
 }
 
-// Global Supabase Helper Object
+// Global Supabase Helper Object (with short-lived request deduplication & batching)
 window.IndustraSupabase = {
+    _memCache: new Map(),
+    _inFlight: new Map(),
+    _ttlMs: 8000,
+
+    _getCached(key) {
+        const hit = this._memCache.get(key);
+        if (!hit) return undefined;
+        if (Date.now() - hit.ts > this._ttlMs) {
+            this._memCache.delete(key);
+            return undefined;
+        }
+        return hit.value;
+    },
+
+    _setCached(key, value) {
+        this._memCache.set(key, { ts: Date.now(), value });
+        return value;
+    },
+
+    _invalidate(prefixOrKey) {
+        for (const k of Array.from(this._memCache.keys())) {
+            if (k === prefixOrKey || k.startsWith(prefixOrKey + ':')) this._memCache.delete(k);
+        }
+        for (const k of Array.from(this._inFlight.keys())) {
+            if (k === prefixOrKey || k.startsWith(prefixOrKey + ':')) this._inFlight.delete(k);
+        }
+    },
+
+    _dedupFetch(cacheKey, fetcher) {
+        const cached = this._getCached(cacheKey);
+        if (cached !== undefined) return Promise.resolve(cached);
+        if (this._inFlight.has(cacheKey)) return this._inFlight.get(cacheKey);
+        const p = Promise.resolve().then(fetcher).then(res => {
+            this._inFlight.delete(cacheKey);
+            if (res !== null && res !== undefined) {
+                this._setCached(cacheKey, res);
+            }
+            return res;
+        }).catch(err => {
+            this._inFlight.delete(cacheKey);
+            throw err;
+        });
+        this._inFlight.set(cacheKey, p);
+        return p;
+    },
+
     getClient() {
         if (!supabaseClient && window.supabase) {
             supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -24,25 +70,28 @@ window.IndustraSupabase = {
         return supabaseClient;
     },
 
-    // Fetch properties from Supabase
+    // Fetch properties from Supabase (deduplicated)
     async fetchProperties() {
-        const client = this.getClient();
-        if (!client) return null;
-        try {
-            const { data, error } = await client.from('properties').select('*');
-            if (error) {
-                console.error('Error fetching properties from Supabase:', error);
+        return this._dedupFetch('properties', async () => {
+            const client = this.getClient();
+            if (!client) return null;
+            try {
+                const { data, error } = await client.from('properties').select('*');
+                if (error) {
+                    console.error('Error fetching properties from Supabase:', error);
+                    return null;
+                }
+                return data;
+            } catch (e) {
+                console.error('Exception fetching properties from Supabase:', e);
                 return null;
             }
-            return data;
-        } catch (e) {
-            console.error('Exception fetching properties from Supabase:', e);
-            return null;
-        }
+        });
     },
 
     // Save/Update property in Supabase
     async upsertProperty(property) {
+        this._invalidate('properties');
         const client = this.getClient();
         if (!client) return { success: false, error: 'Supabase client not initialized' };
         try {
@@ -60,6 +109,7 @@ window.IndustraSupabase = {
 
     // Delete property from Supabase
     async deleteProperty(id) {
+        this._invalidate('properties');
         const client = this.getClient();
         if (!client) return false;
         try {
@@ -75,21 +125,24 @@ window.IndustraSupabase = {
         }
     },
 
-    // Fetch parks
+    // Fetch parks (deduplicated)
     async fetchIndustrialParks() {
-        const client = this.getClient();
-        if (!client) return null;
-        try {
-            const { data, error } = await client.from('parks').select('*');
-            if (error) return null;
-            return data;
-        } catch (e) {
-            return null;
-        }
+        return this._dedupFetch('parks', async () => {
+            const client = this.getClient();
+            if (!client) return null;
+            try {
+                const { data, error } = await client.from('parks').select('*');
+                if (error) return null;
+                return data;
+            } catch (e) {
+                return null;
+            }
+        });
     },
 
     // Upsert park
     async upsertIndustrialPark(park) {
+        this._invalidate('parks');
         const client = this.getClient();
         if (!client) return false;
         try {
@@ -102,6 +155,7 @@ window.IndustraSupabase = {
 
     // Delete park
     async deleteIndustrialPark(id) {
+        this._invalidate('parks');
         const client = this.getClient();
         if (!client) return false;
         try {
@@ -112,37 +166,40 @@ window.IndustraSupabase = {
         }
     },
 
-    // Fetch agents
+    // Fetch agents (deduplicated)
     async fetchAgents() {
-        const client = this.getClient();
-        if (!client) return null;
-        try {
-            const { data, error } = await client.from('agents').select('*').order('id', { ascending: true });
-            if (error) return null;
-            return data.map(item => {
-                const specs = (item.specs && typeof item.specs === 'object') ? item.specs : {};
-                return {
-                    ...specs,
-                    id: isNaN(item.id) ? item.id : Number(item.id),
-                    name: item.name || specs.name || '',
-                    ren: item.ren || specs.ren || '',
-                    phone: item.phone || specs.phone || '',
-                    whatsapp: item.whatsapp || specs.whatsapp || '',
-                    email: item.email || specs.email || '',
-                    bio: item.bio || specs.bio || '',
-                    image: item.image || specs.image || '',
-                    parks: Array.isArray(item.parks) ? item.parks : (specs.parks || []),
-                    assignedParks: Array.isArray(item.parks) ? item.parks : (specs.assignedParks || []),
-                    showOnMainpage: item.show_on_mainpage !== false
-                };
-            });
-        } catch (e) {
-            return null;
-        }
+        return this._dedupFetch('agents', async () => {
+            const client = this.getClient();
+            if (!client) return null;
+            try {
+                const { data, error } = await client.from('agents').select('*').order('id', { ascending: true });
+                if (error) return null;
+                return data.map(item => {
+                    const specs = (item.specs && typeof item.specs === 'object') ? item.specs : {};
+                    return {
+                        ...specs,
+                        id: isNaN(item.id) ? item.id : Number(item.id),
+                        name: item.name || specs.name || '',
+                        ren: item.ren || specs.ren || '',
+                        phone: item.phone || specs.phone || '',
+                        whatsapp: item.whatsapp || specs.whatsapp || '',
+                        email: item.email || specs.email || '',
+                        bio: item.bio || specs.bio || '',
+                        image: item.image || specs.image || '',
+                        parks: Array.isArray(item.parks) ? item.parks : (specs.parks || []),
+                        assignedParks: Array.isArray(item.parks) ? item.parks : (specs.assignedParks || []),
+                        showOnMainpage: item.show_on_mainpage !== false
+                    };
+                });
+            } catch (e) {
+                return null;
+            }
+        });
     },
 
     // Upsert agent
     async upsertAgent(agent) {
+        this._invalidate('agents');
         const client = this.getClient();
         if (!client) {
             console.error('Supabase client not initialized in upsertAgent');
@@ -189,6 +246,7 @@ window.IndustraSupabase = {
 
     // Delete agent
     async deleteAgent(id) {
+        this._invalidate('agents');
         const client = this.getClient();
         if (!client) return false;
         try {
@@ -289,22 +347,67 @@ window.IndustraSupabase = {
         }
     },
 
-    // Fetch site setting by key
-    async fetchSiteSetting(key) {
-        const client = this.getClient();
-        if (!client) return null;
-        try {
-            const { data, error } = await client.from('site_settings').select('*').eq('key', key).maybeSingle();
-            if (error || !data) return null;
-            return data.value;
-        } catch (e) {
-            console.error(`Exception fetching site setting '${key}' from Supabase:`, e);
-            return null;
+    // Fetch multiple site settings in a single query and populate per-key cache
+    async fetchSiteSettingsBatch(keys) {
+        const cleanKeys = [...new Set((Array.isArray(keys) ? keys : []).map(k => String(k || '').trim()).filter(Boolean))];
+        if (cleanKeys.length === 0) return {};
+
+        const result = {};
+        const missing = [];
+        for (const k of cleanKeys) {
+            const cached = this._getCached('site_setting:' + k);
+            if (cached !== undefined) {
+                result[k] = cached;
+            } else {
+                missing.push(k);
+            }
         }
+        if (missing.length === 0) return result;
+
+        const batchKey = 'site_setting_batch:' + missing.slice().sort().join(',');
+        return this._dedupFetch(batchKey, async () => {
+            const client = this.getClient();
+            if (!client) return result;
+            try {
+                const { data, error } = await client.from('site_settings').select('key, value').in('key', missing);
+                if (error) {
+                    console.error('Error batch-fetching site settings:', error);
+                    return result;
+                }
+                const foundMap = new Map((data || []).map(row => [row.key, row.value]));
+                for (const k of missing) {
+                    const val = foundMap.has(k) ? foundMap.get(k) : null;
+                    this._setCached('site_setting:' + k, val);
+                    result[k] = val;
+                }
+                return result;
+            } catch (e) {
+                console.error('Exception batch-fetching site settings:', e);
+                return result;
+            }
+        });
+    },
+
+    // Fetch site setting by key (deduplicated)
+    async fetchSiteSetting(key) {
+        return this._dedupFetch('site_setting:' + key, async () => {
+            const client = this.getClient();
+            if (!client) return null;
+            try {
+                const { data, error } = await client.from('site_settings').select('*').eq('key', key).maybeSingle();
+                if (error || !data) return null;
+                return data.value;
+            } catch (e) {
+                console.error(`Exception fetching site setting '${key}' from Supabase:`, e);
+                return null;
+            }
+        });
     },
 
     // Upsert site setting (key, value)
     async upsertSiteSetting(key, value) {
+        this._invalidate('site_setting:' + key);
+        this._invalidate('site_setting_batch');
         const client = this.getClient();
         if (!client) return false;
         try {
@@ -643,6 +746,114 @@ window.IndustraSupabase = {
             return { success: true, tableMissing: false };
         } catch (e) {
             return { success: false, tableMissing: false };
+        }
+    },
+
+    // Capture webpage metadata, photos, and clean text via Supabase Edge Function 'capture-url-insight'
+    async captureUrlForInsight(url) {
+        const cleanUrl = String(url || '').trim();
+        if (!cleanUrl) return { ok: false, error: 'Please enter a website URL to capture.' };
+        try {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/capture-url-insight`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'apikey': SUPABASE_ANON_KEY
+                },
+                referrerPolicy: 'no-referrer',
+                body: JSON.stringify({ action: 'capture', url: cleanUrl })
+            });
+            const data = await response.json().catch(() => null);
+            if (!data || typeof data !== 'object') {
+                return { ok: false, error: `Capture service returned HTTP ${response.status}.` };
+            }
+            return data;
+        } catch (e) {
+            console.error('captureUrlForInsight error:', e);
+            return { ok: false, error: 'Could not reach the URL Capture service. Check your connection or use Paste Text / Notes.' };
+        }
+    },
+
+    // Download a captured external photo server-side (CORS-free) and upload to Supabase Storage 'property-images'
+    async importCapturedImageToStorage(imageUrl, slugHint = 'insight') {
+        const cleanUrl = String(imageUrl || '').trim();
+        if (!cleanUrl) return { success: false, error: 'No image URL provided.' };
+        // Already local asset or already on our Supabase Storage
+        if (cleanUrl.startsWith('assets/') || cleanUrl.startsWith(SUPABASE_URL)) {
+            return { success: true, url: cleanUrl };
+        }
+        try {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/capture-url-insight`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'apikey': SUPABASE_ANON_KEY
+                },
+                referrerPolicy: 'no-referrer',
+                body: JSON.stringify({ action: 'import_image', imageUrl: cleanUrl })
+            });
+            const data = await response.json().catch(() => null);
+            if (!data || !data.ok || !data.dataUrl) {
+                return { success: false, error: (data && data.error) || 'Failed to download remote photo.' };
+            }
+            const extMap = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/gif': 'gif' };
+            const ext = extMap[data.contentType] || 'jpg';
+            const safeSlug = String(slugHint || 'insight').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 42) || 'insight';
+            const filename = `insight_cap_${safeSlug}_${Date.now()}.${ext}`;
+            return await this.uploadImage(data.dataUrl, filename);
+        } catch (e) {
+            console.error('importCapturedImageToStorage error:', e);
+            return { success: false, error: e.message || 'Image import failed.' };
+        }
+    },
+
+    // Discover fresh Malaysia / Klang Valley public industrial news via Edge Function
+    async discoverPublicIndustrialNews({ query = '', city = '' } = {}) {
+        try {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/capture-url-insight`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'apikey': SUPABASE_ANON_KEY
+                },
+                referrerPolicy: 'no-referrer',
+                body: JSON.stringify({ action: 'discover_public', query, city })
+            });
+            const data = await response.json().catch(() => null);
+            if (!data || typeof data !== 'object') {
+                return { ok: false, error: `Public news service returned HTTP ${response.status}.` };
+            }
+            return data;
+        } catch (e) {
+            console.error('discoverPublicIndustrialNews error:', e);
+            return { ok: false, error: 'Could not reach the Public News discovery service right now.' };
+        }
+    },
+
+    // Auto-discover and capture the freshest unused public industrial story + photos
+    async discoverAndCapturePublicInsight({ query = '', city = '', excludeUrls = [], excludeTitles = [] } = {}) {
+        try {
+            const response = await fetch(`${SUPABASE_URL}/functions/v1/capture-url-insight`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                    'apikey': SUPABASE_ANON_KEY
+                },
+                referrerPolicy: 'no-referrer',
+                body: JSON.stringify({ action: 'discover_and_capture', query, city, excludeUrls, excludeTitles })
+            });
+            const data = await response.json().catch(() => null);
+            if (!data || typeof data !== 'object') {
+                return { ok: false, error: `Public news capture returned HTTP ${response.status}.` };
+            }
+            return data;
+        } catch (e) {
+            console.error('discoverAndCapturePublicInsight error:', e);
+            return { ok: false, error: 'Could not reach the Public News capture service right now.' };
         }
     }
 };

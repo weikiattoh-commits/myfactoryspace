@@ -611,12 +611,19 @@
                     return String(typeof p === 'string' ? p : (p && p.name ? p.name : '')).trim();
                 }).filter(Boolean)));
                 var parksBadges = '';
+                var maxVisibleParks = 4;
                 if (parksList.length > 0) {
-                    parksBadges = parksList.map(function(p) {
-                        return '<span class="agent-park-badge" title="' + escapeHtml(p) + '">' +
+                    parksBadges = parksList.map(function(p, pIdx) {
+                        var extraCls = pIdx >= maxVisibleParks ? ' is-extra-park' : '';
+                        return '<span class="agent-park-badge' + extraCls + '" title="' + escapeHtml(p) + '">' +
                             '<i class="fa-solid fa-industry"></i><span>' + escapeHtml(p) + '</span>' +
                         '</span>';
                     }).join('');
+                    if (parksList.length > maxVisibleParks) {
+                        var hiddenCount = parksList.length - maxVisibleParks;
+                        var allTitle = escapeHtml(parksList.join(', '));
+                        parksBadges += '<button type="button" class="agent-park-more-btn" data-more-count="' + hiddenCount + '" title="All ' + parksList.length + ' parks: ' + allTitle + '" onclick="var cell=this.parentElement; var exp=cell.classList.toggle(\'is-expanded\'); this.textContent=exp?\'Show less\':(\'+\'+this.getAttribute(\'data-more-count\')+\' more\');">+' + hiddenCount + ' more</button>';
+                    }
                 } else {
                     parksBadges = '<span style="color:var(--text-muted);font-size:0.75rem;font-style:italic;">None assigned</span>';
                 }
@@ -641,7 +648,7 @@
                     '<td><div style="font-weight:600; color:#0f172a; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + escapeHtml(a.name||'') + '</div>' + emailHtml + '</td>' +
                     '<td style="white-space:nowrap; font-size:0.8rem; font-weight:600; color:#475569;">' + escapeHtml(a.ren||'') + '</td>' +
                     '<td>' + waDisplay + '</td>' +
-                    '<td><div style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:0.78rem;color:#475569;" title="' + escapeHtml(a.bio||'') + '">' + escapeHtml(a.bio||'') + '</div></td>' +
+                    '<td><div style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;line-height:1.35;font-size:0.78rem;color:#475569;" title="' + escapeHtml(a.bio||'') + '">' + escapeHtml(a.bio||'') + '</div></td>' +
                     '<td><div class="agent-parks-cell">' + parksBadges + '</div></td>' +
                     '<td style="text-align:center;vertical-align:middle;">' +
                         '<label style="display:inline-flex;align-items:center;gap:5px;cursor:' + (canManage ? 'pointer' : 'not-allowed') + ';user-select:none;margin:0;opacity:' + (canManage ? '1' : '0.45') + ';">' +
