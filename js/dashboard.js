@@ -375,8 +375,8 @@ function initDashboardApp() {
             obs.observe(el, { attributes: true, attributeFilter: ['open', 'class', 'style'] });
         };
         watchEl('agent-modal');
-        watchEl('manage-loc-dialog');
-        watchEl('insight-modal');
+        watchEl('manage-location-dialog');
+        watchEl('insight-editor-dialog');
     })();
 
     // Lazy on-demand loaders for optional Dashboard modules (172 KB property-share.js & insights-visuals.js)
@@ -406,17 +406,31 @@ function initDashboardApp() {
     }
     window.ensurePropertyShareLoaded = ensurePropertyShareLoaded;
 
-    if (typeof window.openPropertyShareModal !== 'function') {
-        const lazyShareProxy = async function(propOrId, options) {
+    const makeLazyShareProxy = (fnName, friendlyLabel) => {
+        const proxy = async function(...args) {
             const ok = await ensurePropertyShareLoaded();
-            if (ok && typeof window.openPropertyShareModal === 'function' && !window.openPropertyShareModal.__isLazyProxy) {
-                return window.openPropertyShareModal(propOrId, options);
+            if (ok && typeof window[fnName] === 'function' && !window[fnName].__isLazyProxy) {
+                return window[fnName](...args);
             }
-            if (typeof showToast === 'function') showToast('Unable to load Share tool. Please refresh and try again.', 'error');
+            if (typeof showToast === 'function') showToast(`Unable to load ${friendlyLabel}. Please refresh and try again.`, 'error');
         };
-        lazyShareProxy.__isLazyProxy = true;
-        window.openPropertyShareModal = lazyShareProxy;
-        window.openSharePropertyModal = lazyShareProxy;
+        proxy.__isLazyProxy = true;
+        return proxy;
+    };
+    if (typeof window.openPropertyShareModal !== 'function') {
+        const p = makeLazyShareProxy('openPropertyShareModal', 'Share tool');
+        window.openPropertyShareModal = p;
+        window.openSharePropertyModal = p;
+    }
+    if (typeof window.openPropertyBrochureModal !== 'function') {
+        const p = makeLazyShareProxy('openPropertyBrochureModal', 'E-Brochure viewer');
+        window.openPropertyBrochureModal = p;
+        window.openBrochurePropertyModal = p;
+    }
+    if (typeof window.openPropertyMapModal !== 'function') {
+        const p = makeLazyShareProxy('openPropertyMapModal', 'Map viewer');
+        window.openPropertyMapModal = p;
+        window.openMapPropertyModal = p;
     }
 
     let _insightsVisualsLoadPromise = null;
@@ -11732,6 +11746,7 @@ ON CONFLICT (username) DO NOTHING;`);
     const sidebarPinBtn = document.getElementById('sidebar-pin-btn');
 
     function syncDesktopSidebar() {
+        document.documentElement.classList.remove('sidebar-minimized-early');
         if (window.innerWidth > 768) {
             const isMin = localStorage.getItem('dashboard_sidebar_minimized') !== 'false';
             if (isMin) {
@@ -11744,6 +11759,7 @@ ON CONFLICT (username) DO NOTHING;`);
     syncDesktopSidebar();
 
     function toggleDesktopSidebar() {
+        document.documentElement.classList.remove('sidebar-minimized-early');
         const isMin = document.body.classList.toggle('sidebar-minimized');
         try {
             localStorage.setItem('dashboard_sidebar_minimized', isMin ? 'true' : 'false');
@@ -11979,7 +11995,7 @@ ON CONFLICT (username) DO NOTHING;`);
         }
     };
 
-    // Load Daily Visitor Trend (Last 7, 14, or 30 days) from Supabase
+    // Load Daily Visitor Trend (Last 7, 14, or 30 days) from Supabase (deduplicated & canvas-safe)
     window.loadDailyVisitorTrend = async function(canvas, daysCount, lineColor, fillColor, force = false) {
         canvas = canvas || document.getElementById('trafficChart');
         daysCount = daysCount || window.currentDailyRange || 14;
@@ -11995,92 +12011,59 @@ ON CONFLICT (username) DO NOTHING;`);
         _visitorRpcCache.dailyTrend.key = trendKey;
         _visitorRpcCache.dailyTrend.ts = nowTs;
 
-        const summaryEl = document.getElementById('visitor-chart-summary');
-        if (summaryEl) summaryEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading daily data…';
+        const run = (async () => {
+            const summaryEl = document.getElementById('visitor-chart-summary');
+            if (summaryEl) summaryEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading daily data…';
 
-        let rows = [];
-        try {
-            if (window.IndustraSupabase && typeof window.IndustraSupabase.ensurePublicConfigLoaded === 'function') {
-                await window.IndustraSupabase.ensurePublicConfigLoaded();
-            }
-            const client = window.IndustraSupabase && window.IndustraSupabase.getClient();
-            if (client) {
-                const { data, error } = await client.rpc('get_daily_visitor_trend', { days_count: daysCount });
-                if (error) throw error;
-                rows = Array.isArray(data) ? data : [];
-            }
-        } catch (e) {
-            console.error('Failed to load daily visitor trend:', e);
-        }
-
-        // If no data returned (e.g. offline/fallback), construct default timeline
-        if (rows.length === 0) {
-            const now = new Date();
-            for (let i = daysCount - 1; i >= 0; i--) {
-                const d = new Date(now.getTime() - i * 86400000);
-                const dKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-                rows.push({ day: dKey, visitors: 0, views: 0 });
-            }
-        }
-
-        const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const labels = rows.map(r => {
-            const parts = String(r.day).split('-');
-            if (parts.length === 3) {
-                const mIdx = parseInt(parts[1], 10) - 1;
-                const dayNum = parseInt(parts[2], 10);
-                return dayNum + ' ' + (monthsShort[mIdx] || parts[1]);
-            }
-            return r.day;
-        });
-
-        const visitorsData = rows.map(r => Number(r.visitors) || 0);
-        const viewsData = rows.map(r => Number(r.views) || 0);
-
-        const totalVisitors = visitorsData.reduce((a, b) => a + b, 0);
-        const totalViews = viewsData.reduce((a, b) => a + b, 0);
-
-        if (summaryEl) {
-            summaryEl.innerHTML = `<i class="fa-solid fa-calendar-check" style="color:var(--primary);margin-right:4px;"></i><strong>${totalVisitors.toLocaleString()}</strong> unique visitors &bull; <strong>${totalViews.toLocaleString()}</strong> views in last ${daysCount}d`;
-        }
-
-        if (trafficChartInstance) {
-            trafficChartInstance.data.labels = labels;
-            trafficChartInstance.data.datasets = [
-                {
-                    label: 'Unique Visitors',
-                    data: visitorsData,
-                    borderColor: lineColor,
-                    backgroundColor: fillColor,
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.35,
-                    pointRadius: daysCount > 14 ? 2 : 3,
-                    pointHoverRadius: 5
-                },
-                {
-                    label: 'Page Views',
-                    data: viewsData,
-                    borderColor: '#0284c7',
-                    backgroundColor: 'rgba(2, 132, 199, 0.08)',
-                    borderWidth: 2,
-                    borderDash: [3, 3],
-                    fill: false,
-                    tension: 0.35,
-                    pointRadius: daysCount > 14 ? 2 : 3,
-                    pointHoverRadius: 5
+            let rows = [];
+            try {
+                if (window.IndustraSupabase && typeof window.IndustraSupabase.ensurePublicConfigLoaded === 'function') {
+                    await window.IndustraSupabase.ensurePublicConfigLoaded();
                 }
-            ];
-            trafficChartInstance.options.scales.x.ticks.maxTicksLimit = daysCount > 14 ? 10 : 14;
-            trafficChartInstance.update();
-            return;
-        }
+                const client = window.IndustraSupabase && window.IndustraSupabase.getClient();
+                if (client) {
+                    const { data, error } = await client.rpc('get_daily_visitor_trend', { days_count: daysCount });
+                    if (error) throw error;
+                    rows = Array.isArray(data) ? data : [];
+                }
+            } catch (e) {
+                console.error('Failed to load daily visitor trend:', e);
+            }
 
-        trafficChartInstance = new Chart(canvas, {
-            type: 'line',
-            data: {
-                labels,
-                datasets: [
+            // If no data returned (e.g. offline/fallback), construct default timeline
+            if (rows.length === 0) {
+                const now = new Date();
+                for (let i = daysCount - 1; i >= 0; i--) {
+                    const d = new Date(now.getTime() - i * 86400000);
+                    const dKey = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                    rows.push({ day: dKey, visitors: 0, views: 0 });
+                }
+            }
+
+            const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const labels = rows.map(r => {
+                const parts = String(r.day).split('-');
+                if (parts.length === 3) {
+                    const mIdx = parseInt(parts[1], 10) - 1;
+                    const dayNum = parseInt(parts[2], 10);
+                    return dayNum + ' ' + (monthsShort[mIdx] || parts[1]);
+                }
+                return r.day;
+            });
+
+            const visitorsData = rows.map(r => Number(r.visitors) || 0);
+            const viewsData = rows.map(r => Number(r.views) || 0);
+
+            const totalVisitors = visitorsData.reduce((a, b) => a + b, 0);
+            const totalViews = viewsData.reduce((a, b) => a + b, 0);
+
+            if (summaryEl) {
+                summaryEl.innerHTML = `<i class="fa-solid fa-calendar-check" style="color:var(--primary);margin-right:4px;"></i><strong>${totalVisitors.toLocaleString()}</strong> unique visitors &bull; <strong>${totalViews.toLocaleString()}</strong> views in last ${daysCount}d`;
+            }
+
+            if (trafficChartInstance) {
+                trafficChartInstance.data.labels = labels;
+                trafficChartInstance.data.datasets = [
                     {
                         label: 'Unique Visitors',
                         data: visitorsData,
@@ -12104,43 +12087,85 @@ ON CONFLICT (username) DO NOTHING;`);
                         pointRadius: daysCount > 14 ? 2 : 3,
                         pointHoverRadius: 5
                     }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
+                ];
+                trafficChartInstance.options.scales.x.ticks.maxTicksLimit = daysCount > 14 ? 10 : 14;
+                trafficChartInstance.update();
+                return;
+            }
+
+            const existingChart = typeof Chart.getChart === 'function' ? Chart.getChart(canvas) : null;
+            if (existingChart) existingChart.destroy();
+
+            trafficChartInstance = new Chart(canvas, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Unique Visitors',
+                            data: visitorsData,
+                            borderColor: lineColor,
+                            backgroundColor: fillColor,
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: daysCount > 14 ? 2 : 3,
+                            pointHoverRadius: 5
+                        },
+                        {
+                            label: 'Page Views',
+                            data: viewsData,
+                            borderColor: '#0284c7',
+                            backgroundColor: 'rgba(2, 132, 199, 0.08)',
+                            borderWidth: 2,
+                            borderDash: [3, 3],
+                            fill: false,
+                            tension: 0.35,
+                            pointRadius: daysCount > 14 ? 2 : 3,
+                            pointHoverRadius: 5
+                        }
+                    ]
                 },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#0f172a',
-                        titleFont: { size: 12, weight: 'bold' },
-                        bodyFont: { size: 11 },
-                        padding: 10,
-                        cornerRadius: 8
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { precision: 0 },
-                        grid: { borderDash: [2, 4], color: '#e5e7eb' }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
                     },
-                    x: {
-                        grid: { display: false },
-                        ticks: {
-                            font: { size: 10.5 },
-                            maxRotation: 0,
-                            autoSkip: true,
-                            maxTicksLimit: daysCount > 14 ? 10 : 14
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleFont: { size: 12, weight: 'bold' },
+                            bodyFont: { size: 11 },
+                            padding: 10,
+                            cornerRadius: 8
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 },
+                            grid: { borderDash: [2, 4], color: '#e5e7eb' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: {
+                                font: { size: 10.5 },
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: daysCount > 14 ? 10 : 14
+                            }
                         }
                     }
                 }
-            }
+            });
+        })().finally(() => {
+            if (_visitorRpcCache.dailyTrend.promise === run) _visitorRpcCache.dailyTrend.promise = null;
         });
+        _visitorRpcCache.dailyTrend.promise = run;
+        return run;
     };
 
     // Load last 12 months of unique visitors and render as line chart
