@@ -88,17 +88,15 @@ window.switchView = function switchView(viewName, subtab = 'general') {
         if (navOverview) navOverview.classList.add('active');
         if (overviewView) overviewView.style.display = 'block';
         if (typeof window.renderOverviewCharts === 'function') window.renderOverviewCharts();
-        if (typeof window.renderOverviewSummaries === 'function') window.renderOverviewSummaries();
         if (typeof window.loadPropertiesFromSupabase === 'function') window.loadPropertiesFromSupabase();
         if (typeof window.loadLeadsFromSupabase === 'function') window.loadLeadsFromSupabase();
         if (typeof window.loadOwnerListingsFromSupabase === 'function') window.loadOwnerListingsFromSupabase();
-        if (typeof window.renderVisitorChart === 'function') window.renderVisitorChart();
-        else if (typeof window.loadVisitorTrend === 'function') window.loadVisitorTrend();
-        if (typeof window.loadDailyVisitorStats === 'function') window.loadDailyVisitorStats();
-        if (typeof window.loadVisitorStats === 'function') window.loadVisitorStats();
     } else if (viewName === 'landing-page') {
         if (navLandingPage) navLandingPage.classList.add('active');
-        if (landingPageView) landingPageView.style.display = 'block';
+        if (landingPageView) {
+            landingPageView.style.display = 'block';
+            if (typeof window.hydrateDashboardLazyImages === 'function') window.hydrateDashboardLazyImages(landingPageView);
+        }
         const locationsCont = document.getElementById('properties-locations-container');
         if (locationsCont) locationsCont.style.display = 'block';
         const citySlug = (subtab && subtab !== 'general') ? subtab : null;
@@ -107,8 +105,17 @@ window.switchView = function switchView(viewName, subtab = 'general') {
         }
     } else if (viewName === 'insights') {
         if (navInsights) navInsights.classList.add('active');
-        if (insightsView) insightsView.style.display = 'block';
-        if (typeof window.initInsightsAdminView === 'function') {
+        if (insightsView) {
+            insightsView.style.display = 'block';
+            if (typeof window.hydrateDashboardLazyImages === 'function') window.hydrateDashboardLazyImages(insightsView);
+        }
+        if (typeof window.ensureInsightsVisualsLoaded === 'function') {
+            window.ensureInsightsVisualsLoaded().finally(() => {
+                if (typeof window.initInsightsAdminView === 'function') {
+                    window.initInsightsAdminView();
+                }
+            });
+        } else if (typeof window.initInsightsAdminView === 'function') {
             window.initInsightsAdminView();
         }
     } else if (viewName === 'properties') {
@@ -326,6 +333,111 @@ function initDashboardApp() {
             'location_landing_settings'
         ]).catch(() => {});
     }
+
+    // Deduplicated visitor RPC cache (prevents 4x-5x duplicate boot RPC calls while still allowing forced refresh)
+    const _visitorRpcCache = {
+        dailyStats: { ts: 0, promise: null },
+        monthlyStats: { ts: 0, promise: null },
+        dailyTrend: { ts: 0, key: '', promise: null },
+        monthlyTrend: { ts: 0, promise: null }
+    };
+    const VISITOR_RPC_COOLDOWN_MS = 5000;
+
+    // Hydrate deferred preset/preview images inside modals & hidden tabs on first open
+    function hydrateDashboardLazyImages(rootEl) {
+        const scope = rootEl || document;
+        if (!scope || typeof scope.querySelectorAll !== 'function') return;
+        scope.querySelectorAll('img[data-lazy-src]').forEach(img => {
+            const targetSrc = img.getAttribute('data-lazy-src');
+            if (targetSrc) {
+                img.src = targetSrc;
+                img.removeAttribute('data-lazy-src');
+            }
+        });
+    }
+    window.hydrateDashboardLazyImages = hydrateDashboardLazyImages;
+
+    // Automatically hydrate hidden modals/dialogs as soon as they open (zero bytes downloaded on initial dashboard boot)
+    (function observeLazyModalImages() {
+        if (typeof MutationObserver !== 'function') return;
+        const watchEl = (id) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const obs = new MutationObserver(() => {
+                const isShown = el.hasAttribute('open') ||
+                    el.classList.contains('active') ||
+                    el.classList.contains('open') ||
+                    (el.style && el.style.display && el.style.display !== 'none');
+                if (isShown) {
+                    hydrateDashboardLazyImages(el);
+                }
+            });
+            obs.observe(el, { attributes: true, attributeFilter: ['open', 'class', 'style'] });
+        };
+        watchEl('agent-modal');
+        watchEl('manage-loc-dialog');
+        watchEl('insight-modal');
+    })();
+
+    // Lazy on-demand loaders for optional Dashboard modules (172 KB property-share.js & insights-visuals.js)
+    let _propertyShareLoadPromise = null;
+    function ensurePropertyShareLoaded() {
+        if (window.__propertyShareScriptReady) return Promise.resolve(true);
+        if (_propertyShareLoadPromise) return _propertyShareLoadPromise;
+        _propertyShareLoadPromise = new Promise((resolve) => {
+            const existing = document.querySelector('script[src*="js/property-share.js"]');
+            if (existing && window.openPropertyShareModal && !window.openPropertyShareModal.__isLazyProxy) {
+                window.__propertyShareScriptReady = true;
+                return resolve(true);
+            }
+            const s = document.createElement('script');
+            s.src = 'js/property-share.js?v=47';
+            s.onload = () => {
+                window.__propertyShareScriptReady = true;
+                resolve(true);
+            };
+            s.onerror = () => {
+                _propertyShareLoadPromise = null;
+                resolve(false);
+            };
+            document.head.appendChild(s);
+        });
+        return _propertyShareLoadPromise;
+    }
+    window.ensurePropertyShareLoaded = ensurePropertyShareLoaded;
+
+    if (typeof window.openPropertyShareModal !== 'function') {
+        const lazyShareProxy = async function(propOrId, options) {
+            const ok = await ensurePropertyShareLoaded();
+            if (ok && typeof window.openPropertyShareModal === 'function' && !window.openPropertyShareModal.__isLazyProxy) {
+                return window.openPropertyShareModal(propOrId, options);
+            }
+            if (typeof showToast === 'function') showToast('Unable to load Share tool. Please refresh and try again.', 'error');
+        };
+        lazyShareProxy.__isLazyProxy = true;
+        window.openPropertyShareModal = lazyShareProxy;
+        window.openSharePropertyModal = lazyShareProxy;
+    }
+
+    let _insightsVisualsLoadPromise = null;
+    function ensureInsightsVisualsLoaded() {
+        if (window.InsightsVisuals) return Promise.resolve(true);
+        if (_insightsVisualsLoadPromise) return _insightsVisualsLoadPromise;
+        _insightsVisualsLoadPromise = new Promise((resolve) => {
+            const existing = document.querySelector('script[src*="js/insights-visuals.js"]');
+            if (existing && window.InsightsVisuals) return resolve(true);
+            const s = document.createElement('script');
+            s.src = 'js/insights-visuals.js?v=3';
+            s.onload = () => resolve(true);
+            s.onerror = () => {
+                _insightsVisualsLoadPromise = null;
+                resolve(false);
+            };
+            document.head.appendChild(s);
+        });
+        return _insightsVisualsLoadPromise;
+    }
+    window.ensureInsightsVisualsLoaded = ensureInsightsVisualsLoaded;
 
     // Lazy on-demand CDN loaders for heavy media tools (Cropper.js & heic2any)
     let _cropperLoadPromise = null;
@@ -11811,16 +11923,16 @@ ON CONFLICT (username) DO NOTHING;`);
             });
         }
         
-        // Daily / Monthly Visitor Trends — live from Supabase
+        // Daily / Monthly Visitor Trends — live from Supabase (deduplicated during boot burst)
         if (typeof window.renderVisitorChart === 'function') {
-            window.renderVisitorChart();
+            window.renderVisitorChart(false);
         } else {
-            window.loadDailyVisitorTrend(trafficCanvas, 14, primaryColor, leadsBg);
+            window.loadDailyVisitorTrend(trafficCanvas, 14, primaryColor, leadsBg, false);
         }
         
-        // Update summary metrics
-        window.loadDailyVisitorStats();
-        window.loadVisitorStats();
+        // Update summary metrics (deduplicated during boot burst)
+        window.loadDailyVisitorStats(false);
+        window.loadVisitorStats(false);
         
         window.renderOverviewSummaries();
     };
@@ -11845,15 +11957,15 @@ ON CONFLICT (username) DO NOTHING;`);
         if (legendViews) legendViews.style.display = isDaily ? 'inline-flex' : 'none';
         if (heading) heading.textContent = isDaily ? 'Daily Visitor Trends' : 'Monthly Visitor Trends';
 
-        window.renderVisitorChart();
+        window.renderVisitorChart(true);
     };
 
     window.changeDailyVisitorRange = function(days) {
         window.currentDailyRange = parseInt(days, 10) || 14;
-        window.renderVisitorChart();
+        window.renderVisitorChart(true);
     };
 
-    window.renderVisitorChart = function() {
+    window.renderVisitorChart = function(force = false) {
         const trafficCanvas = document.getElementById('trafficChart');
         if (!trafficCanvas) return;
         const root = document.documentElement;
@@ -11861,19 +11973,27 @@ ON CONFLICT (username) DO NOTHING;`);
         const leadsBg = getComputedStyle(root).getPropertyValue('--primary-light').trim() || 'rgba(5, 150, 105, 0.12)';
 
         if (window.currentVisitorMode === 'monthly') {
-            window.loadVisitorTrend(trafficCanvas, primaryColor, leadsBg);
+            window.loadVisitorTrend(trafficCanvas, primaryColor, leadsBg, force);
         } else {
-            window.loadDailyVisitorTrend(trafficCanvas, window.currentDailyRange, primaryColor, leadsBg);
+            window.loadDailyVisitorTrend(trafficCanvas, window.currentDailyRange, primaryColor, leadsBg, force);
         }
     };
 
     // Load Daily Visitor Trend (Last 7, 14, or 30 days) from Supabase
-    window.loadDailyVisitorTrend = async function(canvas, daysCount, lineColor, fillColor) {
+    window.loadDailyVisitorTrend = async function(canvas, daysCount, lineColor, fillColor, force = false) {
         canvas = canvas || document.getElementById('trafficChart');
         daysCount = daysCount || window.currentDailyRange || 14;
         lineColor = lineColor || '#059669';
         fillColor = fillColor || 'rgba(5, 150, 105, 0.12)';
         if (!canvas || typeof Chart === 'undefined') return;
+        const trendKey = String(daysCount);
+        const nowTs = Date.now();
+        if (!force && _visitorRpcCache.dailyTrend.key === trendKey) {
+            if (_visitorRpcCache.dailyTrend.promise) return _visitorRpcCache.dailyTrend.promise;
+            if (trafficChartInstance && (nowTs - _visitorRpcCache.dailyTrend.ts) < VISITOR_RPC_COOLDOWN_MS) return;
+        }
+        _visitorRpcCache.dailyTrend.key = trendKey;
+        _visitorRpcCache.dailyTrend.ts = nowTs;
 
         const summaryEl = document.getElementById('visitor-chart-summary');
         if (summaryEl) summaryEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Loading daily data…';
@@ -12120,73 +12240,93 @@ ON CONFLICT (username) DO NOTHING;`);
         });
     };
 
-    // Load Daily Visitors KPI Metric from Supabase
-    window.loadDailyVisitorStats = async function() {
+    // Load Daily Visitors KPI Metric from Supabase (deduplicated)
+    window.loadDailyVisitorStats = async function(force = false) {
         const visEl = document.getElementById('metric-daily-visitors');
         const trendEl = document.getElementById('metric-daily-visitors-trend');
         if (!visEl) return;
+        const nowTs = Date.now();
+        if (!force && _visitorRpcCache.dailyStats.promise) return _visitorRpcCache.dailyStats.promise;
+        if (!force && (nowTs - _visitorRpcCache.dailyStats.ts) < VISITOR_RPC_COOLDOWN_MS) return;
+        _visitorRpcCache.dailyStats.ts = nowTs;
         const setTrend = (html, color) => { if (trendEl) { trendEl.innerHTML = html; trendEl.style.color = color; } };
 
-        try {
-            if (window.IndustraSupabase && typeof window.IndustraSupabase.ensurePublicConfigLoaded === 'function') {
-                await window.IndustraSupabase.ensurePublicConfigLoaded();
-            }
-            const client = window.IndustraSupabase && window.IndustraSupabase.getClient();
-            if (!client) throw new Error('Supabase not available');
-            const { data, error } = await client.rpc('get_daily_visitor_stats');
-            if (error) throw error;
-            
-            const stats = (data && typeof data === 'object') ? data : {};
-            const todayVisitors = Number(stats.today_visitors) || 0;
-            const yesterdayVisitors = Number(stats.yesterday_visitors) || 0;
-            const todayViews = Number(stats.today_views) || 0;
+        const run = (async () => {
+            try {
+                if (window.IndustraSupabase && typeof window.IndustraSupabase.ensurePublicConfigLoaded === 'function') {
+                    await window.IndustraSupabase.ensurePublicConfigLoaded();
+                }
+                const client = window.IndustraSupabase && window.IndustraSupabase.getClient();
+                if (!client) throw new Error('Supabase not available');
+                const { data, error } = await client.rpc('get_daily_visitor_stats');
+                if (error) throw error;
+                
+                const stats = (data && typeof data === 'object') ? data : {};
+                const todayVisitors = Number(stats.today_visitors) || 0;
+                const yesterdayVisitors = Number(stats.yesterday_visitors) || 0;
+                const todayViews = Number(stats.today_views) || 0;
 
-            visEl.innerText = todayVisitors.toLocaleString();
+                visEl.innerText = todayVisitors.toLocaleString();
 
-            if (yesterdayVisitors === 0) {
-                setTrend(`<i class="fa-solid fa-eye"></i> ${todayViews.toLocaleString()} views today`, '#64748b');
-            } else {
-                const diff = todayVisitors - yesterdayVisitors;
-                const pct = Math.round((diff / yesterdayVisitors) * 100);
-                const up = pct >= 0;
-                setTrend(`<i class="fa-solid fa-arrow-trend-${up ? 'up' : 'down'}"></i> ${up ? '+' : ''}${pct}% vs yesterday (${todayViews} views)`, up ? '#10b981' : '#ef4444');
+                if (yesterdayVisitors === 0) {
+                    setTrend(`<i class="fa-solid fa-eye"></i> ${todayViews.toLocaleString()} views today`, '#64748b');
+                } else {
+                    const diff = todayVisitors - yesterdayVisitors;
+                    const pct = Math.round((diff / yesterdayVisitors) * 100);
+                    const up = pct >= 0;
+                    setTrend(`<i class="fa-solid fa-arrow-trend-${up ? 'up' : 'down'}"></i> ${up ? '+' : ''}${pct}% vs yesterday (${todayViews} views)`, up ? '#10b981' : '#ef4444');
+                }
+            } catch (e) {
+                console.error('Failed to load daily visitor stats:', e);
+                visEl.innerText = '0';
+                setTrend('<i class="fa-solid fa-circle-info"></i> Tracking active', '#64748b');
+            } finally {
+                if (_visitorRpcCache.dailyStats.promise === run) _visitorRpcCache.dailyStats.promise = null;
             }
-        } catch (e) {
-            console.error('Failed to load daily visitor stats:', e);
-            visEl.innerText = '0';
-            setTrend('<i class="fa-solid fa-circle-info"></i> Tracking active', '#64748b');
-        }
+        })();
+        _visitorRpcCache.dailyStats.promise = run;
+        return run;
     };
 
-    // Load real Monthly Visitors from Supabase (page_views table via get_visitor_stats RPC)
-    window.loadVisitorStats = async function() {
+    // Load real Monthly Visitors from Supabase (page_views table via get_visitor_stats RPC, deduplicated)
+    window.loadVisitorStats = async function(force = false) {
         const visEl = document.getElementById('metric-visitors');
         const trendEl = document.getElementById('metric-visitors-trend');
         if (!visEl) return;
+        const nowTs = Date.now();
+        if (!force && _visitorRpcCache.monthlyStats.promise) return _visitorRpcCache.monthlyStats.promise;
+        if (!force && (nowTs - _visitorRpcCache.monthlyStats.ts) < VISITOR_RPC_COOLDOWN_MS) return;
+        _visitorRpcCache.monthlyStats.ts = nowTs;
         const setTrend = (html, color) => { if (trendEl) { trendEl.innerHTML = html; trendEl.style.color = color; } };
-        try {
-            if (window.IndustraSupabase && typeof window.IndustraSupabase.ensurePublicConfigLoaded === 'function') {
-                await window.IndustraSupabase.ensurePublicConfigLoaded();
+        const run = (async () => {
+            try {
+                if (window.IndustraSupabase && typeof window.IndustraSupabase.ensurePublicConfigLoaded === 'function') {
+                    await window.IndustraSupabase.ensurePublicConfigLoaded();
+                }
+                const client = window.IndustraSupabase && window.IndustraSupabase.getClient();
+                if (!client) throw new Error('Supabase not available');
+                const { data, error } = await client.rpc('get_visitor_stats');
+                if (error) throw error;
+                const thisMonth = Number(data.this_month) || 0;
+                const lastMonth = Number(data.last_month) || 0;
+                visEl.innerText = thisMonth.toLocaleString();
+                if (lastMonth === 0) {
+                    setTrend('<i class="fa-solid fa-chart-line"></i> ' + (Number(data.views_this_month) || 0).toLocaleString() + ' page views this month', '#64748b');
+                } else {
+                    const pct = Math.round(((thisMonth - lastMonth) / lastMonth) * 100);
+                    const up = pct >= 0;
+                    setTrend('<i class="fa-solid fa-arrow-trend-' + (up ? 'up' : 'down') + '"></i> ' + (up ? '+' : '') + pct + '% from last month', up ? '#10b981' : '#ef4444');
+                }
+            } catch (e) {
+                console.error('Failed to load visitor stats:', e);
+                visEl.innerText = '—';
+                setTrend('<i class="fa-solid fa-circle-exclamation"></i> Stats unavailable', '#f59e0b');
+            } finally {
+                if (_visitorRpcCache.monthlyStats.promise === run) _visitorRpcCache.monthlyStats.promise = null;
             }
-            const client = window.IndustraSupabase && window.IndustraSupabase.getClient();
-            if (!client) throw new Error('Supabase not available');
-            const { data, error } = await client.rpc('get_visitor_stats');
-            if (error) throw error;
-            const thisMonth = Number(data.this_month) || 0;
-            const lastMonth = Number(data.last_month) || 0;
-            visEl.innerText = thisMonth.toLocaleString();
-            if (lastMonth === 0) {
-                setTrend('<i class="fa-solid fa-chart-line"></i> ' + (Number(data.views_this_month) || 0).toLocaleString() + ' page views this month', '#64748b');
-            } else {
-                const pct = Math.round(((thisMonth - lastMonth) / lastMonth) * 100);
-                const up = pct >= 0;
-                setTrend('<i class="fa-solid fa-arrow-trend-' + (up ? 'up' : 'down') + '"></i> ' + (up ? '+' : '') + pct + '% from last month', up ? '#10b981' : '#ef4444');
-            }
-        } catch (e) {
-            console.error('Failed to load visitor stats:', e);
-            visEl.innerText = '—';
-            setTrend('<i class="fa-solid fa-circle-exclamation"></i> Stats unavailable', '#f59e0b');
-        }
+        })();
+        _visitorRpcCache.monthlyStats.promise = run;
+        return run;
     };
 
     // Calculate and project Active Properties count on Overview stat card

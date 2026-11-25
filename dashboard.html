@@ -7,6 +7,26 @@
     <meta name="theme-color" content="#0f172a">
     <meta name="robots" content="noindex, nofollow">
     <title>Dashboard | MyFactorySpace Real Estate</title>
+
+    <!-- Instant Early Auth Gate (redirects unauthenticated/expired sessions in <5ms before downloading CSS/JS/images) -->
+    <script>
+    (function() {
+        try {
+            var MAX_SESSION_MS = 8 * 60 * 60 * 1000;
+            var st = parseInt(localStorage.getItem('login_session_time') || sessionStorage.getItem('login_session_time') || '0', 10);
+            var expired = st > 0 && (Date.now() - st > MAX_SESSION_MS);
+            var isAuth = (sessionStorage.getItem('isAuthenticated') === 'true' || localStorage.getItem('isAuthenticated') === 'true') && !expired;
+            if (!isAuth) {
+                sessionStorage.clear();
+                localStorage.removeItem('isAuthenticated');
+                localStorage.removeItem('loggedInUser');
+                localStorage.removeItem('currentUserRole');
+                localStorage.removeItem('login_session_time');
+                window.location.replace('login.html');
+            }
+        } catch (_) {}
+    })();
+    </script>
     
     <!-- Favicon & Site Icons (Google Search, Browser Tabs & Mobile) -->
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon.png">
@@ -21,7 +41,6 @@
     <link rel="manifest" href="/assets/icons/site.webmanifest">
     
     <!-- Resource Hints & Fonts -->
-    <link rel="preconnect" href="https://vnsinkesbbikeqbywxfd.supabase.co" crossorigin>
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1465,7 +1484,7 @@
                                     <span class="loc-hint">1920 &times; 800 px</span>
                                 </div>
                                 <div class="loc-hero-preview">
-                                    <img id="loc-preview-hero-img" src="assets/images/drone_pj.jpg" alt="Hero photo preview">
+                                    <img id="loc-preview-hero-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/drone_pj.jpg" alt="Hero photo preview" loading="lazy" decoding="async">
                                     <span class="loc-hero-tag"><i class="fa-solid fa-drone"></i> <span id="loc-preview-badge-label">Aerial Drone View</span></span>
                                 </div>
                                 <div class="loc-btn-pair">
@@ -6296,14 +6315,14 @@ NOTIFY pgrst, 'reload schema';</pre>
                                                 <div class="agent-mock-picker" id="agent-mock-avatar-picker" role="group" aria-label="Quick-pick default mock portrait">
                                                     <span class="agent-mock-picker-label">Or pick mock portrait:</span>
                                                     <div class="agent-mock-picker-list">
-                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_marcus.jpg" onclick="selectMockAgentAvatar('assets/images/agent_marcus.jpg', 'Marcus')" title="Use Mock Portrait: Marcus" aria-label="Use Mock Portrait Marcus" aria-pressed="false"><img src="assets/images/agent_marcus.jpg" alt="Marcus" loading="lazy"></button>
-                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_david.jpg" onclick="selectMockAgentAvatar('assets/images/agent_david.jpg', 'David')" title="Use Mock Portrait: David" aria-label="Use Mock Portrait David" aria-pressed="false"><img src="assets/images/agent_david.jpg" alt="David" loading="lazy"></button>
-                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_sarah.jpg" onclick="selectMockAgentAvatar('assets/images/agent_sarah.jpg', 'Sarah')" title="Use Mock Portrait: Sarah" aria-label="Use Mock Portrait Sarah" aria-pressed="false"><img src="assets/images/agent_sarah.jpg" alt="Sarah" loading="lazy"></button>
-                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_aisyah.jpg" onclick="selectMockAgentAvatar('assets/images/agent_aisyah.jpg', 'Aisyah')" title="Use Mock Portrait: Aisyah" aria-label="Use Mock Portrait Aisyah" aria-pressed="false"><img src="assets/images/agent_aisyah.jpg" alt="Aisyah" loading="lazy"></button>
-                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_farid.jpg" onclick="selectMockAgentAvatar('assets/images/agent_farid.jpg', 'Farid')" title="Use Mock Portrait: Farid" aria-label="Use Mock Portrait Farid" aria-pressed="false"><img src="assets/images/agent_farid.jpg" alt="Farid" loading="lazy"></button>
-                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_chloe.jpg" onclick="selectMockAgentAvatar('assets/images/agent_chloe.jpg', 'Chloe')" title="Use Mock Portrait: Chloe" aria-label="Use Mock Portrait Chloe" aria-pressed="false"><img src="assets/images/agent_chloe.jpg" alt="Chloe" loading="lazy"></button>
-                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_kevin.jpg" onclick="selectMockAgentAvatar('assets/images/agent_kevin.jpg', 'Kevin')" title="Use Mock Portrait: Kevin" aria-label="Use Mock Portrait Kevin" aria-pressed="false"><img src="assets/images/agent_kevin.jpg" alt="Kevin" loading="lazy"></button>
-                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_rachel.jpg" onclick="selectMockAgentAvatar('assets/images/agent_rachel.jpg', 'Rachel')" title="Use Mock Portrait: Rachel" aria-label="Use Mock Portrait Rachel" aria-pressed="false"><img src="assets/images/agent_rachel.jpg" alt="Rachel" loading="lazy"></button>
+                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_marcus.jpg" onclick="selectMockAgentAvatar('assets/images/agent_marcus.jpg', 'Marcus')" title="Use Mock Portrait: Marcus" aria-label="Use Mock Portrait Marcus" aria-pressed="false"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/agent_marcus.jpg" alt="Marcus" loading="lazy" decoding="async"></button>
+                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_david.jpg" onclick="selectMockAgentAvatar('assets/images/agent_david.jpg', 'David')" title="Use Mock Portrait: David" aria-label="Use Mock Portrait David" aria-pressed="false"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/agent_david.jpg" alt="David" loading="lazy" decoding="async"></button>
+                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_sarah.jpg" onclick="selectMockAgentAvatar('assets/images/agent_sarah.jpg', 'Sarah')" title="Use Mock Portrait: Sarah" aria-label="Use Mock Portrait Sarah" aria-pressed="false"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/agent_sarah.jpg" alt="Sarah" loading="lazy" decoding="async"></button>
+                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_aisyah.jpg" onclick="selectMockAgentAvatar('assets/images/agent_aisyah.jpg', 'Aisyah')" title="Use Mock Portrait: Aisyah" aria-label="Use Mock Portrait Aisyah" aria-pressed="false"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/agent_aisyah.jpg" alt="Aisyah" loading="lazy" decoding="async"></button>
+                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_farid.jpg" onclick="selectMockAgentAvatar('assets/images/agent_farid.jpg', 'Farid')" title="Use Mock Portrait: Farid" aria-label="Use Mock Portrait Farid" aria-pressed="false"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/agent_farid.jpg" alt="Farid" loading="lazy" decoding="async"></button>
+                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_chloe.jpg" onclick="selectMockAgentAvatar('assets/images/agent_chloe.jpg', 'Chloe')" title="Use Mock Portrait: Chloe" aria-label="Use Mock Portrait Chloe" aria-pressed="false"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/agent_chloe.jpg" alt="Chloe" loading="lazy" decoding="async"></button>
+                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_kevin.jpg" onclick="selectMockAgentAvatar('assets/images/agent_kevin.jpg', 'Kevin')" title="Use Mock Portrait: Kevin" aria-label="Use Mock Portrait Kevin" aria-pressed="false"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/agent_kevin.jpg" alt="Kevin" loading="lazy" decoding="async"></button>
+                                                        <button type="button" class="agent-mock-picker-btn" data-avatar-path="assets/images/agent_rachel.jpg" onclick="selectMockAgentAvatar('assets/images/agent_rachel.jpg', 'Rachel')" title="Use Mock Portrait: Rachel" aria-label="Use Mock Portrait Rachel" aria-pressed="false"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/agent_rachel.jpg" alt="Rachel" loading="lazy" decoding="async"></button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -6822,7 +6841,7 @@ NOTIFY pgrst, 'reload schema';</pre>
                         </label>
                     </div>
                     <div style="display: grid; grid-template-columns: 160px 1fr; gap: 0.85rem; align-items: center;">
-                        <img id="insight-cover-preview" src="assets/images/drone_all.jpg" alt="Insight Cover Preview" style="width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 10px; border: 1px solid #cbd5e1;">
+                        <img id="insight-cover-preview" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/drone_all.jpg" alt="Insight Cover Preview" loading="lazy" decoding="async" style="width: 100%; aspect-ratio: 16/10; object-fit: cover; border-radius: 10px; border: 1px solid #cbd5e1;">
                         <div style="display: flex; flex-direction: column; gap: 0.5rem;">
                             <input type="text" id="insight-input-cover" class="form-control" value="assets/images/drone_all.jpg" oninput="document.getElementById('insight-cover-preview').src = this.value || 'assets/images/drone_all.jpg';" style="font-size: 0.82rem;">
                             <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
@@ -7043,7 +7062,7 @@ NOTIFY pgrst, 'reload schema';</pre>
                         <div>
                             <span class="loc-admin-mini-label">Live Mainpage Card Preview</span>
                             <div class="loc-card-live-preview" id="manage-loc-card-preview">
-                                <img id="manage-loc-preview-img" src="assets/images/drone_all.jpg" alt="Location card preview">
+                                <img id="manage-loc-preview-img" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/drone_all.jpg" alt="Location card preview" loading="lazy" decoding="async">
                                 <span class="loc-card-preview-badge">0 Units Available</span>
                                 <span class="loc-card-preview-label">
                                     <span id="manage-loc-preview-title">New Location</span>
@@ -7084,25 +7103,25 @@ NOTIFY pgrst, 'reload schema';</pre>
                         <span class="loc-admin-mini-label">Quick Aerial &amp; Industrial Presets (Safe Fallback if No Drone Shot Yet)</span>
                         <div id="manage-loc-presets-grid" class="loc-admin-thumb-grid">
                             <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_all.jpg')" title="Klang Valley Aerial Hub">
-                                <img src="assets/images/drone_all.jpg" alt="Aerial Industrial Hub"><span>Aerial Hub</span>
+                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/drone_all.jpg" alt="Aerial Industrial Hub" loading="lazy" decoding="async"><span>Aerial Hub</span>
                             </button>
                             <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_logistics_park.jpg')" title="Aerial Logistics Park">
-                                <img src="assets/images/drone_logistics_park.jpg" alt="Aerial Logistics Park"><span>Logistics Park</span>
+                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/drone_logistics_park.jpg" alt="Aerial Logistics Park" loading="lazy" decoding="async"><span>Logistics Park</span>
                             </button>
                             <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_factory_estate.jpg')" title="Aerial Factory Estate">
-                                <img src="assets/images/drone_factory_estate.jpg" alt="Aerial Factory Estate"><span>Factory Estate</span>
+                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/drone_factory_estate.jpg" alt="Aerial Factory Estate" loading="lazy" decoding="async"><span>Factory Estate</span>
                             </button>
                             <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_pj.jpg')" title="Urban Industrial Estate">
-                                <img src="assets/images/drone_pj.jpg" alt="Urban Industrial Estate"><span>Urban Estate</span>
+                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/drone_pj.jpg" alt="Urban Industrial Estate" loading="lazy" decoding="async"><span>Urban Estate</span>
                             </button>
                             <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_subang.jpg')" title="Hi-Tech Warehouses">
-                                <img src="assets/images/drone_subang.jpg" alt="Hi-Tech Warehouses"><span>Hi-Tech Hub</span>
+                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/drone_subang.jpg" alt="Hi-Tech Warehouses" loading="lazy" decoding="async"><span>Hi-Tech Hub</span>
                             </button>
                             <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_shahalam.jpg')" title="Heavy Industrial Zone">
-                                <img src="assets/images/drone_shahalam.jpg" alt="Heavy Industrial Zone"><span>Industrial Zone</span>
+                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/drone_shahalam.jpg" alt="Heavy Industrial Zone" loading="lazy" decoding="async"><span>Industrial Zone</span>
                             </button>
                             <button type="button" class="loc-preset-thumb" onclick="selectManagedLocationPreset('assets/images/drone_klang.jpg')" title="Port & Logistics Corridor">
-                                <img src="assets/images/drone_klang.jpg" alt="Port Logistics Corridor"><span>Port Corridor</span>
+                                <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="assets/images/drone_klang.jpg" alt="Port Logistics Corridor" loading="lazy" decoding="async"><span>Port Corridor</span>
                             </button>
                         </div>
                     </div>
@@ -7132,17 +7151,14 @@ NOTIFY pgrst, 'reload schema';</pre>
         <div id="maintenance-preview-card-mount" style="width: 100%;"></div>
     </dialog>
 
-    <!-- Vendor Libraries & Supabase SDK (Cropper.js, heic2any, and Leaflet are lazy-loaded on demand) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="js/supabase-client.js?v=51"></script>
-    <script src="js/property-share.js?v=47"></script>
-    <script src="js/property-map.js?v=14"></script>
-    <script src="js/insights-visuals.js?v=3"></script>
-    <script src="js/dashboard.js?v=141"></script>
-
-    <script src="js/dashboard-agents.js?v=12"></script>
-    <script src="js/dashboard-ux.js?v=1"></script>
+    <!-- Vendor Libraries & Supabase SDK (Cropper, heic2any, Leaflet, Share & Insights Visuals are lazy-loaded on demand) -->
+    <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.6/Sortable.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="js/supabase-client.js?v=51"></script>
+    <script defer src="js/property-map.js?v=14"></script>
+    <script defer src="js/dashboard.js?v=142"></script>
+    <script defer src="js/dashboard-agents.js?v=12"></script>
+    <script defer src="js/dashboard-ux.js?v=1"></script>
 </body>
 </html>
