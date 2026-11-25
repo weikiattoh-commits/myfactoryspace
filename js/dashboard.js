@@ -1475,7 +1475,7 @@ function initDashboardApp() {
         window.location.href = 'login.html';
     };
 
-    const defaultCleanImages = {
+    var defaultCleanImages = {
         1: 'assets/images/seksyen_51_factory.jpg',
         2: 'assets/images/drone_shahalam.jpg',
         3: 'assets/images/factory.jpg',
@@ -1518,7 +1518,7 @@ function initDashboardApp() {
         }
     };
 
-    let properties = safeJsonParse('industria_properties', defaultProperties);
+    var properties = safeJsonParse('industria_properties', defaultProperties);
     // Strip only obsolete hardcoded mock titles (preserve genuine Supabase listings with any ID)
     const mockTitles = [
         'SIME UEP Modern Logistics Facility',
@@ -2072,7 +2072,7 @@ function initDashboardApp() {
         'Subang Jaya': ['SIME UEP Industrial Park', 'Subang Hi-Tech Industrial Park', 'PJS 11 (Bandar Sunway)', 'PJS 7 (Bandar Sunway)'],
         'Klang': ['Bandar Bukit Raja Industrial Park']
     };
-    let parks = safeJsonParse('industria_industrial_parks', defaultParks);
+    var parks = safeJsonParse('industria_industrial_parks', defaultParks);
     // Migrate strings to object format for hiding feature & assign section defaults
     for (const city in parks) {
         parks[city] = parks[city].map(park => {
@@ -2173,13 +2173,13 @@ function initDashboardApp() {
         }
     }
 
-    const defaultAgents = [
+    var defaultAgents = [
         { id: '1', name: 'Wei Kiat', ren: 'REN 44824', phone: '60163117162', whatsapp: '60163117162', email: 'marcus@industria.my', bio: 'Specializing in large-scale factory acquisitions and heavy industrial plots across Shah Alam and Klang.', image: 'assets/images/agent_marcus.jpg', assignedParks: ['Temasya Industrial Park', 'i-Parc 1', 'Hicom 27', 'Batu Tiga Light Industrial Park', 'Subang Hi-Tech Industrial Park', 'Bandar Bukit Raja Industrial Park', 'Tiong Nam Industrial Park @ PJ', 'PJ 51 Business Centre'], parks: ['Temasya Industrial Park', 'i-Parc 1', 'Hicom 27', 'Batu Tiga Light Industrial Park', 'Subang Hi-Tech Industrial Park', 'Bandar Bukit Raja Industrial Park', 'Tiong Nam Industrial Park @ PJ', 'PJ 51 Business Centre'], showOnMainpage: true },
         { id: '2', name: 'Renvin', ren: 'REN 61030', phone: '60176008088', whatsapp: '60176008088', email: 'sarah@industria.my', bio: 'Focused in warehouse space rentals, high-floor-load logistics hubs, and built-to-suit industrial leases.', image: 'assets/images/agent_marcus.jpg', assignedParks: ['Ace Industrial Park', 'i-Parc 2', 'Hicom-Glenmarie Industrial Park', 'Sekitar 26 Business Park', 'Tiong Nam Industrial Park', 'USJ Avenue', 'SIME UEP Industrial Park', 'Tiara Square Business Park'], parks: ['Ace Industrial Park', 'i-Parc 2', 'Hicom-Glenmarie Industrial Park', 'Sekitar 26 Business Park', 'Tiong Nam Industrial Park', 'USJ Avenue', 'SIME UEP Industrial Park', 'Tiara Square Business Park'], showOnMainpage: true },
         { id: '3', name: 'Sarah', ren: 'REN 44820', phone: '60123456789', whatsapp: '60123456789', email: 'sarah@industria.my', bio: 'Focusing on corporate property expansion, regulatory compliance, and multi-facility industrial portfolios.', image: 'assets/images/agent_marcus.jpg', assignedParks: [], parks: [], showOnMainpage: true },
         { id: '4', name: 'Jimmy', ren: 'REN 49321', phone: '', whatsapp: '', email: 'jimmy@industria.my', bio: 'Specializing in large-scale factory acquisitions and heavy industrial plots.', image: 'assets/images/agent_marcus.jpg', assignedParks: [], parks: [], showOnMainpage: true }
     ];
-    let agents = safeJsonParse('industria_agents', defaultAgents);
+    var agents = safeJsonParse('industria_agents', defaultAgents);
     if (!Array.isArray(agents) || agents.length === 0) {
         agents = JSON.parse(JSON.stringify(defaultAgents));
         safeLocalStorageSet('industria_agents', agents);
@@ -2211,10 +2211,10 @@ function initDashboardApp() {
     const propParkGroup = document.getElementById('propParkGroup');
     const propPark = document.getElementById('propPark');
 
-    let editingPropertyId = null;
-    let currentPropertyImages = [];
-    let currentRawPropertyImages = [];
-    let unsavedPropertySessionUploads = [];
+    var editingPropertyId = null;
+    var currentPropertyImages = [];
+    var currentRawPropertyImages = [];
+    var unsavedPropertySessionUploads = [];
 
     function openModal() {
         const propModal = document.getElementById('property-modal') || modal;
@@ -4376,7 +4376,7 @@ function initDashboardApp() {
     }
 
     // Property photo input — 3:2 ratio
-    let fileQueue = [];
+    var fileQueue = [];
 
     function enqueuePropertyPhotos(files) {
         if (!files || files.length === 0) return;
@@ -16258,8 +16258,8 @@ ON CONFLICT (username) DO NOTHING;`);
     const watermarkLogoPreview = document.getElementById('watermark-logo-preview');
     const defaultLogoSvg = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iOTAiIHZpZXdCb3g9IjAgMCAzMDAgOTAiPjxyZWN0IHdpZHRoPSIzMDAiIGhlaWdodD0iOTAiIHJ4PSIxMCIgZmlsbD0iIzAwNzdiNiIvPjxwYXRoIGQ9Ik0zMCA2MFYzMGwyMC0xMHY0MGwyMC0xMHYzNUgzMHoiIGZpbGw9IiMzOGJkZjgiLz48dGV4dCB4PSI4NSIgeT0iNTIiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjIyIiBmb250LXdlaWdodD0iYm9sZCIgZmlsbD0iI2ZmZmZmZiIgbGV0dGVyLXNwYWNpbmc9IjIiPk5PIExPR088L3RleHQ+PC9zdmc+';
 
-    let isWatermarkProcessing = false;
-    let watermarkSettings = JSON.parse(localStorage.getItem('industria_watermark_settings')) || {
+    var isWatermarkProcessing = false;
+    var watermarkSettings = JSON.parse(localStorage.getItem('industria_watermark_settings')) || {
         type: 'none',
         position: 'bottom-right',
         opacity: 85,

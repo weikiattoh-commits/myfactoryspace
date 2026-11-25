@@ -316,6 +316,10 @@ window.IndustraSupabase = {
         const cfg = cfgOverride ? Object.assign({}, this.getPrimarySupabaseConfig(), cfgOverride) : this.getPrimarySupabaseConfig();
         const valid = Boolean(cfg.url && /^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(cfg.url) && cfg.anonKey && cfg.anonKey.length > 20);
         if (!valid || !window.supabase) return null;
+        // Reuse the built-in client when custom config targets the same project URL + key (avoids duplicate GoTrueClient instances)
+        if (!cfgOverride && cfg.url.toLowerCase() === SUPABASE_URL.toLowerCase() && cfg.anonKey === SUPABASE_ANON_KEY) {
+            return this.getBuiltInClient();
+        }
         if (cfgOverride) {
             return window.supabase.createClient(cfg.url, cfg.anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
         }
