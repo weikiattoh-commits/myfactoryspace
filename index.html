@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Find premium factories, warehouses, and industrial land for sale or rent across Petaling Jaya, Subang Jaya, Shah Alam, and Klang with MyFactorySpace.">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="theme-color" content="#0f172a">
+    <title>Industrial Factory & Warehouse For Sale & Rent | MyFactorySpace</title>
+
+    <!-- Favicon & Site Icons (Google Search, Browser Tabs & Mobile) -->
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon.png">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="48x48" href="/assets/icons/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/android-chrome-192x192.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/assets/icons/site.webmanifest">
+
+    <!-- Canonical & AI / LLM Auto-Discovery -->
+    <link rel="canonical" href="https://www.myfactoryspace.com/">
+    <link rel="alternate" type="text/markdown" title="LLM Context (llms.txt)" href="https://www.myfactoryspace.com/llms.txt">
+    <link rel="alternate" type="text/markdown" title="LLM Full Dataset (llms-full.txt)" href="https://www.myfactoryspace.com/llms-full.txt">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="MyFactorySpace">
+    <meta property="og:title" content="Industrial Factory & Warehouse For Sale & Rent | MyFactorySpace">
+    <meta property="og:description" content="Find premium factories, warehouses, and industrial land for sale or rent across Petaling Jaya, Subang Jaya, Shah Alam, and Klang with MyFactorySpace.">
+    <meta property="og:url" content="https://www.myfactoryspace.com/">
+    <meta property="og:image" content="https://www.myfactoryspace.com/assets/images/hero.jpg">
+    <meta property="og:locale" content="en_MY">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Industrial Factory & Warehouse For Sale & Rent | MyFactorySpace">
+    <meta name="twitter:description" content="Find premium factories, warehouses, and industrial land for sale or rent across Petaling Jaya, Subang Jaya, Shah Alam, and Klang with MyFactorySpace.">
+    <meta name="twitter:image" content="https://www.myfactoryspace.com/assets/images/hero.jpg">
+    
+    <!-- Resource Hints & Fonts -->
+    <link rel="preconnect" href="https://vnsinkesbbikeqbywxfd.supabase.co" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Icons (FontAwesome) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+    
+    <!-- Leaflet & MarkerCluster -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.min.css" crossorigin="anonymous">
+
+    <!-- Styles -->
+    <link rel="preload" as="image" href="assets/images/hero.jpg?v=34" fetchpriority="high">
+    <link rel="stylesheet" href="css/styles.css?v=120">
+
+    <!-- Corporate Branding Initializer (Zero-Flicker Synchronous Engine) -->
+    <script>
+    (function() {
+        // Direct listing deep-link redirect: forward directly to properties.html?id=...
+        try {
+            var urlP = new URLSearchParams(window.location.search);
+            var directId = urlP.get('id') || urlP.get('propertyId');
+            if (directId) {
+                window.location.replace('properties.html?id=' + encodeURIComponent(directId));
+                return;
+            }
+        } catch(e) {}
+
+        try {
+            try {
+                var gEarly = localStorage.getItem('industria_settings');
+                var pEarly = gEarly ? JSON.parse(gEarly) : null;
+                if (pEarly && (pEarly.insightsEnabled === false || String(pEarly.insightsEnabled) === 'false')) {
+                    document.documentElement.classList.add('mfs-insights-disabled');
+                }
+                if (pEarly && (pEarly.maintenanceMode === true || String(pEarly.maintenanceMode) === 'true')) {
+                    document.documentElement.classList.add('mfs-maintenance-active');
+                }
+            } catch (_) {}
+            var s = localStorage.getItem('industria_branding_settings');
+            var b = s ? JSON.parse(s) : null;
+            if (!b) {
+                var g = localStorage.getItem('industria_settings');
+                if (g) { var p = JSON.parse(g); b = p ? p.branding : null; }
+            }
+            var root = document.documentElement;
+            var primary = (b && b.primaryColor) ? b.primaryColor : '#059669';
+            var primaryDark = (b && b.primaryDarkColor) ? b.primaryDarkColor : '#064e3b';
+            var accent = (b && b.accentColor) ? b.accentColor : '#dcfce7';
+            
+            function toRgba(hex, alpha) {
+                if (!hex) return 'rgba(5, 150, 105, ' + alpha + ')';
+                hex = hex.replace('#', '');
+                if (hex.length === 3) hex = hex.split('').map(function(c) { return c + c; }).join('');
+                if (hex.length !== 6) return 'rgba(5, 150, 105, ' + alpha + ')';
+                var num = parseInt(hex, 16);
+                if (isNaN(num)) return 'rgba(5, 150, 105, ' + alpha + ')';
+                return 'rgba(' + ((num >> 16) & 255) + ',' + ((num >> 8) & 255) + ',' + (num & 255) + ',' + alpha + ')';
+            }
+
+            function esc(str) {
+                if (!str) return '';
+                return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+            }
+
+            root.style.setProperty('--primary', primary);
+            root.style.setProperty('--primary-dark', primaryDark);
+            root.style.setProperty('--accent', accent);
+            root.style.setProperty('--secondary', primary);
+            root.style.setProperty('--primary-light', toRgba(primary, 0.15));
+            root.style.setProperty('--border-light', toRgba(primary, 0.12));
+            root.style.setProperty('--primary-glow', toRgba(primary, 0.35));
+            root.style.setProperty('--hero-gradient-start', toRgba(primaryDark, 0.88));
+            root.style.setProperty('--hero-gradient-end', toRgba(primary, 0.65));
+
+            var logoUrl = (b && b.logoUrl) ? b.logoUrl : '';
+            var brandName = (b && b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : (logoUrl ? '' : 'MyFactorySpace');
+            var logoH = (b && b.logoHeight !== undefined && b.logoHeight !== null && !isNaN(b.logoHeight)) ? parseInt(b.logoHeight, 10) : 32;
+            var navLogoH = Math.round(logoH * 1.58);
+
+            var navHtml = '';
+            if (logoUrl) {
+                navHtml += '<img src="' + esc(logoUrl) + '" data-brand-logo="true" alt="' + esc(brandName || 'MyFactorySpace') + '" style="height: ' + navLogoH + 'px; width: auto; max-width: 310px; object-fit: contain; vertical-align: middle;">';
+            } else {
+                var m = brandName ? ' margin-right: 6px;' : '';
+                navHtml += '<i class="fa-solid fa-industry" style="color: var(--primary);' + m + '"></i>';
+                if (brandName) {
+                    navHtml += ' <span>' + esc(brandName) + '</span>';
+                }
+            }
+            window.__initialNavBrandHtml = navHtml;
+
+            if (b && b.siteTitle && String(b.siteTitle).trim()) {
+                document.title = String(b.siteTitle).trim();
+            }
+
+            if (b && b.faviconUrl && String(b.faviconUrl).indexOf('favicon-48x48.png') === -1) {
+                document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]').forEach(function(el) { el.remove(); });
+                ['icon', 'shortcut icon', 'apple-touch-icon'].forEach(function(relVal) {
+                    var lk = document.createElement('link');
+                    lk.rel = relVal;
+                    lk.href = b.faviconUrl;
+                    document.head.appendChild(lk);
+                });
+            }
+
+            var footerHtml = '';
+            if (logoUrl) {
+                footerHtml += '<img src="' + esc(logoUrl) + '" data-brand-logo="true" alt="' + esc(brandName || 'MyFactorySpace') + '" style="height: ' + Math.round(logoH * 1.25) + 'px; width: auto; max-width: 240px; object-fit: contain; vertical-align: middle; filter: brightness(0) invert(1);">';
+            } else {
+                var m = brandName ? ' margin-right: 6px;' : '';
+                footerHtml += '<i class="fa-solid fa-industry" style="color: #ffffff;' + m + '"></i>';
+                if (brandName) {
+                    footerHtml += ' <span style="color: var(--white);">' + esc(brandName) + '</span>';
+                }
+            }
+            window.__initialFooterBrandHtml = footerHtml;
+        } catch(e) {}
+    })();
+    </script>
+
+    <!-- Answer Engine Optimization (AOE) & Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "RealEstateAgent",
+          "@id": "https://www.myfactoryspace.com/#organization",
+          "name": "MyFactorySpace",
+          "url": "https://www.myfactoryspace.com/",
+          "logo": "https://www.myfactoryspace.com/assets/branding/company_logo.png",
+          "image": "https://www.myfactoryspace.com/assets/images/hero.jpg",
+          "description": "Specialists in industrial premises, warehouses, factories, and industrial land across Petaling Jaya, Subang Jaya, Shah Alam, and Klang.",
+          "telephone": "+60-3-9054-8582",
+          "email": "info@MyFactorySpace.com",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "No. 2-3, Jalan Radin Anum 2, Bandar Baru Sri Petaling",
+            "addressLocality": "Kuala Lumpur",
+            "postalCode": "57000",
+            "addressCountry": "MY"
+          },
+          "areaServed": [
+            { "@type": "City", "name": "Petaling Jaya" },
+            { "@type": "City", "name": "Subang Jaya" },
+            { "@type": "City", "name": "Shah Alam" },
+            { "@type": "City", "name": "Klang" }
+          ],
+          "priceRange": "RM 1,700 - RM 12,000,000"
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://www.myfactoryspace.com/#website",
+          "url": "https://www.myfactoryspace.com/",
+          "name": "MyFactorySpace",
+          "alternateName": ["MyFactorySpace Malaysia", "MyFactorySpace Klang Valley"],
+          "description": "Premium Industrial Real Estate Klang Valley",
+          "publisher": { "@id": "https://www.myfactoryspace.com/#organization" },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://www.myfactoryspace.com/properties.html?keyword={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "ItemList",
+          "@id": "https://www.myfactoryspace.com/#flagship-properties",
+          "name": "Active Industrial Properties in Klang Valley",
+          "description": "Verified warehouses, semi-detached factories, terrace link factories, and commercial shoplots near industrial hubs.",
+          "numberOfItems": 9,
+          "itemListElement": [
+            {
+              "@type": "ListItem",
+              "position": 1,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "PJ 51 Business Park - 3-Storey Semi-Detached Factory",
+                "alternateName": ["PJ 51 Business Centre", "PJ 51 Industrial Park Seksyen 51"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=1",
+                "description": "Modern 3-storey semi-detached corporate factory in PJ 51 Business Centre, Petaling Jaya. 13,000 sqft land, 9,500 sqft built-up, 150 Amp power, cargo lift.",
+                "price": "12000000",
+                "priceCurrency": "MYR"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 2,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "Sekitar 26 Business Park - Freehold Semi-Detached Factory",
+                "alternateName": ["Sekitar 26 Section 26 Shah Alam"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=2",
+                "description": "Prime freehold semi-detached commercial & industrial facility in Sekitar 26 Business Park, Shah Alam. 9,900 sqft land, 8,800 sqft built-up, 150 Amp power.",
+                "price": "7000000",
+                "priceCurrency": "MYR"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 3,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "Ace Industrial Park - High-Spec Semi-Detached Factory",
+                "alternateName": ["Ace Industrial Park Section 15 Shah Alam"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=3",
+                "description": "High-spec semi-detached factory for rent in Ace Industrial Park, Section 15 Shah Alam. 9,800 sqft land, 8,800 sqft built-up, 5 kN/m² floor loading, 150 Amp power.",
+                "price": "25000",
+                "priceCurrency": "MYR"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 4,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "Tiong Nam Industrial Park @ Shah Alam - Semi-Detached Factory",
+                "alternateName": ["Tiong Nam Industrial Park Shah Alam", "Tiong Nam Section 15"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=4",
+                "description": "Established semi-detached industrial unit in Tiong Nam Industrial Park, Section 15 Shah Alam. 9,900 sqft land, 8,800 sqft built-up, 150 Amp power, cargo lift.",
+                "price": "7000000",
+                "priceCurrency": "MYR"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 5,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "Hicom-Glenmarie Industrial Park (1.5 Storey Link Factory)",
+                "alternateName": ["Hicom Glenmarie Industrial Park", "Hicom Glenmarie 1.5 Storey Terrace Factory", "Glenmarie U1 Link Factory"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=1794535399915",
+                "description": "Freehold 1.5-storey terrace link factory for sale in Hicom-Glenmarie Industrial Park (Hicom Glenmarie), Shah Alam. 3,300 sqft land, 2,760 sqft built-up, 100 Amp power, 14 ft ceiling peak.",
+                "price": "3000000",
+                "priceCurrency": "MYR"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 6,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "Tiara Square Business Park (2-Storey)",
+                "alternateName": ["Tiara Square Subang Jaya", "Tiara Square SIME UEP"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=1793339269220",
+                "description": "Freehold 2-storey shoplot near industrial hubs in Tiara Square Business Park, Subang Jaya. 1,540 sqft land, 2,926 sqft built-up, Jalan Tiara.",
+                "price": "1350000",
+                "priceCurrency": "MYR"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 7,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "USJ Avenue (1.5 Storey)",
+                "alternateName": ["USJ Avenue USJ Heights Subang Jaya"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=1793338038982",
+                "description": "Freehold 1.5-storey shoplot for rent in USJ Avenue, Jalan USJ Heights 1/1C, Subang Jaya. 1,300 sqft land, 1,960 sqft built-up, fast link to Federal Highway and ELITE.",
+                "price": "4800",
+                "priceCurrency": "MYR"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 8,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "Tiara Square Business Park (Ground Floor)",
+                "alternateName": ["Tiara Square Ground Floor Shoplot Subang Jaya"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=1793336056615",
+                "description": "Freehold ground floor shoplot for rent near industrial parks in Tiara Square Business Park, Subang Jaya. 1,540 sqft land, 1,386 sqft built-up.",
+                "price": "3200",
+                "priceCurrency": "MYR"
+              }
+            },
+            {
+              "@type": "ListItem",
+              "position": 9,
+              "item": {
+                "@type": "RealEstateListing",
+                "name": "Tiara Square Business Park (1st Floor)",
+                "alternateName": ["Tiara Square First Floor Office Subang Jaya"],
+                "url": "https://www.myfactoryspace.com/properties.html?id=1793335518953",
+                "description": "Freehold 1st floor commercial unit for rent in Tiara Square Business Park, Subang Jaya. 1,540 sqft built-up, easy access to KESAS and ELITE.",
+                "price": "1700",
+                "priceCurrency": "MYR"
+              }
+            }
+          ]
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://www.myfactoryspace.com/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What ceiling height is required for modern logistics warehouses in Klang Valley?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Modern Grade-A logistics warehouses in Klang Valley typically require clear ceiling heights between 30 to 45 feet (9 to 13.7 meters) to accommodate 5 to 7 tiers of high-bay pallet racking and comply with Bomba sprinkler requirements."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What floor loading capacity is needed for industrial warehouses vs factories?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Standard light production units require 5 to 10 kN/m², while heavy logistics warehouses and automated fulfillment centers require heavy-duty reinforced slabs between 20 to 50 kN/m²."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What electrical power supply is standard for industrial factories in Selangor?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Semi-detached factories usually provide 100 to 150 Amp 3-phase power, while logistics warehouses and manufacturing facilities offer 200 to 400+ Amp or dedicated TNB substations."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Are there upfront marketing fees to list industrial properties on MyFactorySpace?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No upfront marketing fees. Listing industrial properties on MyFactorySpace is completely free for owners until a sale or tenancy agreement is successfully concluded."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <a href="index.html" class="nav-brand" id="main-nav-brand"></a>
+            <script>
+            (function() {
+                var nb = document.getElementById('main-nav-brand');
+                if (nb && window.__initialNavBrandHtml) nb.innerHTML = window.__initialNavBrandHtml;
+            })();
+            </script>
+            <ul class="nav-links" id="nav-links">
+                <li><a href="#home" class="active">Home</a></li>
+                <li class="nav-item-dropdown">
+                    <a href="#properties" class="nav-dropdown-toggle">
+                        Properties <i class="fa-solid fa-chevron-down nav-dropdown-arrow"></i>
+                    </a>
+                    <div class="nav-dropdown-menu">
+                        <a href="#properties" class="dropdown-link-main">
+                            <div class="dropdown-icon-box">
+                                <i class="fa-solid fa-warehouse"></i>
+                            </div>
+                            <div class="dropdown-link-text">
+                                <span class="dropdown-link-title">All Properties</span>
+                                <span class="dropdown-link-sub">Browse verified factories &amp; warehouses</span>
+                            </div>
+                        </a>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-section-title">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                            <span>Location</span>
+                        </div>
+                        <div class="dropdown-cities-grid">
+                            <a href="location.html?city=petaling-jaya" class="dropdown-city-item">
+                                <span class="dropdown-city-dot"></span>
+                                <span>Petaling Jaya</span>
+                            </a>
+                            <a href="location.html?city=subang-jaya" class="dropdown-city-item">
+                                <span class="dropdown-city-dot"></span>
+                                <span>Subang Jaya</span>
+                            </a>
+                            <a href="location.html?city=shah-alam" class="dropdown-city-item">
+                                <span class="dropdown-city-dot"></span>
+                                <span>Shah Alam</span>
+                            </a>
+                            <a href="location.html?city=klang" class="dropdown-city-item">
+                                <span class="dropdown-city-dot"></span>
+                                <span>Klang</span>
+                            </a>
+                        </div>
+                        <a href="#properties" class="dropdown-explore-all">
+                            <span>Explore All Locations</span>
+                            <i class="fa-solid fa-arrow-right"></i>
+                        </a>
+                    </div>
+                </li>
+                <li><a href="#services">Services</a></li>
+                <li><a href="insights.html">Insights</a></li>
+                <li><a href="#about">Why Choose Us</a></li>
+                <li><a href="#who-we-are">Who Are We</a></li>
+                <li><a href="#owner-section">Property Owners</a></li>
+                <li><a href="#contact">Contact</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="btn nav-cta-btn open-owner-modal-btn">
+                    <i class="fa-solid fa-house-chimney-user"></i> <span>List <strong>Property</strong></span>
+                </button>
+                <button class="mobile-toggle" id="mobile-toggle" aria-label="Toggle menu">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero" id="home">
+        <div class="hero-overlay"></div>
+        <div class="container">
+            <div class="hero-content">
+                <h1>Factories &amp; Warehouses For Sale &amp; Rent in Klang Valley</h1>
+                <p>Elevate your business operations with top-tier warehouses and factories in Petaling Jaya, Subang Jaya, Shah Alam, and Klang.</p>
+                
+                <div class="hero-search-wrapper">
+                    <div class="hero-intent-tabs" role="radiogroup" aria-label="Property Transaction Type">
+                        <div class="hero-intent-tab" role="radio" tabindex="0" aria-checked="false" data-intent="Sale" title="For Sale (click again to clear)">
+                            <input type="radio" name="heroIntent" value="Sale" id="heroIntentSale" tabindex="-1">
+                            <span class="hero-intent-radio-dot" aria-hidden="true"></span>
+                            <span>For Sale</span>
+                        </div>
+                        <div class="hero-intent-tab" role="radio" tabindex="0" aria-checked="false" data-intent="Rent" title="For Rent (click again to clear)">
+                            <input type="radio" name="heroIntent" value="Rent" id="heroIntentRent" tabindex="-1">
+                            <span class="hero-intent-radio-dot" aria-hidden="true"></span>
+                            <span>For Rent</span>
+                        </div>
+                    </div>
+
+                    <form class="search-bar" id="search-form">
+                        <div class="search-field search-field-location" id="hero-location-field">
+                            <i class="fa-solid fa-location-dot search-field-icon"></i>
+                            <button type="button" id="hero-location-trigger" class="hero-type-trigger hero-popover-trigger" aria-expanded="false" aria-controls="hero-location-popover">
+                                <span id="hero-location-trigger-label">All Locations</span>
+                            </button>
+                            <select id="heroLocationSelect" name="location" class="hero-sr-backing-select" aria-hidden="true" tabindex="-1">
+                                <option value="All">All Locations</option>
+                                <option value="Petaling Jaya">Petaling Jaya</option>
+                                <option value="Subang Jaya">Subang Jaya</option>
+                                <option value="Shah Alam">Shah Alam</option>
+                                <option value="Klang">Klang</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down search-field-arrow"></i>
+                        </div>
+                        <div class="search-field search-field-section" id="hero-section-field">
+                            <i class="fa-solid fa-map-location-dot search-field-icon"></i>
+                            <button type="button" id="hero-section-trigger" class="hero-type-trigger hero-popover-trigger" aria-expanded="false" aria-controls="hero-section-popover">
+                                <span id="hero-section-trigger-label">All Sections</span>
+                            </button>
+                            <select id="heroSectionSelect" name="section" class="hero-sr-backing-select" aria-hidden="true" tabindex="-1">
+                                <option value="All">All Sections</option>
+                            </select>
+                            <i class="fa-solid fa-chevron-down search-field-arrow"></i>
+                        </div>
+                        <div class="search-field search-field-type" id="hero-type-field">
+                            <i class="fa-solid fa-warehouse search-field-icon"></i>
+                            <button type="button" id="hero-type-trigger" class="hero-type-trigger" aria-expanded="false" aria-controls="hero-type-popover">
+                                <span id="hero-type-trigger-label">Any type</span>
+                            </button>
+                            <input type="hidden" id="heroTypeSelect" name="type" value="All">
+                            <i class="fa-solid fa-chevron-down search-field-arrow"></i>
+                        </div>
+                        <div class="search-field search-field-keyword">
+                            <i class="fa-solid fa-magnifying-glass search-field-icon"></i>
+                            <input type="text" id="heroKeywordInput" name="keyword" placeholder="Search property name..." aria-label="Search property name">
+                        </div>
+                        <div class="hero-search-actions">
+                            <button type="button" class="hero-filter-btn" id="hero-filter-toggle-btn" aria-expanded="false" aria-controls="hero-filters-popover">
+                                <i class="fa-solid fa-sliders"></i>
+                                <span>Filters</span>
+                                <span class="hero-filter-count-badge" id="hero-filter-count-badge" style="display: none;">0</span>
+                            </button>
+                            <button type="submit" class="btn btn-primary search-submit-btn">
+                                <span>Search</span> <i class="fa-solid fa-magnifying-glass"></i>
+                            </button>
+                        </div>
+                    </form>
+
+                    <!-- Compact Location Popover (Matches Property Type UI/UX) -->
+                    <div class="hero-type-popover hero-location-popover" id="hero-location-popover" aria-hidden="true">
+                        <div class="hero-type-popover-head">
+                            <div class="hero-type-popover-title-wrap">
+                                <span class="hero-type-popover-title"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Location</span>
+                                <span class="hero-type-popover-sub">Choose Klang Valley industrial hub</span>
+                            </div>
+                            <div class="hero-type-popover-head-actions">
+                                <span class="hero-type-selection-badge" id="hero-location-selection-badge">All Locations</span>
+                                <button type="button" class="hero-type-select-all-btn" id="hero-location-all-btn">All Cities</button>
+                            </div>
+                        </div>
+                        <div class="hero-choice-grid hero-location-grid" id="hero-location-grid" role="radiogroup" aria-label="Select Location"></div>
+                        <div class="hero-filters-footer hero-type-popover-footer">
+                            <button type="button" class="hero-filters-clear-btn" id="hero-location-clear-btn">
+                                <i class="fa-solid fa-rotate-left"></i> Reset Location
+                            </button>
+                            <div class="hero-type-footer-right">
+                                <span class="hero-type-footer-summary" id="hero-location-footer-summary">Showing all Klang Valley locations</span>
+                                <button type="button" class="hero-filters-apply-btn" id="hero-location-apply-btn">
+                                    <i class="fa-solid fa-check" aria-hidden="true"></i> Done
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Compact Sections Popover (Matches Property Type UI/UX) -->
+                    <div class="hero-type-popover hero-section-popover" id="hero-section-popover" aria-hidden="true">
+                        <div class="hero-type-popover-head">
+                            <div class="hero-type-popover-title-wrap">
+                                <span class="hero-type-popover-title"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> Industrial Sections</span>
+                                <span class="hero-section-city-chip" id="hero-section-city-chip">All Klang Valley</span>
+                            </div>
+                            <div class="hero-type-popover-head-actions">
+                                <div class="hero-section-search-wrap" id="hero-section-search-wrap">
+                                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                    <input type="search" id="hero-section-quick-filter" class="hero-section-quick-filter" placeholder="Filter section..." aria-label="Filter industrial sections">
+                                </div>
+                                <span class="hero-type-selection-badge" id="hero-section-selection-badge">All Sections</span>
+                            </div>
+                        </div>
+                        <div class="hero-section-groups" id="hero-section-groups" role="radiogroup" aria-label="Select Industrial Section"></div>
+                        <div class="hero-filters-footer hero-type-popover-footer">
+                            <button type="button" class="hero-filters-clear-btn" id="hero-section-clear-btn">
+                                <i class="fa-solid fa-rotate-left"></i> Reset Section
+                            </button>
+                            <div class="hero-type-footer-right">
+                                <span class="hero-type-footer-summary" id="hero-section-footer-summary">Showing all industrial sections</span>
+                                <button type="button" class="hero-filters-apply-btn" id="hero-section-apply-btn">
+                                    <i class="fa-solid fa-check" aria-hidden="true"></i> Done
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hero-type-popover" id="hero-type-popover" aria-hidden="true">
+                        <div class="hero-type-popover-head">
+                            <div class="hero-type-popover-title-wrap">
+                                <span class="hero-type-popover-title"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Property Type</span>
+                                <span class="hero-type-popover-sub">Choose one or more industrial property formats</span>
+                            </div>
+                            <div class="hero-type-popover-head-actions">
+                                <span class="hero-type-selection-badge" id="hero-type-selection-badge">All Types</span>
+                                <button type="button" class="hero-type-select-all-btn" id="hero-type-select-all-btn">Select All</button>
+                            </div>
+                        </div>
+                        <div class="hero-type-columns" id="hero-type-columns">
+                            <div class="hero-type-col" data-type-group="Factory">
+                                <label class="hero-type-parent">
+                                    <input type="checkbox" class="hero-type-checkbox hero-type-parent-cb" data-type-category="Factory">
+                                    <span class="hero-type-parent-icon" aria-hidden="true"><i class="fa-solid fa-industry"></i></span>
+                                    <span class="hero-type-parent-label">Factory</span>
+                                    <span class="hero-type-group-count" data-group-count="Factory">4</span>
+                                </label>
+                                <div class="hero-type-children">
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Detached Factory" data-parent-category="Factory">
+                                        <span>Detached Factory</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Semi-Detached Factory" data-parent-category="Factory">
+                                        <span>Semi-Detached Factory</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Terrace Factory" data-parent-category="Factory">
+                                        <span>Terrace Factory</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Cluster Factory" data-parent-category="Factory">
+                                        <span>Cluster Factory</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="hero-type-col" data-type-group="Warehouse">
+                                <label class="hero-type-parent">
+                                    <input type="checkbox" class="hero-type-checkbox hero-type-parent-cb" data-type-category="Warehouse">
+                                    <span class="hero-type-parent-icon" aria-hidden="true"><i class="fa-solid fa-warehouse"></i></span>
+                                    <span class="hero-type-parent-label">Warehouse</span>
+                                    <span class="hero-type-group-count" data-group-count="Warehouse">4</span>
+                                </label>
+                                <div class="hero-type-children">
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Detached Warehouse" data-parent-category="Warehouse">
+                                        <span>Detached Warehouse</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Semi-Detached Warehouse" data-parent-category="Warehouse">
+                                        <span>Semi-Detached Warehouse</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Shared Warehouse" data-parent-category="Warehouse">
+                                        <span>Shared Warehouse</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Multi-Storey Warehouse" data-parent-category="Warehouse">
+                                        <span>Multi-Storey Warehouse</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="hero-type-col" data-type-group="Land">
+                                <label class="hero-type-parent">
+                                    <input type="checkbox" class="hero-type-checkbox hero-type-parent-cb" data-type-category="Land">
+                                    <span class="hero-type-parent-icon" aria-hidden="true"><i class="fa-solid fa-map-location-dot"></i></span>
+                                    <span class="hero-type-parent-label">Land</span>
+                                    <span class="hero-type-group-count" data-group-count="Land">3</span>
+                                </label>
+                                <div class="hero-type-children">
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Industrial Land" data-parent-category="Land">
+                                        <span>Industrial Land</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Commercial Land" data-parent-category="Land">
+                                        <span>Commercial Land</span>
+                                    </label>
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Agricultural Land" data-parent-category="Land">
+                                        <span>Agricultural Land</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="hero-type-col" data-type-group="Shoplot">
+                                <label class="hero-type-parent">
+                                    <input type="checkbox" class="hero-type-checkbox hero-type-parent-cb" data-type-category="Shoplot">
+                                    <span class="hero-type-parent-icon" aria-hidden="true"><i class="fa-solid fa-store"></i></span>
+                                    <span class="hero-type-parent-label">Shoplot</span>
+                                    <span class="hero-type-group-count" data-group-count="Shoplot">1</span>
+                                </label>
+                                <div class="hero-type-children">
+                                    <label class="hero-type-child">
+                                        <input type="checkbox" class="hero-type-checkbox hero-type-child-cb" value="Shoplot (Near Factory)" data-parent-category="Shoplot">
+                                        <span>Shoplot (Near Factory)</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hero-filters-footer hero-type-popover-footer">
+                            <button type="button" class="hero-filters-clear-btn" id="hero-type-clear-btn">
+                                <i class="fa-solid fa-rotate-left"></i> Reset Types
+                            </button>
+                            <div class="hero-type-footer-right">
+                                <span class="hero-type-footer-summary" id="hero-type-footer-summary">Showing all industrial types</span>
+                                <button type="button" class="hero-filters-apply-btn" id="hero-type-apply-btn">
+                                    <i class="fa-solid fa-check" aria-hidden="true"></i> Done
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hero-filters-popover" id="hero-filters-popover" aria-hidden="true">
+                        <div class="hero-filters-grid">
+                            <div class="hero-filter-group">
+                                <label><i class="fa-solid fa-tag"></i> Budget (RM)</label>
+                                <div class="hero-range-pair">
+                                    <input type="text" inputmode="numeric" id="hero-budget-min" placeholder="Min RM" aria-label="Minimum Budget RM">
+                                    <span class="hero-range-dash">&ndash;</span>
+                                    <input type="text" inputmode="numeric" id="hero-budget-max" placeholder="Max RM" aria-label="Maximum Budget RM">
+                                </div>
+                            </div>
+                            <div class="hero-filter-group">
+                                <label><i class="fa-solid fa-building"></i> Build Up (Sqft)</label>
+                                <div class="hero-range-pair">
+                                    <input type="text" inputmode="numeric" id="hero-buildup-min" placeholder="Min sqft" aria-label="Minimum Build Up Sqft">
+                                    <span class="hero-range-dash">&ndash;</span>
+                                    <input type="text" inputmode="numeric" id="hero-buildup-max" placeholder="Max sqft" aria-label="Maximum Build Up Sqft">
+                                </div>
+                            </div>
+                            <div class="hero-filter-group">
+                                <label><i class="fa-solid fa-maximize"></i> Land Area (Sqft)</label>
+                                <div class="hero-range-pair">
+                                    <input type="text" inputmode="numeric" id="hero-landarea-min" placeholder="Min sqft" aria-label="Minimum Land Area Sqft">
+                                    <span class="hero-range-dash">&ndash;</span>
+                                    <input type="text" inputmode="numeric" id="hero-landarea-max" placeholder="Max sqft" aria-label="Maximum Land Area Sqft">
+                                </div>
+                            </div>
+                            <div class="hero-filter-group">
+                                <label><i class="fa-solid fa-file-contract"></i> Tenure</label>
+                                <div class="hero-tenure-pills" role="radiogroup" aria-label="Property Tenure">
+                                    <label class="hero-tenure-pill active">
+                                        <input type="radio" name="heroTenure" value="All" checked>
+                                        <span>Both</span>
+                                    </label>
+                                    <label class="hero-tenure-pill">
+                                        <input type="radio" name="heroTenure" value="Freehold">
+                                        <span>Freehold</span>
+                                    </label>
+                                    <label class="hero-tenure-pill">
+                                        <input type="radio" name="heroTenure" value="Leasehold">
+                                        <span>Leasehold</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="hero-filters-footer">
+                            <button type="button" class="hero-filters-clear-btn" id="hero-filters-clear-btn">
+                                <i class="fa-solid fa-rotate-left"></i> Clear Filters
+                            </button>
+                            <button type="button" class="hero-filters-apply-btn" id="hero-filters-apply-btn">
+                                Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hero Trust Badges (Highlighted Yellow Image 2) -->
+            <div class="hero-trust-badges">
+                <div class="hero-trust-card">
+                    <div class="trust-icon">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <div class="trust-info">
+                        <h4>500+ Verified Assets</h4>
+                        <p>Factories, Warehouses & Land</p>
+                    </div>
+                </div>
+                <div class="hero-trust-card">
+                    <div class="trust-icon">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <div class="trust-info">
+                        <h4>100% Direct Owner Specs</h4>
+                        <p>Floor Load & Power Amp</p>
+                    </div>
+                </div>
+                <div class="hero-trust-card">
+                    <div class="trust-icon">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                    </div>
+                    <div class="trust-info">
+                        <h4>4 Strategic Hubs</h4>
+                        <p>PJ, Subang, Shah Alam, Klang</p>
+                    </div>
+                </div>
+                <div class="hero-trust-card">
+                    <div class="trust-icon">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div class="trust-info">
+                        <h4>24-Hour Response</h4>
+                        <p>Dedicated Specialist Team</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Featured Properties -->
+    <section class="section properties-bg" id="properties">
+        <div class="container">
+            <div class="section-header featured-section-header">
+                <div class="featured-header-copy">
+                    <h2>Featured Industrial Properties</h2>
+                    <p>Discover our curated selection of premium factories and warehouses currently available for lease or sale.</p>
+                </div>
+                <div class="featured-header-actions">
+                    <span class="featured-results-pill" id="featured-results-pill" role="status" aria-live="polite">
+                        <i class="fa-solid fa-building-circle-check" aria-hidden="true"></i>
+                        <span id="featured-results-text">Featured Listings</span>
+                    </span>
+                    <button type="button" class="featured-clear-chip" id="featured-reset-btn" hidden>
+                        <i class="fa-solid fa-rotate-left" aria-hidden="true"></i>
+                        <span>Reset</span>
+                    </button>
+                    <a href="properties.html#browse-properties" class="featured-browse-link">
+                        <span>Browse All</span>
+                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Direct Shared Listing Banner (Visible when ?id=... is present) -->
+            <div id="direct-listing-banner" class="direct-listing-banner" style="display: none;">
+                <div class="direct-listing-banner-content">
+                    <div class="direct-listing-icon">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
+                    <div class="direct-listing-info">
+                        <div class="direct-listing-subtitle-wrap">
+                            <span class="direct-listing-pill"><i class="fa-solid fa-share-nodes"></i> Shared Listing</span>
+                            <span class="direct-listing-city" id="direct-listing-city">Selangor</span>
+                        </div>
+                        <h3 class="direct-listing-title" id="direct-listing-title">Property Listing</h3>
+                        <p class="direct-listing-meta" id="direct-listing-meta"><i class="fa-solid fa-map-location-dot"></i> <span>Location</span></p>
+                    </div>
+                </div>
+                <div class="direct-listing-banner-actions">
+                    <button type="button" class="btn btn-outline direct-listing-reset-btn" id="direct-listing-reset-btn">
+                        <i class="fa-solid fa-list-ul"></i> <span>Browse All Properties</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Type Filters (Unified Space-Saving Filter Bar + Contextual Subtype Strip) -->
+            <div class="type-filters-wrapper">
+                <div class="type-filter-toolbar" role="toolbar" focusgroup="toolbar wrap" aria-label="Filter featured properties" aria-controls="property-list">
+                    <div class="type-filters" id="type-filters" role="group" aria-label="Property type">
+                        <button type="button" class="type-filter-btn active" data-type="All" aria-pressed="true">
+                            <i class="fa-solid fa-layer-group type-btn-icon" aria-hidden="true"></i>
+                            <span class="type-btn-label">All Types</span>
+                            <span class="type-btn-count" data-type-count="All"></span>
+                        </button>
+                        <button type="button" class="type-filter-btn" data-type="Factory" aria-pressed="false">
+                            <i class="fa-solid fa-industry type-btn-icon" aria-hidden="true"></i>
+                            <span class="type-btn-label">Factory</span>
+                            <span class="type-btn-count" data-type-count="Factory"></span>
+                        </button>
+                        <button type="button" class="type-filter-btn" data-type="Warehouse" aria-pressed="false">
+                            <i class="fa-solid fa-warehouse type-btn-icon" aria-hidden="true"></i>
+                            <span class="type-btn-label">Warehouse</span>
+                            <span class="type-btn-count" data-type-count="Warehouse"></span>
+                        </button>
+                        <button type="button" class="type-filter-btn" data-type="Land" aria-pressed="false">
+                            <i class="fa-solid fa-map-location-dot type-btn-icon" aria-hidden="true"></i>
+                            <span class="type-btn-label">Land</span>
+                            <span class="type-btn-count" data-type-count="Land"></span>
+                        </button>
+                        <button type="button" class="type-filter-btn" data-type="Shoplot (Near Factory)" aria-pressed="false">
+                            <i class="fa-solid fa-store type-btn-icon" aria-hidden="true"></i>
+                            <span class="type-btn-label">Shoplot <span class="type-btn-sublabel">(Near Factory)</span></span>
+                            <span class="type-btn-count" data-type-count="Shoplot (Near Factory)"></span>
+                        </button>
+                    </div>
+                    <span class="type-toolbar-sep" role="separator" aria-orientation="vertical"></span>
+                    <div class="intent-toggle lt-intent-toggle featured-intent-toggle" role="group" aria-label="Listing intent">
+                        <button type="button" class="intent-btn active" data-intent="All" aria-pressed="true">All</button>
+                        <button type="button" class="intent-btn" data-intent="Sale" aria-pressed="false">For Sale</button>
+                        <button type="button" class="intent-btn" data-intent="Rent" aria-pressed="false">For Rent</button>
+                    </div>
+                </div>
+                <div class="type-subfilters" id="type-subfilters" role="toolbar" focusgroup="toolbar wrap" aria-label="Property subtype" aria-controls="property-list" style="display: none;"></div>
+            </div>
+
+            <div class="property-grid" id="property-list">
+                <!-- Dynamically Populated from shared property storage -->
+            </div>
+
+            <!-- Property Filters (City Filters & Industrial Sections Popover) -->
+            <div class="property-filters featured-hubs-block">
+                <div class="hub-strip-header">
+                    <div class="hub-strip-copy">
+                        <span class="hub-strip-title"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> Browse by Industrial Hub</span>
+                        <span class="hub-strip-hint">Select a city to filter sections &amp; parks</span>
+                    </div>
+                    <a href="properties.html#browse-properties" id="view-all-properties-btn" class="featured-browse-link">
+                        <span>View All Properties</span>
+                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+                <!-- City Filters (Unique Drone Shot Images) -->
+                <div class="city-filters" id="city-filters">
+                    <button type="button" class="city-filter-card active" data-city="All">
+                        <img src="assets/images/drone_all.jpg" alt="" aria-hidden="true" loading="lazy">
+                        <span class="city-count-badge" data-city-count="All"><span class="city-badge-full">0 Available</span><span class="city-badge-short">0</span></span>
+                        <span class="city-label"><i class="fa-solid fa-layer-group mobile-all-icon" aria-hidden="true" style="display: none; font-size: 0.72rem; margin-right: 2px;"></i><span class="city-label-full">All Locations</span><span class="city-label-short">All Locations</span></span>
+                    </button>
+                    <button type="button" class="city-filter-card" data-city="Petaling Jaya" aria-expanded="false" aria-controls="city-section-popover">
+                        <img src="assets/images/drone_pj.jpg" alt="" aria-hidden="true" loading="lazy">
+                        <span class="city-count-badge" data-city-count="Petaling Jaya"><span class="city-badge-full">0 Available</span><span class="city-badge-short">0</span></span>
+                        <span class="city-label" data-default="Petaling Jaya"><span class="city-label-full">Petaling Jaya <i class="fa-solid fa-chevron-down city-label-chevron" aria-hidden="true" style="font-size: 0.7em; margin-left: 4px;"></i></span><span class="city-label-short">PJ</span></span>
+                    </button>
+                    <button type="button" class="city-filter-card" data-city="Subang Jaya" aria-expanded="false" aria-controls="city-section-popover">
+                        <img src="assets/images/drone_subang.jpg" alt="" aria-hidden="true" loading="lazy">
+                        <span class="city-count-badge" data-city-count="Subang Jaya"><span class="city-badge-full">0 Available</span><span class="city-badge-short">0</span></span>
+                        <span class="city-label" data-default="Subang Jaya"><span class="city-label-full">Subang Jaya <i class="fa-solid fa-chevron-down city-label-chevron" aria-hidden="true" style="font-size: 0.7em; margin-left: 4px;"></i></span><span class="city-label-short">Subang</span></span>
+                    </button>
+                    <button type="button" class="city-filter-card" data-city="Shah Alam" aria-expanded="false" aria-controls="city-section-popover">
+                        <img src="assets/images/drone_shahalam.jpg" alt="" aria-hidden="true" loading="lazy">
+                        <span class="city-count-badge" data-city-count="Shah Alam"><span class="city-badge-full">0 Available</span><span class="city-badge-short">0</span></span>
+                        <span class="city-label" data-default="Shah Alam"><span class="city-label-full">Shah Alam <i class="fa-solid fa-chevron-down city-label-chevron" aria-hidden="true" style="font-size: 0.7em; margin-left: 4px;"></i></span><span class="city-label-short">Shah Alam</span></span>
+                    </button>
+                    <button type="button" class="city-filter-card" data-city="Klang" aria-expanded="false" aria-controls="city-section-popover">
+                        <img src="assets/images/drone_klang.jpg" alt="" aria-hidden="true" loading="lazy">
+                        <span class="city-count-badge" data-city-count="Klang"><span class="city-badge-full">0 Available</span><span class="city-badge-short">0</span></span>
+                        <span class="city-label" data-default="Klang"><span class="city-label-full">Klang <i class="fa-solid fa-chevron-down city-label-chevron" aria-hidden="true" style="font-size: 0.7em; margin-left: 4px;"></i></span><span class="city-label-short">Klang</span></span>
+                    </button>
+                </div>
+
+                <!-- City Card Industrial Sections Inline Drawer (Matches Top Hero Sections UI) -->
+                <div class="hero-type-popover hero-section-popover city-section-popover" id="city-section-popover" aria-hidden="true" aria-label="Industrial Sections">
+                    <div class="hero-type-popover-head">
+                        <div class="hero-type-popover-title-wrap">
+                            <span class="hero-type-popover-title"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> Industrial Sections</span>
+                            <span class="hero-section-city-chip" id="city-section-city-chip">In Petaling Jaya</span>
+                        </div>
+                        <div class="hero-type-popover-head-actions">
+                            <div class="hero-section-search-wrap" id="city-section-search-wrap">
+                                <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                                <input type="search" id="city-section-quick-filter" class="hero-section-quick-filter" placeholder="Filter section..." aria-label="Filter industrial sections">
+                            </div>
+                            <span class="hero-type-selection-badge" id="city-section-selection-badge">All Sections</span>
+                        </div>
+                    </div>
+                    <div class="hero-section-groups" id="city-section-groups" role="radiogroup" aria-label="Select Industrial Section"></div>
+                    <div class="hero-filters-footer hero-type-popover-footer">
+                        <button type="button" class="hero-filters-clear-btn" id="city-section-clear-btn">
+                            <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Reset Section
+                        </button>
+                        <div class="hero-type-footer-right">
+                            <span class="hero-type-footer-summary" id="city-section-footer-summary">Showing all industrial sections</span>
+                            <button type="button" class="hero-filters-apply-btn" id="city-section-apply-btn">
+                                <i class="fa-solid fa-check" aria-hidden="true"></i> Done
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Interactive Klang Valley Covered Industrial Parks Map -->
+    <section class="section home-map-section" id="location-map-section">
+        <div class="container">
+            <div class="section-header featured-section-header">
+                <div class="featured-header-copy">
+                    <h2>Explore Covered Industrial Parks</h2>
+                    <p>Interactive map of prime Klang Valley industrial parks &amp; hubs covered across Petaling Jaya, Subang Jaya, Shah Alam, and Klang.</p>
+                </div>
+                <div class="featured-header-actions">
+                    <a href="properties.html#browse-properties" class="featured-browse-link">
+                        <i class="fa-solid fa-map-location-dot" aria-hidden="true"></i>
+                        <span>Full Split Map</span>
+                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+
+            <div class="home-map-card">
+                <div class="home-map-toolbar">
+                    <div class="home-map-filters-row">
+                        <div class="home-map-city-pills" role="group" aria-label="Filter covered industrial parks by city">
+                            <button type="button" class="home-map-city-btn active" data-city="All" aria-pressed="true">All Klang Valley</button>
+                            <button type="button" class="home-map-city-btn" data-city="Petaling Jaya" aria-pressed="false">Petaling Jaya</button>
+                            <button type="button" class="home-map-city-btn" data-city="Subang Jaya" aria-pressed="false">Subang Jaya</button>
+                            <button type="button" class="home-map-city-btn" data-city="Shah Alam" aria-pressed="false">Shah Alam</button>
+                            <button type="button" class="home-map-city-btn" data-city="Klang" aria-pressed="false">Klang</button>
+                        </div>
+                        <div class="home-map-search-box">
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            <input type="search" id="home-map-park-search" placeholder="Search park or section..." aria-label="Search covered industrial park or section" autocorrect="off" autocapitalize="none" spellcheck="false" enterkeyhint="search">
+                        </div>
+                    </div>
+
+                    <div class="home-map-kpi-strip">
+                        <button type="button" class="home-map-kpi-item is-park-kpi" data-home-map-trigger="true" title="Click to explore all covered parks on map">
+                            <span class="home-map-kpi-icon"><i class="fa-solid fa-industry"></i></span>
+                            <span class="home-map-kpi-meta">
+                                <strong id="home-map-total-parks">0</strong>
+                                <span>Covered Parks</span>
+                            </span>
+                        </button>
+                        <button type="button" class="home-map-kpi-item" data-home-map-trigger="true" title="Click to explore cities on map">
+                            <span class="home-map-kpi-icon"><i class="fa-solid fa-city"></i></span>
+                            <span class="home-map-kpi-meta">
+                                <strong id="home-map-cities-count">0</strong>
+                                <span>Cities Covered</span>
+                            </span>
+                        </button>
+                        <button type="button" class="home-map-kpi-item" data-home-map-trigger="true" title="Click to explore industrial sections on map">
+                            <span class="home-map-kpi-icon"><i class="fa-solid fa-layer-group"></i></span>
+                            <span class="home-map-kpi-meta">
+                                <strong id="home-map-sections-count">0</strong>
+                                <span>Industrial Sections</span>
+                            </span>
+                        </button>
+                        <button type="button" class="home-map-kpi-item" data-home-map-trigger="true" title="Click to view assigned area specialists on map">
+                            <span class="home-map-kpi-icon"><i class="fa-solid fa-user-tie"></i></span>
+                            <span class="home-map-kpi-meta">
+                                <strong id="home-map-specialists-count">0</strong>
+                                <span>Area Specialists</span>
+                            </span>
+                        </button>
+                    </div>
+
+                    <div class="home-map-toggle-strip" id="home-map-toggle-strip">
+                        <div class="home-map-toggle-top">
+                            <div class="home-map-toggle-caption">
+                                <span class="home-map-pin-radar" aria-hidden="true">
+                                    <i class="fa-solid fa-location-dot"></i>
+                                </span>
+                                <div class="home-map-caption-text">
+                                    <strong>Interactive Park &amp; Specialist Explorer</strong>
+                                    <span>Jump straight to an industrial park pin, cluster breakdown, or assigned specialist</span>
+                                </div>
+                            </div>
+                            <div class="home-map-toggle-actions">
+                                <button type="button" id="home-map-toggle-btn" class="btn btn-primary home-map-toggle-btn" aria-expanded="false" aria-controls="home-map-layout">
+                                    <i class="fa-solid fa-map-location-dot"></i> <span>Show Interactive Map</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="home-map-quick-chips" id="home-map-quick-chips" aria-label="Quick-jump covered industrial parks"></div>
+                    </div>
+                </div>
+
+                <div class="home-map-layout" id="home-map-layout" hidden>
+                    <div class="home-map-stage">
+                        <div class="home-map-stage-controls">
+                            <button type="button" id="home-map-layer-btn" class="imap-ctrl-btn">
+                                <i class="fa-solid fa-satellite"></i> <span>Satellite</span>
+                            </button>
+                        </div>
+                        <div id="homepage-map-canvas" class="home-map-canvas"></div>
+                        <div class="imap-bottom-overlay">
+                            <div class="imap-legend-pill">
+                                <span class="imap-legend-item"><span class="imap-dot is-park"></span> Covered Industrial Park</span>
+                                <span class="imap-legend-sep">|</span>
+                                <span class="imap-units-summary">Numbers show Covered Parks in area</span>
+                            </div>
+                            <button type="button" class="imap-kbd-btn" data-imap-open-shortcuts="true" title="Keyboard shortcuts for Mac & Windows (?)" aria-label="Open map keyboard shortcuts">
+                                <i class="fa-regular fa-keyboard"></i> <span>Keyboard shortcuts</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <aside class="home-map-sidebar">
+                        <div class="home-map-sidebar-head">
+                            <h4><i class="fa-solid fa-industry"></i> Covered Industrial Parks</h4>
+                            <span>Click park to zoom</span>
+                        </div>
+                        <div id="homepage-map-breakdown" class="home-map-breakdown-list">
+                            <!-- Populated by JS -->
+                        </div>
+                        <div class="home-map-sidebar-foot">
+                            <a href="properties.html#browse-properties" class="btn btn-primary" style="width: 100%; justify-content: center;">
+                                <i class="fa-solid fa-map-location-dot" style="margin-right: 6px;"></i> Open Full Split Map &amp; Filters
+                            </a>
+                        </div>
+                    </aside>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How Can We Help -->
+    <section class="section services-bg" id="services">
+        <div class="container">
+            <div class="section-header featured-section-header">
+                <div class="featured-header-copy">
+                    <h2>Industrial Property Services</h2>
+                    <p id="front-services-desc">Comprehensive industrial real estate solutions tailored to your operational requirements across Klang Valley &amp; Selangor.</p>
+                </div>
+                <div class="featured-header-actions">
+                    <a href="#contact" class="featured-browse-link">
+                        <span>Request Consultation</span>
+                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-card-head">
+                        <div class="service-icon-wrapper" aria-hidden="true">
+                            <i class="fa-solid fa-industry"></i>
+                        </div>
+                        <h3 id="front-services-card1-title">Factory Acquisition</h3>
+                    </div>
+                    <p id="front-services-card1-desc">End-to-end purchasing and strategic sourcing of manufacturing plants, heavy industrial facilities, and land plots optimized for production and high power loads.</p>
+                    <a href="#contact" class="service-link" id="front-services-card1-link">Inquire Acquisition <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-card-head">
+                        <div class="service-icon-wrapper" aria-hidden="true">
+                            <i class="fa-solid fa-warehouse"></i>
+                        </div>
+                        <h3 id="front-services-card2-title">Space Rental</h3>
+                    </div>
+                    <p id="front-services-card2-desc">High-floor-loading warehouses, strategic located spaces and logistic spaces for rent.</p>
+                    <a href="properties.html?intent=Rent" class="service-link" id="front-services-card2-link">Browse Rentals <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                </div>
+                
+                <div class="service-card">
+                    <div class="service-card-head">
+                        <div class="service-icon-wrapper" aria-hidden="true">
+                            <i class="fa-solid fa-chart-line"></i>
+                        </div>
+                        <h3 id="front-services-card3-title">Property Expansion Advisory</h3>
+                    </div>
+                    <p id="front-services-card3-desc">Strategic consulting for expanding industrial operations, including local council &amp; DOE zoning compliance, built-to-suit projects, and facility modernizations.</p>
+                    <a href="#contact" class="service-link" id="front-services-card3-link">Schedule Advisory <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                </div>
+            </div>
+
+            <!-- Custom Requirements Banner -->
+            <div class="custom-requirements-banner">
+                <div class="banner-content">
+                    <div class="banner-icon-box" aria-hidden="true">
+                        <i class="fa-solid fa-headset"></i>
+                    </div>
+                    <div class="banner-text">
+                        <h3>Need Custom Industrial Requirements?</h3>
+                        <p>Speak to our senior consultants today for personalized site matches and regulatory guidance within 24 hours.</p>
+                    </div>
+                </div>
+                <div class="banner-actions">
+                    <a href="#contact" class="banner-btn banner-btn-white">
+                        <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Contact Us
+                    </a>
+                    <a href="https://wa.me/60312345678?text=Hello%20MyFactorySpace%20Specialist%2C%20I%20have%20custom%20industrial%20property%20requirements." target="_blank" rel="noopener noreferrer" class="banner-btn banner-btn-whatsapp main-whatsapp-link" id="main-whatsapp-btn-1">
+                        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i> WhatsApp Us
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Us -->
+    <section class="section about-bg" id="about">
+        <div class="container">
+            <div class="section-header featured-section-header">
+                <div class="featured-header-copy">
+                    <h2>Why Choose MyFactorySpace</h2>
+                    <p id="front-why-choose-desc">Leading specialists in industrial real estate across Selangor's prime industrial belt.</p>
+                </div>
+                <div class="featured-header-actions">
+                    <a href="properties.html#browse-properties" class="featured-browse-link">
+                        <span>Explore Catalog</span>
+                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-card-head">
+                        <div class="feature-icon" aria-hidden="true">
+                            <i class="fa-solid fa-map-location-dot"></i>
+                        </div>
+                        <h3 id="front-about-card1-title">Prime Locations</h3>
+                    </div>
+                    <p id="front-about-card1-desc">Strategic positioning near major highways and ports (Port Klang) to optimize your supply chain logistics.</p>
+                    <a href="#city-filters" class="feature-link" id="front-about-card1-link">Explore Industrial Hubs <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-card-head">
+                        <div class="feature-icon" aria-hidden="true">
+                            <i class="fa-solid fa-building-shield"></i>
+                        </div>
+                        <h3 id="front-about-card2-title">Modern Facilities</h3>
+                    </div>
+                    <p id="front-about-card2-desc">High ceilings, various floor loading capacities, and advanced power infrastructures built for different tier of industries.</p>
+                    <a href="properties.html#browse-properties" class="feature-link" id="front-about-card2-link">Browse Factories &amp; Warehouses <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-card-head">
+                        <div class="feature-icon" aria-hidden="true">
+                            <i class="fa-solid fa-handshake-angle"></i>
+                        </div>
+                        <h3 id="front-about-card3-title">Expert Guidance</h3>
+                    </div>
+                    <p id="front-about-card3-desc">Our consultants specialize purely in industrial premises, offering unmatched regulatory and market knowledge.</p>
+                    <a href="#contact" class="feature-link" id="front-about-card3-link">Speak with a Specialist <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Who Are We -->
+    <section class="section who-we-are-bg" id="who-we-are">
+        <div class="container">
+            <div class="section-header featured-section-header">
+                <div class="featured-header-copy">
+                    <h2>Specialized Industrial Real Estate Consultants</h2>
+                    <p>Selangor's premier team of industrial real estate specialists with a proven track record of driving industrial growth.</p>
+                </div>
+                <div class="featured-header-actions">
+                    <a href="#contact" class="featured-browse-link">
+                        <span>Speak With Team</span>
+                        <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Stats Banner -->
+            <div class="stats-banner">
+                <div class="stats-grid">
+                    <button type="button" class="stat-card" onclick="scrollToProperties()" title="Click to explore property listings">
+                        <span class="stat-number" id="stat-count-1">500+</span>
+                        <span class="stat-label">Total Transactions Closed</span>
+                        <span class="stat-detail"><i class="fa-solid fa-warehouse" aria-hidden="true"></i> Warehouses &amp; Factories</span>
+                    </button>
+                    <button type="button" class="stat-card" onclick="scrollToProperties()" title="Click to explore property listings">
+                        <span class="stat-number" id="stat-count-2">RM 1.2B+</span>
+                        <span class="stat-label">Available Assets for Sale &amp; Rent</span>
+                        <span class="stat-detail"><i class="fa-solid fa-tag" aria-hidden="true"></i> Freehold &amp; Leasehold Portfolio</span>
+                    </button>
+                    <button type="button" class="stat-card" onclick="scrollToProperties()" title="Click to explore property listings">
+                        <span class="stat-number" id="stat-count-3">45+</span>
+                        <span class="stat-label">Industrial Areas Covered</span>
+                        <span class="stat-detail"><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> Klang, Shah Alam, Subang &amp; PJ</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Featured Agents -->
+            <div class="team-header">
+                <h3>Meet Our Industrial Specialists</h3>
+                <p>Dedicated agents with deep technical expertise in industrial land, factories, and logistics parks.</p>
+            </div>
+
+            <div class="team-grid" id="team-grid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Property Owner Welcome & Listing Section -->
+    <section class="section owner-section-bg" id="owner-section">
+        <div class="container">
+            <div class="section-header featured-section-header owner-section-header">
+                <div class="featured-header-copy">
+                    <span id="front-owner-badge" class="owner-eyebrow-pill">
+                        <i class="fa-solid fa-handshake" aria-hidden="true"></i> For Property Owners &amp; Asset Managers
+                    </span>
+                    <h2 id="front-owner-heading">Property Owner Welcome to List &amp; Reach Out</h2>
+                    <p id="front-owner-subtitle">Have a warehouse, factory, or industrial land plot in Klang Valley? Partner with Selangor's #1 industrial estate team for corporate buyer matching and fast closing.</p>
+                </div>
+                <div class="featured-header-actions">
+                    <button type="button" class="featured-primary-cta open-owner-modal-btn">
+                        <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+                        <span>List Your Property</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Value Highlights Grid -->
+            <div class="owner-features-grid">
+                <div class="owner-feature-card">
+                    <div class="owner-card-head">
+                        <div class="owner-feature-icon" aria-hidden="true">
+                            <i class="fa-solid fa-users-gear"></i>
+                        </div>
+                        <h3 id="front-owner-card1-title">500+ Vetted Corporate Buyers &amp; Tenants</h3>
+                    </div>
+                    <p id="front-owner-card1-desc">Direct access to MNCs, logistics operators, and manufacturing firms seeking space in Petaling Jaya, Subang Jaya, Shah Alam, and Klang.</p>
+                    <a href="#" class="owner-feature-link open-owner-modal-btn" id="front-owner-card1-link" data-owner-note="Requesting buyer/tenant matching for my industrial property.">Match With Buyers &amp; Tenants <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                </div>
+
+                <div class="owner-feature-card">
+                    <div class="owner-card-head">
+                        <div class="owner-feature-icon" aria-hidden="true">
+                            <i class="fa-solid fa-camera-rotate"></i>
+                        </div>
+                        <h3 id="front-owner-card2-title">Drone Site Mapping &amp; High-End Asset Presentation</h3>
+                    </div>
+                    <p id="front-owner-card2-desc">Comprehensive property representation including aerial footage, technical spec sheets, and targeted digital exposure.</p>
+                    <a href="#" class="owner-feature-link open-owner-modal-btn" id="front-owner-card2-link" data-owner-note="Interested in drone site mapping, spec sheet &amp; digital presentation for my property.">Book Drone Shoot &amp; Spec Sheet <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                </div>
+
+                <div class="owner-feature-card">
+                    <div class="owner-card-head">
+                        <div class="owner-feature-icon" aria-hidden="true">
+                            <i class="fa-solid fa-shield-halved"></i>
+                        </div>
+                        <h3 id="front-owner-card3-title">Zero Upfront Cost &amp; Local Council Compliance Support</h3>
+                    </div>
+                    <p id="front-owner-card3-desc">No upfront fees. Guidance on floor load capacity (ton/m²), electrical amp rating, DOE zoning compliance, and valuation.</p>
+                    <a href="#" class="owner-feature-link open-owner-modal-btn" id="front-owner-card3-link" data-owner-note="Requesting free valuation, DOE zoning &amp; technical load assessment.">Request Free Valuation &amp; Advisory <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></a>
+                </div>
+            </div>
+
+            <!-- Main Listing Box -->
+            <div class="custom-requirements-banner owner-listing-banner">
+                <div class="banner-content">
+                    <div class="banner-icon-box">
+                        <i class="fa-solid fa-house-chimney-user"></i>
+                    </div>
+                    <div class="banner-text">
+                        <h3>Submit Your Property Listing Request</h3>
+                        <p>Your listing request will be immediately sent to our specialist in charge.</p>
+                    </div>
+                </div>
+                <div class="banner-actions">
+                    <button type="button" class="banner-btn banner-btn-white open-owner-modal-btn">
+                        <i class="fa-solid fa-paper-plane"></i> Submit Property Listing Request
+                    </button>
+                    <a href="https://wa.me/60176008088?text=Hello%20MyFactorySpace%20Team%2C%20I%20am%20a%20property%20owner%20and%20would%20like%20to%20list%20my%20industrial%20property." target="_blank" rel="noopener noreferrer" class="banner-btn banner-btn-whatsapp main-whatsapp-link" id="main-whatsapp-btn-2">
+                        <i class="fa-brands fa-whatsapp"></i> Reach Us on WhatsApp
+                    </a>
+                </div>
+            </div>
+
+            <!-- Owner Quick Guide / FAQ Accordion -->
+            <div class="owner-faq-wrapper" id="owner-faq-wrapper">
+                <div class="owner-faq-header" id="owner-faq-header" role="button" aria-expanded="false" tabindex="0" title="Click to view Frequently Asked Questions">
+                    <h4 class="owner-faq-title">
+                        <i class="fa-solid fa-circle-question" style="color: var(--primary);"></i> <span>Frequently Asked Questions by Property Owners</span>
+                    </h4>
+                    <div class="owner-faq-toggle-badge">
+                        <span class="owner-faq-badge-text">3 FAQs</span>
+                        <i class="fa-solid fa-chevron-down owner-faq-chevron"></i>
+                    </div>
+                </div>
+                <div class="owner-faq-grid" id="owner-faq-grid">
+                    <div class="owner-faq-item">
+                        <div class="owner-faq-q" id="front-owner-faq1-q">
+                            <i class="fa-solid fa-chevron-right"></i> What happens after I submit my listing?
+                        </div>
+                        <div class="owner-faq-a" id="front-owner-faq1-a">
+                            Your request is immediately logged in our admin <strong>Owner List</strong>. An assigned specialist will call you to verify specs, inspect the property, and match it with corporate buyers.
+                        </div>
+                    </div>
+
+                    <div class="owner-faq-item">
+                        <div class="owner-faq-q" id="front-owner-faq2-q">
+                            <i class="fa-solid fa-chevron-right"></i> Are there upfront marketing fees?
+                        </div>
+                        <div class="owner-faq-a" id="front-owner-faq2-a">
+                            No upfront fees whatsoever. Listing your warehouse, factory, or land on MyFactorySpace is 100% free until a tenancy or sale agreement is successfully executed.
+                        </div>
+                    </div>
+
+                    <div class="owner-faq-item">
+                        <div class="owner-faq-q" id="front-owner-faq3-q">
+                            <i class="fa-solid fa-chevron-right"></i> Can you assist with technical zoning & load ratings?
+                        </div>
+                        <div class="owner-faq-a" id="front-owner-faq3-a">
+                            Yes. We evaluate floor loading specs (ton/m²), electrical substations, ceiling height clearances, and DOE zoning approvals to maximize your asking value.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Contact & Lead Generation -->
+    <section class="section" id="contact" style="background-color: var(--white);">
+        <div class="container">
+            <div class="section-header featured-section-header">
+                <div class="featured-header-copy">
+                    <h2>Get In Touch</h2>
+                    <p>Register your interest or schedule a viewing directly with our industrial property specialists.</p>
+                </div>
+                <div class="featured-header-actions">
+                    <a href="tel:+60390548582" class="featured-browse-link">
+                        <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                        <span>Call Office</span>
+                    </a>
+                    <a href="https://wa.me/60176008088" target="_blank" rel="noopener noreferrer" class="featured-wa-link main-whatsapp-link">
+                        <i class="fa-brands fa-whatsapp" aria-hidden="true"></i>
+                        <span>WhatsApp</span>
+                    </a>
+                </div>
+            </div>
+            
+            <div class="contact-layout-grid">
+                
+                <!-- Contact Information (Left) -->
+                <div id="contact-info-panel" style="position: relative;">
+                    <!-- Default Contact Info -->
+                    <div id="default-contact-info" style="transition: opacity 0.3s ease;">
+                        <h3 class="contact-info-heading">Contact Information</h3>
+                        <p class="contact-info-sub">Ready to take your operations to the next level? Fill out the form or contact us directly using the details below.</p>
+                        
+                        <div class="contact-items-list">
+                            <div class="contact-item">
+                                <div class="contact-icon-box" aria-hidden="true">
+                                    <i class="fa-solid fa-location-dot"></i>
+                                </div>
+                                <div class="contact-text-box">
+                                    <h4>Our Office</h4>
+                                    <p id="front-main-address">No. 2-3, Jalan Radin Anum 2, Bandar Baru Sri Petaling, 57000 Kuala Lumpur</p>
+                                </div>
+                            </div>
+
+                            <div class="contact-item">
+                                <div class="contact-icon-box" aria-hidden="true">
+                                    <i class="fa-solid fa-phone"></i>
+                                </div>
+                                <div class="contact-text-box">
+                                    <h4>Phone Number</h4>
+                                    <p id="front-main-phone">+60 3-9054 8582</p>
+                                </div>
+                            </div>
+
+                            <div class="contact-item">
+                                <div class="contact-icon-box" aria-hidden="true">
+                                    <i class="fa-solid fa-envelope"></i>
+                                </div>
+                                <div class="contact-text-box">
+                                    <h4>Email Address</h4>
+                                    <p id="front-main-email">info@MyFactorySpace.com</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Selected Property Info (Hidden by default) -->
+                    <div id="selected-property-info" style="display: none; transition: opacity 0.3s ease; opacity: 0;">
+                        <!-- Content will be injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Form (Right) -->
+                <div class="contact-form-wrapper" id="contact-inquiry-form">
+                    <div class="contact-form-header">
+                        <div class="contact-form-header-left">
+                            <div class="contact-form-icon-pill" aria-hidden="true">
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </div>
+                            <div>
+                                <h3 class="contact-form-title">Send Us an Inquiry</h3>
+                                <p class="contact-form-subtitle">Direct connect with our territory industrial specialists</p>
+                            </div>
+                        </div>
+                        <span class="contact-form-badge"><i class="fa-solid fa-bolt" aria-hidden="true"></i> Fast Response</span>
+                    </div>
+
+                    <form id="lead-form">
+                        <div class="form-group">
+                            <label for="leadName">Full Name <span class="req-star">*</span></label>
+                            <div class="lead-input-wrap">
+                                <span class="lead-input-icon" aria-hidden="true"><i class="fa-solid fa-user"></i></span>
+                                <input type="text" id="leadName" class="form-control" required placeholder="John Doe" autocomplete="name">
+                            </div>
+                        </div>
+                        <div class="lead-form-row-2">
+                            <div class="form-group">
+                                <label for="leadEmail">Email Address <span class="req-star">*</span></label>
+                                <div class="lead-input-wrap">
+                                    <span class="lead-input-icon" aria-hidden="true"><i class="fa-solid fa-envelope"></i></span>
+                                    <input type="email" id="leadEmail" class="form-control" required placeholder="john@company.com" autocomplete="email" inputmode="email">
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="leadPhone">Phone Number <span class="req-star">*</span></label>
+                                <div class="lead-input-wrap">
+                                    <span class="lead-input-icon" aria-hidden="true"><i class="fa-solid fa-phone"></i></span>
+                                    <input type="tel" id="leadPhone" class="form-control" required placeholder="+60 12-345 6789" autocomplete="tel" inputmode="tel">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="leadInterest">Property of Interest <span class="req-star">*</span></label>
+                            <div class="lead-input-wrap lead-select-wrap">
+                                <span class="lead-input-icon" aria-hidden="true"><i class="fa-solid fa-building"></i></span>
+                                <select id="leadInterest" class="form-control" required>
+                                    <option value="">Select an option</option>
+                                    <option value="General Inquiry">General Inquiry</option>
+                                </select>
+                                <span class="lead-select-chevron" aria-hidden="true"><i class="fa-solid fa-chevron-down"></i></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="leadMessage">Message (Optional)</label>
+                            <div class="lead-input-wrap lead-textarea-wrap">
+                                <span class="lead-input-icon" aria-hidden="true"><i class="fa-solid fa-comment-dots"></i></span>
+                                <textarea id="leadMessage" class="form-control" rows="2" placeholder="How can we help you?"></textarea>
+                            </div>
+                        </div>
+                        <div id="lead-success" role="status" aria-live="polite" style="display:none; color: #059669; background: #d1fae5; padding: 0.85rem 1rem; border-radius: 10px; margin-top: 0.5rem; text-align: center; font-size: 0.85rem; font-weight: 600;">
+                            <i class="fa-solid fa-circle-check" aria-hidden="true" style="margin-right: 4px;"></i> Thank you! Your inquiry has been submitted. Our agent will contact you shortly.
+                        </div>
+                        <button type="submit" class="btn btn-primary lead-submit-btn" style="width: 100%; margin-top: 0.45rem;">
+                            <i class="fa-solid fa-paper-plane" aria-hidden="true" style="margin-right: 6px;"></i> Submit Inquiry
+                        </button>
+                        <div class="form-privacy-note">
+                            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i> 100% confidential. No spam, guaranteed response within 2 hours.
+                        </div>
+                    </form>
+                </div>
+                
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-brand">
+                    <h3 id="main-footer-brand"></h3>
+                    <script>
+                    (function() {
+                        var fb = document.getElementById('main-footer-brand');
+                        if (fb && window.__initialFooterBrandHtml) fb.innerHTML = window.__initialFooterBrandHtml;
+                    })();
+                    </script>
+                    <p>Your trusted partner for industrial real estate solutions in the Klang Valley.</p>
+                    <div class="social-links">
+                        <a href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+                        <a href="#" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                        <a href="#" aria-label="Twitter"><i class="fa-brands fa-twitter"></i></a>
+                    </div>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Coverage Areas</h4>
+                    <ul>
+                        <li><a href="location.html?city=petaling-jaya">Petaling Jaya</a></li>
+                        <li><a href="location.html?city=subang-jaya">Subang Jaya</a></li>
+                        <li><a href="location.html?city=shah-alam">Shah Alam</a></li>
+                        <li><a href="location.html?city=klang">Klang</a></li>
+                    </ul>
+                </div>
+
+                <div class="footer-links">
+                    <h4>Quick Links</h4>
+                    <ul>
+                        <li><a href="#home">Home</a></li>
+                        <li><a href="#properties">Properties</a></li>
+                        <li><a href="insights.html">Market Insights</a></li>
+                        <li><a href="#about">About Us</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-links">
+                    <h4>Contact Us</h4>
+                    <ul>
+                        <li><a href="mailto:info@MyFactorySpace.com" id="front-contact-email"><i class="fa-solid fa-envelope" style="margin-right:8px;"></i> info@MyFactorySpace.com</a></li>
+                        <li><a href="tel:+60390548582" id="front-contact-phone"><i class="fa-solid fa-phone" style="margin-right:8px;"></i> +60 3-9054 8582</a></li>
+                        <li id="front-contact-address"><i class="fa-solid fa-location-dot" style="margin-right:8px; color:var(--accent);"></i> No. 2-3, Jalan Radin Anum 2, Bandar Baru Sri Petaling, 57000 Kuala Lumpur</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                &copy; 2026 MyFactorySpace Real Estate. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <!-- Quick Property Owner Listing Modal -->
+    <div id="ownerModal" class="modal owner-modal" style="display: none;">
+        <div class="owner-modal-dialog">
+            <button class="modal-close-btn owner-modal-close" id="close-owner-modal" aria-label="Close modal">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <div class="owner-modal-header">
+                <div class="owner-modal-icon">
+                    <i class="fa-solid fa-house-chimney-user"></i>
+                </div>
+                <h3>List Your Property With Us</h3>
+                <p>Submit your warehouse, factory, or land details. Your listing request will be immediately sent to our specialist in charge.</p>
+            </div>
+
+            <form id="modal-owner-form">
+                <div class="form-group owner-form-group">
+                    <label for="modalOwnerName">Full Name / Company Name <span class="req-star">*</span></label>
+                    <div class="lead-input-wrap">
+                        <span class="lead-input-icon"><i class="fa-solid fa-building-user"></i></span>
+                        <input type="text" id="modalOwnerName" class="form-control" required placeholder="e.g. Tan Sri Lee / Apex Logistics" autocomplete="name">
+                    </div>
+                </div>
+
+                <div class="owner-form-row col-2">
+                    <div class="form-group">
+                        <label for="modalOwnerPhone">Phone Number <span class="req-star">*</span></label>
+                        <div class="lead-input-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-phone"></i></span>
+                            <input type="tel" id="modalOwnerPhone" class="form-control" required placeholder="+60 12-345 6789" inputmode="tel" autocomplete="tel">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modalOwnerEmail">Email Address <span class="req-star">*</span></label>
+                        <div class="lead-input-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-envelope"></i></span>
+                            <input type="email" id="modalOwnerEmail" class="form-control" required placeholder="name@company.com" inputmode="email" autocomplete="email" autocapitalize="off">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="owner-form-row col-3">
+                    <div class="form-group">
+                        <label for="modalOwnerLocation">Location <span class="req-star">*</span></label>
+                        <div class="lead-input-wrap lead-select-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-location-dot"></i></span>
+                            <select id="modalOwnerLocation" class="form-control" required>
+                                <option value="">Select Location</option>
+                                <option value="Petaling Jaya">Petaling Jaya</option>
+                                <option value="Subang Jaya">Subang Jaya</option>
+                                <option value="Shah Alam">Shah Alam</option>
+                                <option value="Klang">Klang</option>
+                                <option value="Other Selangor Area">Other Selangor Area</option>
+                            </select>
+                            <span class="lead-select-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modalOwnerPark">Industrial Park</label>
+                        <div class="lead-input-wrap lead-select-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-industry"></i></span>
+                            <select id="modalOwnerPark" class="form-control">
+                                <option value="">Select Location First...</option>
+                            </select>
+                            <span class="lead-select-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modalOwnerType">Property Type <span class="req-star">*</span></label>
+                        <div class="lead-input-wrap lead-select-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-warehouse"></i></span>
+                            <select id="modalOwnerType" class="form-control" required>
+                                <option value="">Select Type</option>
+                                <optgroup label="Factory">
+                                    <option value="Detached Factory">Detached Factory</option>
+                                    <option value="Semi-Detached Factory">Semi-Detached Factory</option>
+                                    <option value="Terrace Factory">Terrace Factory</option>
+                                    <option value="Cluster Factory">Cluster Factory</option>
+                                </optgroup>
+                                <optgroup label="Warehouse">
+                                    <option value="Detached Warehouse">Detached Warehouse</option>
+                                    <option value="Semi-Detached Warehouse">Semi-Detached Warehouse</option>
+                                    <option value="Shared Warehouse">Shared Warehouse</option>
+                                    <option value="Multi-Storey Warehouse">Multi-Storey Warehouse</option>
+                                </optgroup>
+                                <optgroup label="Land">
+                                    <option value="Industrial Land">Industrial Land</option>
+                                    <option value="Commercial Land">Commercial Land</option>
+                                    <option value="Agricultural Land">Agricultural Land</option>
+                                </optgroup>
+                                <optgroup label="Shoplot">
+                                    <option value="Shoplot (Near Factory)">Shoplot (Near Factory)</option>
+                                </optgroup>
+                            </select>
+                            <span class="lead-select-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="owner-form-row col-2">
+                    <div class="form-group">
+                        <label for="modalOwnerIntent">Intent <span class="req-star">*</span></label>
+                        <div class="lead-input-wrap lead-select-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-tag"></i></span>
+                            <select id="modalOwnerIntent" class="form-control" required>
+                                <option value="Rent">For Rent</option>
+                                <option value="Sale">For Sale</option>
+                                <option value="Both Rent & Sale">Both Rent & Sale</option>
+                            </select>
+                            <span class="lead-select-chevron"><i class="fa-solid fa-chevron-down"></i></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="modalOwnerPrice">Asking Price / Rent</label>
+                        <div class="lead-input-wrap">
+                            <span class="lead-input-icon"><i class="fa-solid fa-money-bill-wave"></i></span>
+                            <input type="text" id="modalOwnerPrice" class="form-control" placeholder="e.g. RM 35,000/mo">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group owner-form-group">
+                    <label for="modalOwnerNotes">Address & Property Notes</label>
+                    <div class="lead-input-wrap lead-textarea-wrap">
+                        <span class="lead-input-icon"><i class="fa-solid fa-clipboard-list"></i></span>
+                        <textarea id="modalOwnerNotes" class="form-control" rows="3" placeholder="Provide property address, floor area, ceiling height, power supply..."></textarea>
+                    </div>
+                </div>
+
+                <div id="modal-owner-form-success" style="display:none; color: #065f46; background-color: #d1fae5; border: 1px solid #a7f3d0; padding: 0.85rem 1rem; border-radius: 10px; margin-bottom: 0.75rem; text-align: center; font-size: 0.85rem; font-weight: 600;">
+                    <i class="fa-solid fa-circle-check" style="color: #059669; margin-right: 6px;"></i> Thank you! Property request submitted and added to Dashboard &gt; Owner List.
+                </div>
+
+                <button type="submit" class="btn btn-primary owner-submit-btn lead-submit-btn" style="width: 100%;">
+                    <i class="fa-solid fa-paper-plane" style="margin-right: 6px;"></i> Submit Property Request
+                </button>
+                <div class="form-privacy-note" style="margin-top: 0.55rem; font-size: 0.74rem; color: #64748b; text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                    <i class="fa-solid fa-shield-halved"></i> 100% confidential. Direct routing to designated industrial specialist.
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <!-- Supabase JS SDK & Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js?v=51"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js" crossorigin="anonymous"></script>
+    <script src="js/property-share.js?v=47"></script>
+    <script src="js/property-map.js?v=14"></script>
+    <script src="js/scripts.js?v=100"></script>
+    <script src="js/visit-tracker.js?v=3"></script>
+    <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+    <script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>

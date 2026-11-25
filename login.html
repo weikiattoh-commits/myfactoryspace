@@ -1,0 +1,1760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="theme-color" content="#064e3b">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Admin Login | MyFactorySpace Real Estate</title>
+
+    <!-- Favicon & Site Icons -->
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon.png">
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="icon" href="/favicon.ico" sizes="any">
+    <link rel="shortcut icon" href="/favicon.ico">
+    <link rel="icon" type="image/png" sizes="48x48" href="/assets/icons/favicon-48x48.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/assets/icons/android-chrome-192x192.png">
+    <link rel="icon" type="image/svg+xml" href="/assets/icons/favicon.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/assets/icons/site.webmanifest">
+
+    <!-- Resource Hints & Fonts -->
+    <link rel="preconnect" href="https://vnsinkesbbikeqbywxfd.supabase.co" crossorigin>
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
+
+    <!-- Preload Showcase Visual on Desktop -->
+    <link rel="preload" as="image" href="assets/images/hero.jpg?v=34" media="(min-width: 960px)">
+
+    <!-- Self-contained login styles below (decoupled from 393 KB public styles.css for instant load) -->
+
+    <!-- Corporate Branding Initializer (Zero-Flicker Synchronous Engine) -->
+    <script>
+    (function() {
+        try {
+            var s = localStorage.getItem('industria_branding_settings');
+            var b = s ? JSON.parse(s) : null;
+            if (!b) {
+                var g = localStorage.getItem('industria_settings');
+                if (g) { var p = JSON.parse(g); b = p ? p.branding : null; }
+            }
+            var root = document.documentElement;
+            var primary = (b && b.primaryColor) ? b.primaryColor : '#059669';
+            var primaryDark = (b && b.primaryDarkColor) ? b.primaryDarkColor : '#064e3b';
+            var accent = (b && b.accentColor) ? b.accentColor : '#dcfce7';
+
+            function toRgba(hex, alpha) {
+                if (!hex) return 'rgba(5, 150, 105, ' + alpha + ')';
+                hex = hex.replace('#', '');
+                if (hex.length === 3) hex = hex.split('').map(function(c) { return c + c; }).join('');
+                if (hex.length !== 6) return 'rgba(5, 150, 105, ' + alpha + ')';
+                var num = parseInt(hex, 16);
+                if (isNaN(num)) return 'rgba(5, 150, 105, ' + alpha + ')';
+                return 'rgba(' + ((num >> 16) & 255) + ',' + ((num >> 8) & 255) + ',' + (num & 255) + ',' + alpha + ')';
+            }
+
+            root.style.setProperty('--primary', primary);
+            root.style.setProperty('--primary-dark', primaryDark);
+            root.style.setProperty('--accent', accent);
+            root.style.setProperty('--secondary', primary);
+            root.style.setProperty('--primary-light', toRgba(primary, 0.14));
+            root.style.setProperty('--border-light', toRgba(primary, 0.16));
+            root.style.setProperty('--primary-glow', toRgba(primary, 0.28));
+            root.style.setProperty('--hero-gradient-start', toRgba(primaryDark, 0.90));
+            root.style.setProperty('--hero-gradient-end', toRgba(primary, 0.62));
+
+            var themeMeta = document.querySelector('meta[name="theme-color"]');
+            if (themeMeta) themeMeta.setAttribute('content', primaryDark);
+
+            if (b && b.faviconUrl) {
+                var favTag = document.querySelector('link[rel="icon"][sizes="48x48"]');
+                if (favTag) favTag.href = b.faviconUrl;
+            }
+
+            var logoUrl = (b && b.logoUrl) ? String(b.logoUrl) : '';
+            var explicitName = (b && b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : '';
+
+            window.__loginBranding = {
+                logoUrl: logoUrl,
+                displayName: explicitName || (logoUrl ? '' : 'MyFactorySpace'),
+                brandTitle: explicitName || 'MyFactorySpace',
+                hasCustomLogo: !!logoUrl
+            };
+        } catch (e) {}
+    })();
+    </script>
+
+    <style>
+        /* Registered custom properties for indeterminate progress spinner dash */
+        @property --arc-start {
+            syntax: "<angle>";
+            inherits: false;
+            initial-value: 0deg;
+        }
+        @property --arc-end {
+            syntax: "<angle>";
+            inherits: false;
+            initial-value: 0deg;
+        }
+        @property --progress-dash-animation {
+            syntax: "*";
+            inherits: false;
+            initial-value: , progress-dash 2.6s ease-in-out infinite;
+        }
+
+        :root {
+            --primary: #059669;
+            --primary-dark: #064e3b;
+            --secondary: #059669;
+            --accent: #dcfce7;
+            --white: #ffffff;
+            --bg-light: #f8fafc;
+            --text-dark: #0f172a;
+            --text-muted: #526074;
+            --border-light: rgba(5, 150, 105, 0.16);
+            --login-surface: #ffffff;
+            --login-canvas: #f8fafc;
+            --login-ink: #0f172a;
+            --login-ink-secondary: #475569;
+            --login-ink-muted: #526074;
+            --login-border: #768699; /* >= 3.7:1 contrast on white (WCAG 1.4.11) */
+            --login-border-subtle: #e2e8f0;
+            --login-error: #b91c1c;
+            --login-error-bg: #fef2f2;
+            --login-error-border: #fca5a5;
+            --login-warn: #92400e;
+            --login-warn-bg: #fffbeb;
+            --login-warn-border: #fcd34d;
+            --login-radius-md: 12px;
+            --login-radius-lg: 20px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.45rem;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            text-decoration: none;
+            transition: background-color 0.18s ease, box-shadow 0.18s ease, transform 0.14s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary, #059669) 0%, var(--primary-dark, #064e3b) 100%);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            filter: brightness(1.06);
+        }
+
+        /* High-Density Enterprise Scale (matches dashboard.css scale while respecting root font prefs) */
+        html {
+            font-size: 87.5%; /* 14px base at default 16px browser setting */
+            -webkit-text-size-adjust: 100%;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        /* Visually hidden utility (keeps content in accessibility tree) */
+        .visually-hidden:where(:not(:focus-within, :active)) {
+            position: absolute !important;
+            clip-path: inset(50%) !important;
+            overflow: hidden !important;
+            width: 1px !important;
+            height: 1px !important;
+            margin: -1px !important;
+            padding: 0 !important;
+            border: 0 !important;
+            white-space: nowrap !important;
+        }
+
+        body.login-page {
+            margin: 0;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background-color: var(--login-surface);
+            color: var(--login-ink);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Split-screen layout shell */
+        .login-shell {
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: grid;
+            grid-template-columns: 1fr;
+        }
+
+        /* =========================================================
+           LEFT SHOWCASE PANEL (Architectural Industrial Identity)
+           ========================================================= */
+        .login-showcase {
+            display: none;
+            position: relative;
+            overflow: hidden;
+            color: #ffffff;
+            background-color: var(--primary-dark, #064e3b);
+            background-image:
+                linear-gradient(
+                    155deg,
+                    rgba(7, 25, 22, 0.90) 0%,
+                    var(--hero-gradient-start, rgba(6, 78, 59, 0.82)) 48%,
+                    rgba(15, 23, 42, 0.92) 100%
+                ),
+                url('assets/images/hero.jpg?v=34');
+            background-size: cover;
+            background-position: center;
+            padding: clamp(2.25rem, 4vw, 3.5rem);
+        }
+
+        /* Subtle architectural drafting grid overlay */
+        .login-showcase::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(to right, rgba(255, 255, 255, 0.055) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.055) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        /* Soft radial accent glow */
+        .login-showcase::after {
+            content: '';
+            position: absolute;
+            inset: auto -15% -25% auto;
+            width: 440px;
+            height: 440px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--primary-glow, rgba(5, 150, 105, 0.35)) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .showcase-inner {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            max-width: 540px;
+            margin-inline: auto;
+            width: 100%;
+            gap: 2.5rem;
+        }
+
+        .showcase-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .showcase-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            color: #ffffff;
+            text-decoration: none;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            border-radius: 10px;
+        }
+
+        .showcase-brand-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(8px);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: var(--accent, #dcfce7);
+            flex-shrink: 0;
+        }
+
+        .showcase-brand img {
+            max-height: 36px;
+            max-width: 190px;
+            width: auto;
+            object-fit: contain;
+            filter: brightness(0) invert(1);
+        }
+
+        .portal-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.3rem 0.7rem;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.94);
+            white-space: nowrap;
+        }
+
+        .portal-pill-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #34d399;
+            box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.24);
+        }
+
+        .showcase-hero {
+            margin-block: auto;
+        }
+
+        .showcase-eyebrow {
+            display: inline-block;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.11em;
+            text-transform: uppercase;
+            color: var(--accent, #dcfce7);
+            margin-block-end: 0.75rem;
+        }
+
+        .showcase-headline {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(1.65rem, 1rem + 1.45vw, 2.2rem);
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -0.025em;
+            text-wrap: balance;
+            color: #ffffff;
+            margin: 0 0 0.85rem 0;
+        }
+
+        .showcase-lead {
+            font-size: 0.92rem;
+            line-height: 1.58;
+            text-wrap: pretty;
+            color: rgba(226, 232, 240, 0.9);
+            margin: 0 0 1.65rem 0;
+            max-width: 48ch;
+        }
+
+        .showcase-features {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .showcase-feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.8rem 0.95rem;
+            border-radius: 13px;
+            background: rgba(15, 23, 42, 0.38);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            backdrop-filter: blur(10px);
+        }
+
+        .showcase-feature-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.12);
+            color: var(--accent, #dcfce7);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+            margin-block-start: 1px;
+        }
+
+        .showcase-feature-title {
+            display: block;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.3;
+        }
+
+        .showcase-feature-desc {
+            display: block;
+            font-size: 0.82rem;
+            color: rgba(226, 232, 240, 0.84);
+            line-height: 1.45;
+            margin-block-start: 0.15rem;
+        }
+
+        .showcase-footer {
+            padding-block-start: 1.1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.16);
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            font-size: 0.8rem;
+            color: rgba(226, 232, 240, 0.8);
+        }
+
+        .showcase-regions {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        /* =========================================================
+           RIGHT WORKSPACE / SIGN-IN PANEL
+           ========================================================= */
+        .login-main {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            min-height: 100dvh;
+            background:
+                radial-gradient(circle at top right, var(--primary-light, rgba(5, 150, 105, 0.07)) 0%, transparent 46%),
+                var(--login-surface);
+            padding: 1rem 1.35rem 1.5rem;
+        }
+
+        /* Top bar (Brand on mobile + Back to Website link) */
+        .login-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            width: 100%;
+            max-width: 520px;
+            margin-inline: auto;
+            padding-block: 0.25rem 0.75rem;
+        }
+
+        .mobile-brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 800;
+            color: var(--primary-dark, #064e3b);
+            text-decoration: none;
+            letter-spacing: -0.025em;
+            min-width: 0;
+            border-radius: 8px;
+        }
+
+        .mobile-brand-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--accent, #dcfce7);
+            color: var(--primary, #059669);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .mobile-brand img {
+            max-height: 32px;
+            max-width: 160px;
+            width: auto;
+            object-fit: contain;
+        }
+
+        .mobile-brand-text {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            min-block-size: 38px;
+            padding: 0.4rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--login-ink-secondary);
+            background: #f1f5f9;
+            border: 1px solid var(--login-border-subtle);
+            text-decoration: none;
+            transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .back-link:hover {
+            color: var(--primary-dark, #064e3b);
+            background: var(--accent, #dcfce7);
+            border-color: var(--border-light, rgba(5, 150, 105, 0.28));
+        }
+
+        .back-link:focus-visible {
+            outline: 3px solid var(--primary-dark, #064e3b);
+            outline-offset: 2px;
+        }
+
+        .back-link i {
+            font-size: 0.8rem;
+            transition: transform 0.2s ease;
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .back-link:hover i {
+                transform: translateX(-3px);
+            }
+        }
+
+        /* Form container — top-anchored on mobile so virtual keyboards never hide Sign In */
+        .login-card-wrap {
+            flex: 1 0 auto;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding-block: 0.75rem 1.5rem;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 424px;
+            background: transparent;
+            border-radius: var(--login-radius-lg);
+            position: relative;
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .login-card {
+                animation: cardFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            }
+        }
+
+        @keyframes cardFadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes cardShake {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-7px); }
+            40% { transform: translateX(7px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+        }
+
+        .login-card.is-shaking {
+            @media (prefers-reduced-motion: no-preference) {
+                animation: cardShake 0.38s ease-in-out;
+            }
+        }
+
+        .login-header {
+            margin-block-end: 1.25rem;
+        }
+
+        .login-kicker {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.74rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--primary-dark, #064e3b);
+            background: var(--accent, #dcfce7);
+            padding: 0.28rem 0.6rem;
+            border-radius: 999px;
+            margin-block-end: 0.7rem;
+        }
+
+        .login-header h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: clamp(1.4rem, 1rem + 0.85vw, 1.7rem);
+            font-weight: 800;
+            letter-spacing: -0.025em;
+            text-wrap: balance;
+            color: var(--login-ink);
+            line-height: 1.2;
+            margin: 0 0 0.4rem 0;
+        }
+
+        .login-subtitle {
+            color: var(--login-ink-secondary);
+            font-size: 0.9rem;
+            text-wrap: pretty;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .required-note {
+            font-size: 0.8rem;
+            color: var(--login-ink-muted);
+            margin: 0 0 1.1rem 0;
+        }
+
+        .required-mark {
+            color: var(--login-error);
+            font-weight: 700;
+        }
+
+        /* Status / Error Banners */
+        .status-banner {
+            display: none;
+            align-items: flex-start;
+            gap: 0.6rem;
+            padding: 0.75rem 0.9rem;
+            border-radius: var(--login-radius-md);
+            font-size: 0.85rem;
+            line-height: 1.45;
+            margin-block-end: 1.1rem;
+            border: 1px solid transparent;
+        }
+
+        .status-banner.show {
+            display: flex;
+        }
+
+        .status-banner-icon {
+            font-size: 1rem;
+            margin-block-start: 2px;
+            flex-shrink: 0;
+        }
+
+        .status-banner-body {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .session-notice {
+            background: var(--login-warn-bg);
+            border-color: var(--login-warn-border);
+            color: var(--login-warn);
+        }
+
+        .error-message {
+            background: var(--login-error-bg);
+            border-color: var(--login-error-border);
+            color: #991b1b;
+            font-weight: 500;
+        }
+
+        .error-message.is-lockout {
+            background: #fff7ed;
+            border-color: #fdba74;
+            color: #9a3412;
+        }
+
+        .lockout-track {
+            display: none;
+            width: 100%;
+            height: 5px;
+            background: rgba(154, 52, 18, 0.14);
+            border-radius: 999px;
+            margin-block-start: 0.6rem;
+            overflow: hidden;
+        }
+
+        .error-message.is-lockout .lockout-track {
+            display: block;
+        }
+
+        .lockout-fill {
+            height: 100%;
+            width: 100%;
+            background: #ea580c;
+            border-radius: 999px;
+            transform-origin: left center;
+            transition: transform 0.9s linear;
+        }
+
+        /* Form Fields */
+        .form-group {
+            margin-block-end: 1.1rem;
+        }
+
+        .label-row {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.75rem;
+            margin-block-end: 0.4rem;
+        }
+
+        .form-group label {
+            display: inline-block;
+            font-weight: 600;
+            color: var(--login-ink);
+            font-size: 0.85rem;
+            margin-block-end: 0.4rem;
+            cursor: pointer;
+            transition: color 0.18s ease;
+        }
+
+        .label-row label {
+            margin-block-end: 0;
+        }
+
+        .help-trigger-btn {
+            background: none;
+            border: none;
+            padding: 0.25rem 0.35rem;
+            margin: -0.25rem -0.35rem;
+            font-family: inherit;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--primary-dark, #064e3b);
+            cursor: pointer;
+            border-radius: 6px;
+            text-decoration: underline;
+            text-decoration-color: transparent;
+            text-underline-offset: 3px;
+            transition: color 0.18s ease, text-decoration-color 0.18s ease;
+        }
+
+        .help-trigger-btn:hover {
+            color: var(--primary, #059669);
+            text-decoration-color: currentColor;
+        }
+
+        .help-trigger-btn:focus-visible {
+            outline: 3px solid var(--primary-dark, #064e3b);
+            outline-offset: 2px;
+        }
+
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .input-icon-left {
+            position: absolute;
+            inset-inline-start: 0.9rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 0.9rem;
+            pointer-events: none;
+            z-index: 2;
+            transition: color 0.18s ease;
+        }
+
+        .login-card .form-control {
+            width: 100%;
+            min-block-size: 44px;
+            padding-block: 0.6rem;
+            padding-inline: 2.6rem 0.95rem;
+            border: 1.5px solid var(--login-border);
+            border-radius: var(--login-radius-md);
+            font-family: inherit;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            background-color: var(--login-surface);
+            color: var(--login-ink);
+            outline: none;
+            transition: border-color 0.18s ease, background-color 0.18s ease, box-shadow 0.18s ease;
+        }
+
+        .login-card input#password {
+            padding-inline-end: 3.1rem;
+        }
+
+        .login-card .form-control::placeholder {
+            color: #64748b;
+            opacity: 0.82;
+        }
+
+        .login-card .form-control:hover:not(:disabled) {
+            border-color: #475569;
+        }
+
+        .login-card .form-control:focus {
+            border-color: var(--primary, #059669);
+            box-shadow: 0 0 0 3px var(--primary-light, rgba(5, 150, 105, 0.14));
+        }
+
+        /* Distinct, crisp focus-visible outline (with forced-colors preservation) */
+        .login-card .form-control:focus-visible {
+            border-color: var(--primary, #059669);
+            box-shadow: none;
+            outline: 2.5px solid var(--primary, #059669);
+            outline-offset: 2px;
+        }
+
+        .input-group:focus-within .input-icon-left {
+            color: var(--primary, #059669);
+        }
+
+        /* Autofill highlight: non-color indicator without layout shift, preserving native tint */
+        .login-card .form-control:is(:autofill, :-webkit-autofill) {
+            box-shadow: inset 0 0 0 2px var(--primary, #059669);
+            border-color: var(--primary, #059669);
+        }
+
+        .login-card .form-control:is(:autofill, :-webkit-autofill):focus-visible {
+            box-shadow: inset 0 0 0 2px var(--primary, #059669);
+            outline: 3px solid var(--primary-dark, #064e3b);
+            outline-offset: 2px;
+        }
+
+        /* Post-interaction validation states (:user-invalid + JS fallback via :is()) */
+        .login-card .form-control:is(:user-invalid, .user-invalid-fallback) {
+            border-color: var(--login-error);
+            background-color: #fffafa;
+        }
+
+        .login-card .form-control:is(:user-invalid, .user-invalid-fallback):focus {
+            border-color: var(--login-error);
+            box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.14);
+        }
+
+        .login-card .form-control:is(:user-invalid, .user-invalid-fallback):focus-visible {
+            border-color: var(--login-error);
+            box-shadow: none;
+            outline: 2.5px solid var(--login-error);
+            outline-offset: 2px;
+        }
+
+        /* Parent styling with :has() + .has-error-fallback */
+        .form-group:has(.form-control:is(:user-invalid, .user-invalid-fallback)) label,
+        .form-group.has-error-fallback label {
+            color: var(--login-error);
+        }
+
+        .form-group:has(.form-control:is(:user-invalid, .user-invalid-fallback)) .input-icon-left,
+        .form-group.has-error-fallback .input-icon-left {
+            color: var(--login-error);
+        }
+
+        .field-error {
+            display: none;
+            align-items: center;
+            gap: 0.35rem;
+            margin-block-start: 0.35rem;
+            color: var(--login-error);
+            font-size: 0.8rem;
+            font-weight: 500;
+            line-height: 1.35;
+        }
+
+        .field-error-icon {
+            display: inline-flex;
+            align-items: center;
+            font-size: 0.82rem;
+            flex-shrink: 0;
+        }
+
+        .form-group:has(.form-control:is(:user-invalid, .user-invalid-fallback)) .field-error,
+        .form-group.has-error-fallback .field-error {
+            display: flex;
+        }
+
+        /* Password Visibility Toggle (>= 42px tap target) */
+        .password-toggle-btn {
+            position: absolute;
+            inset-inline-end: 0.2rem;
+            top: 50%;
+            transform: translateY(-50%);
+            min-inline-size: 40px;
+            min-block-size: 40px;
+            background: transparent;
+            border: none;
+            color: #475569;
+            cursor: pointer;
+            padding: 0;
+            font-size: 0.92rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            transition: color 0.18s ease, background-color 0.18s ease;
+            z-index: 2;
+        }
+
+        .password-toggle-btn:hover {
+            color: var(--primary-dark, #064e3b);
+            background-color: #f1f5f9;
+        }
+
+        .password-toggle-btn[aria-pressed="true"] {
+            color: var(--primary-dark, #064e3b);
+            background-color: var(--accent, #dcfce7);
+        }
+
+        .password-toggle-btn:focus-visible {
+            outline: 3px solid var(--primary-dark, #064e3b);
+            outline-offset: -1px;
+        }
+
+        /* Caps Lock Indicator */
+        .caps-lock-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin-block-start: 0.4rem;
+            padding: 0.24rem 0.6rem;
+            border-radius: 999px;
+            background: var(--login-warn-bg);
+            border: 1px solid var(--login-warn-border);
+            color: var(--login-warn);
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        .caps-lock-pill[hidden] {
+            display: none;
+        }
+
+        /* Submit Button */
+        .login-btn {
+            width: 100%;
+            min-block-size: 44px;
+            padding: 0.65rem 1.15rem;
+            margin-block-start: 0.25rem;
+            border: none;
+            border-radius: var(--login-radius-md);
+            background: linear-gradient(135deg, var(--primary, #059669) 0%, var(--primary-dark, #064e3b) 100%);
+            color: #ffffff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            box-shadow: 0 6px 18px -4px var(--primary-glow, rgba(5, 150, 105, 0.36));
+            transition: filter 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .login-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--primary-dark, #064e3b) 0%, var(--primary, #059669) 100%);
+            box-shadow: 0 10px 24px -6px var(--primary-glow, rgba(5, 150, 105, 0.46));
+        }
+
+        @media (prefers-reduced-motion: no-preference) {
+            .login-btn:hover:not(:disabled) {
+                transform: translateY(-1px);
+            }
+            .login-btn:hover:not(:disabled) .btn-arrow {
+                transform: translateX(3px);
+            }
+            .login-btn:active:not(:disabled) {
+                transform: translateY(0);
+            }
+        }
+
+        .login-btn .btn-arrow {
+            font-size: 0.9rem;
+            transition: transform 0.2s ease;
+        }
+
+        .login-btn:focus-visible {
+            outline: 3px solid var(--primary-dark, #064e3b);
+            outline-offset: 3px;
+        }
+
+        .login-btn:disabled {
+            opacity: 0.72;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Semantic Indeterminate <progress> Loading Spinner */
+        progress.loading-spinner:indeterminate::-webkit-progress-bar,
+        progress.loading-spinner:indeterminate::-webkit-progress-value,
+        progress.loading-spinner:indeterminate::-moz-progress-bar,
+        progress.loading-spinner:indeterminate::slider-fill {
+            display: none;
+            background: none;
+        }
+
+        progress.loading-spinner:indeterminate {
+            --_from: calc(90deg + var(--arc-start, 0deg));
+            --_to: calc(90deg + var(--arc-end, 158deg));
+            --size: 18px;
+            --thickness: 2.5px;
+            --spinner-color: #ffffff;
+            --track-color: rgba(255, 255, 255, 0.28);
+            --spinner-duration: 1.1s;
+            --_used-spinner-duration: var(--spinner-duration);
+
+            display: inline-block;
+            position: relative;
+            width: var(--size);
+            height: var(--size);
+            border-radius: 50%;
+            appearance: none;
+            flex-shrink: 0;
+            background: conic-gradient(
+                    from var(--_from),
+                    var(--spinner-color) calc(var(--_to) - var(--_from)),
+                    transparent 0
+                )
+                var(--track-color);
+
+            @supports (background-clip: border-area) {
+                background-clip: border-area;
+                border: var(--thickness) solid transparent;
+                background-origin: border-box;
+            }
+
+            @supports not (background-clip: border-area) {
+                --clip-boundary: calc(100% - var(--thickness));
+                mask-image: radial-gradient(
+                    farthest-side,
+                    transparent var(--clip-boundary),
+                    black var(--clip-boundary)
+                );
+                border: 0;
+            }
+
+            @media (forced-colors: active) {
+                forced-color-adjust: none;
+                --spinner-color: CanvasText;
+                --track-color: Canvas;
+            }
+
+            animation:
+                progress-spin var(--_used-spinner-duration) linear infinite
+                var(--progress-dash-animation, );
+        }
+
+        @keyframes progress-spin {
+            to {
+                rotate: 1turn;
+            }
+        }
+
+        @keyframes progress-dash {
+            from {
+                --arc-start: 0deg;
+                --arc-end: 8deg;
+            }
+            50% {
+                --arc-start: 100deg;
+                --arc-end: 356deg;
+            }
+            to {
+                --arc-start: 360deg;
+                --arc-end: 368deg;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            progress.loading-spinner:indeterminate {
+                --_used-spinner-duration: 6s;
+                --progress-dash-animation: ;
+                --arc-end: 158deg;
+            }
+        }
+
+        /* Security Footnote inside Card */
+        .login-security-note {
+            margin-block-start: 1.5rem;
+            padding-block-start: 1.15rem;
+            border-top: 1px solid var(--login-border-subtle);
+            font-size: 0.8125rem;
+            color: var(--login-ink-muted);
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .login-security-note i {
+            color: var(--primary, #059669);
+            font-size: 0.85rem;
+            margin-inline-end: 0.35rem;
+        }
+
+        /* Explicitly override global site footer styles from css/styles.css */
+        footer.login-footer-meta {
+            width: 100%;
+            max-width: 520px;
+            margin: 0 auto;
+            padding: 0.75rem 0 0;
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            text-align: center;
+            font-size: 0.78rem;
+            color: var(--login-ink-muted);
+        }
+
+        /* =========================================================
+           NATIVE ACCOUNT HELP DIALOG (Top-Layer Animated)
+           ========================================================= */
+        dialog.help-dialog {
+            margin: auto;
+            width: min(460px, calc(100% - 2rem));
+            padding: 0;
+            border: 1px solid var(--login-border-subtle);
+            border-radius: 18px;
+            background: var(--login-surface);
+            color: var(--login-ink);
+            box-shadow: 0 24px 56px -12px rgba(15, 23, 42, 0.28);
+            opacity: 0;
+            transition-property: opacity, transform, display, overlay;
+            transition-duration: 0.24s;
+            transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+            transition-behavior: allow-discrete;
+
+            @media (prefers-reduced-motion: no-preference) {
+                transform: translateY(10px) scale(0.97);
+            }
+        }
+
+        dialog.help-dialog::backdrop {
+            background-color: rgba(15, 23, 42, 0);
+            backdrop-filter: blur(0px);
+            transition-property: background-color, backdrop-filter, display, overlay;
+            transition-duration: 0.24s;
+            transition-timing-function: ease-out;
+            transition-behavior: allow-discrete;
+        }
+
+        dialog.help-dialog[open]:where(:not([data-closing])) {
+            opacity: 1;
+
+            @starting-style {
+                opacity: 0;
+            }
+
+            @media (prefers-reduced-motion: no-preference) {
+                transform: translateY(0) scale(1);
+
+                @starting-style {
+                    transform: translateY(10px) scale(0.97);
+                }
+            }
+
+            &::backdrop {
+                background-color: rgba(15, 23, 42, 0.55);
+                backdrop-filter: blur(4px);
+
+                @starting-style {
+                    background-color: rgba(15, 23, 42, 0);
+                    backdrop-filter: blur(0px);
+                }
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            dialog.help-dialog,
+            dialog.help-dialog::backdrop {
+                transition-duration: 0.1s;
+            }
+        }
+
+        .help-dialog-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1.25rem 1.35rem 1rem;
+            border-bottom: 1px solid var(--login-border-subtle);
+        }
+
+        .help-dialog-title-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+        }
+
+        .help-dialog-badge {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: var(--accent, #dcfce7);
+            color: var(--primary-dark, #064e3b);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95rem;
+            flex-shrink: 0;
+        }
+
+        .help-dialog-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--login-ink);
+            margin: 0;
+        }
+
+        .help-dialog-x {
+            min-inline-size: 40px;
+            min-block-size: 40px;
+            border: 1px solid transparent;
+            border-radius: 10px;
+            background: transparent;
+            color: var(--login-ink-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.05rem;
+            transition: background-color 0.18s ease, color 0.18s ease;
+        }
+
+        .help-dialog-x:hover {
+            background: #f1f5f9;
+            color: var(--login-ink);
+        }
+
+        .help-dialog-x:focus-visible {
+            outline: 3px solid var(--primary-dark, #064e3b);
+            outline-offset: 2px;
+        }
+
+        .help-dialog-body {
+            padding: 1.2rem 1.35rem;
+            display: grid;
+            gap: 0.9rem;
+        }
+
+        .help-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            padding: 0.85rem 0.95rem;
+            border-radius: 12px;
+            background: #f8fafc;
+            border: 1px solid var(--login-border-subtle);
+        }
+
+        .help-item i {
+            color: var(--primary, #059669);
+            font-size: 0.95rem;
+            margin-block-start: 3px;
+            flex-shrink: 0;
+        }
+
+        .help-item h3 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--login-ink);
+            margin: 0 0 0.2rem 0;
+        }
+
+        .help-item p {
+            margin: 0;
+            font-size: 0.84rem;
+            text-wrap: pretty;
+            color: var(--login-ink-secondary);
+            line-height: 1.5;
+        }
+
+        .help-dialog-footer {
+            padding: 0.85rem 1.35rem 1.15rem;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .help-dialog-close {
+            min-block-size: 40px;
+            padding: 0.5rem 1.15rem;
+            border-radius: 10px;
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+
+        .help-dialog-close:focus-visible {
+            outline: 3px solid var(--primary-dark, #064e3b);
+            outline-offset: 3px;
+        }
+
+        /* Coarse pointer touch-target comfort & iOS Safari zoom prevention */
+        @media (pointer: coarse) {
+            .login-card .form-control {
+                min-block-size: 48px;
+                font-size: 1.143rem; /* ~16px at 87.5% root to prevent iOS auto-zoom while respecting root font prefs */
+            }
+
+            .login-btn {
+                min-block-size: 48px;
+            }
+
+            .password-toggle-btn {
+                min-inline-size: 44px;
+                min-block-size: 44px;
+            }
+        }
+
+        /* Compact Mobile Top Bar Sizing (prevents brand truncation on 360px-420px phones) */
+        @media (max-width: 480px) {
+            .login-topbar {
+                gap: 0.5rem;
+            }
+
+            .mobile-brand {
+                font-size: 1rem;
+                gap: 0.45rem;
+            }
+
+            .mobile-brand-icon {
+                width: 28px;
+                height: 28px;
+                font-size: 0.85rem;
+                border-radius: 7px;
+            }
+
+            .back-link {
+                font-size: 0.8rem;
+                padding: 0.35rem 0.68rem;
+                gap: 0.35rem;
+            }
+        }
+
+        /* =========================================================
+           TABLET & DESKTOP RESPONSIVE ENHANCEMENTS
+           ========================================================= */
+        @media (min-width: 640px) and (max-width: 959px) {
+            .login-main {
+                background:
+                    linear-gradient(145deg, var(--hero-gradient-start, rgba(6, 78, 59, 0.86)) 0%, rgba(15, 23, 42, 0.88) 100%),
+                    url('assets/images/hero.jpg?v=34') center/cover no-repeat;
+                padding: 1.5rem 2rem;
+            }
+
+            .login-topbar {
+                max-width: 480px;
+            }
+
+            .mobile-brand {
+                color: #ffffff;
+            }
+
+            .mobile-brand:hover {
+                color: var(--accent, #dcfce7);
+            }
+
+            .mobile-brand-icon {
+                background: rgba(255, 255, 255, 0.16);
+                color: var(--accent, #dcfce7);
+            }
+
+            .mobile-brand img {
+                filter: brightness(0) invert(1);
+            }
+
+            .back-link {
+                background: rgba(255, 255, 255, 0.14);
+                border-color: rgba(255, 255, 255, 0.24);
+                color: #ffffff;
+                backdrop-filter: blur(8px);
+            }
+
+            .back-link:hover {
+                background: rgba(255, 255, 255, 0.24);
+                color: #ffffff;
+                border-color: rgba(255, 255, 255, 0.4);
+            }
+
+            .login-card-wrap {
+                align-items: center;
+                padding-block: 1.5rem;
+            }
+
+            .login-card {
+                max-width: 460px;
+                background: var(--login-surface);
+                padding: 2.5rem 2.25rem;
+                box-shadow: 0 24px 50px -12px rgba(15, 23, 42, 0.34);
+                border: 1px solid rgba(255, 255, 255, 0.16);
+            }
+
+            footer.login-footer-meta {
+                color: rgba(226, 232, 240, 0.88);
+            }
+        }
+
+        @media (min-width: 960px) {
+            .login-shell {
+                grid-template-columns: minmax(0, 1.08fr) minmax(460px, 0.92fr);
+            }
+
+            .login-showcase {
+                display: flex;
+            }
+
+            .login-main {
+                padding: 1.75rem clamp(2rem, 4.5vw, 3.75rem) 1.5rem;
+                border-inline-start: 1px solid var(--login-border-subtle);
+            }
+
+            .login-topbar {
+                max-width: none;
+                justify-content: flex-end;
+                padding-block: 0;
+            }
+
+            .mobile-brand {
+                display: none;
+            }
+
+            .login-card-wrap {
+                align-items: center;
+                padding-block: 2rem;
+            }
+
+            .login-card {
+                max-width: 416px;
+            }
+
+            .login-footer-meta {
+                max-width: none;
+                text-align: center;
+            }
+        }
+
+        /* Forced Colors / High Contrast Mode Support */
+        @media (forced-colors: active) {
+            .login-card .form-control:focus-visible,
+            .login-btn:focus-visible,
+            .password-toggle-btn:focus-visible,
+            .back-link:focus-visible,
+            .help-trigger-btn:focus-visible {
+                outline: 2px solid Highlight;
+            }
+
+            .login-btn {
+                border: 1px solid ButtonText;
+            }
+
+            .status-banner,
+            .caps-lock-pill {
+                border: 1px solid CanvasText;
+            }
+        }
+    </style>
+</head>
+<body class="login-page">
+
+    <div class="login-shell">
+        <!-- Left Architectural Showcase Panel (Desktop) -->
+        <aside class="login-showcase" aria-label="Portal overview">
+            <div class="showcase-inner">
+                <div class="showcase-top">
+                    <div class="showcase-brand" id="showcase-brand">
+                        <span class="showcase-brand-icon" aria-hidden="true">
+                            <i class="fa-solid fa-industry"></i>
+                        </span>
+                        <span class="showcase-brand-text">MyFactorySpace</span>
+                    </div>
+                    <span class="portal-pill">
+                        <span class="portal-pill-dot" aria-hidden="true"></span>
+                        Admin Portal
+                    </span>
+                </div>
+
+                <div class="showcase-hero">
+                    <span class="showcase-eyebrow">Industrial Real Estate Workspace</span>
+                    <p class="showcase-headline">Manage factories, warehouses &amp; parks in one place.</p>
+                    <p class="showcase-lead">
+                        Centralized workspace for publishing industrial listings, organizing park landing pages, managing specialist profiles, and tracking client inquiries.
+                    </p>
+
+                    <ul class="showcase-features" role="list">
+                        <li class="showcase-feature-item">
+                            <span class="showcase-feature-icon" aria-hidden="true">
+                                <i class="fa-solid fa-warehouse"></i>
+                            </span>
+                            <div>
+                                <span class="showcase-feature-title">Listings &amp; Industrial Parks</span>
+                                <span class="showcase-feature-desc">Publish, organize, and share verified factory &amp; warehouse spaces.</span>
+                            </div>
+                        </li>
+                        <li class="showcase-feature-item">
+                            <span class="showcase-feature-icon" aria-hidden="true">
+                                <i class="fa-solid fa-user-shield"></i>
+                            </span>
+                            <div>
+                                <span class="showcase-feature-title">Role-Based Workspace Access</span>
+                                <span class="showcase-feature-desc">Dedicated permissions for Administrators, Supervisors, Agents &amp; Support.</span>
+                            </div>
+                        </li>
+                        <li class="showcase-feature-item">
+                            <span class="showcase-feature-icon" aria-hidden="true">
+                                <i class="fa-solid fa-clock-rotate-left"></i>
+                            </span>
+                            <div>
+                                <span class="showcase-feature-title">Protected Admin Sessions</span>
+                                <span class="showcase-feature-desc">Automatic 8-hour session expiry with built-in brute-force lockout protection.</span>
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="showcase-footer">
+                    <span class="showcase-regions">
+                        <i class="fa-solid fa-location-dot" aria-hidden="true"></i>
+                        Petaling Jaya &bull; Subang Jaya &bull; Shah Alam &bull; Klang
+                    </span>
+                    <span>Industrial Property Specialist Portal</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Right Sign-In Panel -->
+        <main class="login-main">
+            <header class="login-topbar">
+                <div class="mobile-brand" id="mobile-brand">
+                    <span class="mobile-brand-icon" aria-hidden="true">
+                        <i class="fa-solid fa-industry"></i>
+                    </span>
+                    <span class="mobile-brand-text">MyFactorySpace</span>
+                </div>
+                <a href="index.html" class="back-link">
+                    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                    <span>Back to Website</span>
+                </a>
+            </header>
+
+            <div class="login-card-wrap">
+                <div class="login-card">
+                    <div class="login-header">
+                        <span class="login-kicker">
+                            <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                            Workspace Access
+                        </span>
+                        <h1>Sign in to Dashboard</h1>
+                        <p class="login-subtitle">Enter your administrator or specialist credentials to continue.</p>
+                    </div>
+
+                    <p class="required-note">Fields marked <span class="required-mark" aria-hidden="true">*</span> are required.</p>
+
+                    <!-- Session Expired Informational Notice -->
+                    <div class="status-banner session-notice" id="session-notice" role="status">
+                        <i class="fa-solid fa-clock status-banner-icon" aria-hidden="true"></i>
+                        <div class="status-banner-body" id="session-notice-text">
+                            Your previous 8-hour session expired. Please sign in again.
+                        </div>
+                    </div>
+
+                    <!-- Authentication Error / Lockout Alert -->
+                    <div class="status-banner error-message" id="login-error" role="alert">
+                        <i class="fa-solid fa-circle-exclamation status-banner-icon" id="login-error-icon" aria-hidden="true"></i>
+                        <div class="status-banner-body">
+                            <div id="login-error-text">Invalid username or password.</div>
+                            <div class="lockout-track" aria-hidden="true">
+                                <div class="lockout-fill" id="lockout-bar-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="login-form" method="post">
+                        <div class="form-group">
+                            <label for="username">Username <span class="required-mark" aria-hidden="true">*</span></label>
+                            <div class="input-group">
+                                <i class="fa-regular fa-user input-icon-left" aria-hidden="true"></i>
+                                <input
+                                    type="text"
+                                    id="username"
+                                    name="username"
+                                    class="form-control"
+                                    placeholder="Enter your username"
+                                    required
+                                    autocomplete="username"
+                                    autocapitalize="none"
+                                    autocorrect="off"
+                                    spellcheck="false"
+                                    enterkeyhint="next"
+                                    data-error="username-error"
+                                >
+                            </div>
+                            <div id="username-error" class="field-error">
+                                <span role="img" aria-label="Error" class="field-error-icon">
+                                    <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+                                </span>
+                                <span>Please enter your username.</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="label-row">
+                                <label for="password">Password <span class="required-mark" aria-hidden="true">*</span></label>
+                                <button type="button" id="open-help-dialog" class="help-trigger-btn">Trouble signing in?</button>
+                            </div>
+                            <div class="input-group">
+                                <i class="fa-solid fa-lock input-icon-left" aria-hidden="true"></i>
+                                <input
+                                    type="password"
+                                    id="password"
+                                    name="password"
+                                    class="form-control"
+                                    placeholder="Enter your password"
+                                    required
+                                    autocomplete="current-password"
+                                    enterkeyhint="done"
+                                    data-error="password-error"
+                                >
+                                <button
+                                    type="button"
+                                    id="toggle-password"
+                                    class="password-toggle-btn"
+                                    aria-pressed="false"
+                                    aria-label="Show password"
+                                    aria-controls="password"
+                                    aria-describedby="toggle-password-hint"
+                                >
+                                    <i class="fa-regular fa-eye" aria-hidden="true"></i>
+                                </button>
+                                <span id="toggle-password-hint" class="visually-hidden">Warning: this will display your password on the screen.</span>
+                            </div>
+                            <div id="caps-lock-warning" class="caps-lock-pill" role="status" hidden>
+                                <i class="fa-solid fa-circle-arrow-up" aria-hidden="true"></i>
+                                <span>Caps Lock is on</span>
+                            </div>
+                            <div id="password-error" class="field-error">
+                                <span role="img" aria-label="Error" class="field-error-icon">
+                                    <i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i>
+                                </span>
+                                <span>Please enter your password.</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="login-submit" class="btn btn-primary login-btn">
+                            <span class="btn-label">Sign In</span>
+                            <i class="fa-solid fa-arrow-right btn-arrow" aria-hidden="true"></i>
+                        </button>
+                    </form>
+
+                    <div class="login-security-note">
+                        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                        <span>Authorized personnel only &bull; Sessions auto-expire after 8 hours</span>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="login-footer-meta" id="login-footer-meta">
+                MyFactorySpace Real Estate &bull; Admin &amp; Specialist Portal
+            </footer>
+        </main>
+    </div>
+
+    <!-- Native Modal Dialog for Sign-In & Account Help -->
+    <dialog id="login-help-dialog" class="help-dialog" closedby="any" aria-labelledby="help-dialog-title">
+        <div class="help-dialog-header">
+            <div class="help-dialog-title-wrap">
+                <span class="help-dialog-badge" aria-hidden="true">
+                    <i class="fa-solid fa-circle-question"></i>
+                </span>
+                <h2 id="help-dialog-title">Sign-In &amp; Account Help</h2>
+            </div>
+            <button type="button" class="help-dialog-x" data-close-help aria-label="Close help dialog">
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+        </div>
+
+        <div class="help-dialog-body">
+            <div class="help-item">
+                <i class="fa-solid fa-key" aria-hidden="true"></i>
+                <div>
+                    <h3>Forgot username or password?</h3>
+                    <p>Workspace accounts are managed centrally by your Administrator under <strong>Admin Users Directory</strong>. Reach out to your Administrator to reset your credentials.</p>
+                </div>
+            </div>
+            <div class="help-item">
+                <i class="fa-solid fa-shield-halved" aria-hidden="true"></i>
+                <div>
+                    <h3>Temporary 60-second lockout</h3>
+                    <p>For workspace security, sign-in pauses for 60 seconds after 5 failed attempts. Wait for the countdown bar to complete, then try again.</p>
+                </div>
+            </div>
+            <div class="help-item">
+                <i class="fa-solid fa-id-badge" aria-hidden="true"></i>
+                <div>
+                    <h3>First-time Agent or Specialist login</h3>
+                    <p>Newly provisioned unassigned accounts are guided to complete their Specialist profile right after their first sign-in.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="help-dialog-footer">
+            <button type="button" class="btn btn-primary help-dialog-close" data-close-help>Got it</button>
+        </div>
+    </dialog>
+
+    <!-- Synchronous Brand Lockup Hydration (avoids FOUC when custom logo/name is configured) -->
+    <script>
+    (function() {
+        try {
+            var brand = window.__loginBranding;
+            if (!brand) return;
+
+            function hydrateBrand(containerId, iconClass, textClass) {
+                var el = document.getElementById(containerId);
+                if (!el) return;
+                if (brand.hasCustomLogo) {
+                    var fallbackMarkup = el.innerHTML;
+                    el.textContent = '';
+                    var img = document.createElement('img');
+                    img.src = brand.logoUrl;
+                    img.alt = brand.brandTitle;
+                    img.addEventListener('error', function() {
+                        el.innerHTML = fallbackMarkup;
+                        var fallbackTxt = el.querySelector('.' + textClass);
+                        if (fallbackTxt && brand.brandTitle) fallbackTxt.textContent = brand.brandTitle;
+                    }, { once: true });
+                    el.appendChild(img);
+                } else if (brand.displayName && brand.displayName !== 'MyFactorySpace') {
+                    var txt = el.querySelector('.' + textClass);
+                    if (txt) txt.textContent = brand.displayName;
+                }
+            }
+
+            hydrateBrand('showcase-brand', 'showcase-brand-icon', 'showcase-brand-text');
+            hydrateBrand('mobile-brand', 'mobile-brand-icon', 'mobile-brand-text');
+
+            if (brand.brandTitle && brand.brandTitle !== 'MyFactorySpace') {
+                document.title = 'Admin Login | ' + brand.brandTitle;
+                var footerMeta = document.getElementById('login-footer-meta');
+                if (footerMeta) footerMeta.textContent = brand.brandTitle + ' • Admin & Specialist Portal';
+            }
+        } catch (e) {}
+    })();
+    </script>
+
+    <!-- Supabase JS SDK & Client -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-client.js?v=51"></script>
+    <script src="js/login.js?v=22"></script>
+</body>
+</html>
