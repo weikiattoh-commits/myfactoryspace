@@ -14813,9 +14813,17 @@ ON CONFLICT (username) DO NOTHING;`);
             }
         });
 
-        const logoUrl = (b && b.logoUrl) ? b.logoUrl : '';
-        let brandName = (b && b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : (logoUrl ? '' : 'MyFactorySpace');
-        const logoH = (b && b.logoHeight !== undefined && b.logoHeight !== null && !isNaN(b.logoHeight)) ? parseInt(b.logoHeight, 10) : 32;
+        const DEFAULT_DASHBOARD_LOGO_URL = 'assets/branding/company_logo.png';
+        const explicitLogoUrl = (b && b.logoUrl) ? String(b.logoUrl).trim() : '';
+        const explicitName = (b && b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : '';
+        const hasPersistedBranding = Boolean(
+            window.__liveBrandingSettings ||
+            safeJsonParse('industria_branding_settings', null) ||
+            (window.__liveSiteSettings && window.__liveSiteSettings.branding)
+        );
+        const logoUrl = explicitLogoUrl || (!hasPersistedBranding ? DEFAULT_DASHBOARD_LOGO_URL : '');
+        let brandName = explicitName || (logoUrl ? '' : 'MyFactorySpace');
+        const logoH = (b && b.logoHeight !== undefined && b.logoHeight !== null && !isNaN(b.logoHeight)) ? parseInt(b.logoHeight, 10) : 66;
         const navLogoH = Math.round(logoH * 1.12);
 
         // Helper to construct brand HTML (shows uploaded horizontal logo cleanly without duplicate default wordmark)
@@ -14823,7 +14831,7 @@ ON CONFLICT (username) DO NOTHING;`);
             let html = '';
             if (logoUrl) {
                 const filterStyle = isFooter ? ' filter: brightness(0) invert(1);' : '';
-                html += `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(brandName || 'MyFactorySpace')}" style="height: ${imgHeight}; max-width: ${imgMaxWidth}; object-fit: contain; vertical-align: middle;${filterStyle}">`;
+                html += `<img src="${escapeHtml(logoUrl)}" data-brand-logo="true" alt="${escapeHtml(brandName || 'MyFactorySpace')}" style="height: ${imgHeight}; max-width: ${imgMaxWidth}; width: auto; object-fit: contain; vertical-align: middle;${filterStyle}">`;
             } else {
                 const marginStyle = brandName ? ' margin-right: 6px;' : '';
                 const iconColor = isFooter ? '#ffffff' : 'var(--primary)';
@@ -14836,32 +14844,59 @@ ON CONFLICT (username) DO NOTHING;`);
             return html;
         };
 
+        const syncDashBrandEl = (el, imgHeight, imgMaxWidth, isNav, isFooter = false) => {
+            if (!el) return;
+            if (logoUrl) {
+                const existingImg = el.querySelector('img');
+                if (existingImg) {
+                    existingImg.alt = brandName || 'MyFactorySpace';
+                    existingImg.style.maxHeight = imgHeight;
+                    existingImg.style.height = isNav ? imgHeight : 'auto';
+                    existingImg.style.maxWidth = imgMaxWidth;
+                    if (isFooter) existingImg.style.filter = 'brightness(0) invert(1)';
+                    if (existingImg.getAttribute('src') === logoUrl) return;
+                    existingImg.dataset.pendingLogoSrc = logoUrl;
+                    const preloader = new Image();
+                    const commit = () => {
+                        if (!existingImg.isConnected || existingImg.dataset.pendingLogoSrc !== logoUrl) return;
+                        existingImg.src = logoUrl;
+                        delete existingImg.dataset.pendingLogoSrc;
+                    };
+                    preloader.onload = () => {
+                        if (typeof preloader.decode === 'function') {
+                            preloader.decode().then(commit, commit);
+                        } else {
+                            commit();
+                        }
+                    };
+                    preloader.src = logoUrl;
+                    if (preloader.complete && preloader.naturalWidth > 0) commit();
+                    return;
+                }
+            }
+            const newHtml = buildBrandHtml(imgHeight, imgMaxWidth, isNav, isFooter);
+            if (el.innerHTML.trim() !== newHtml.trim()) {
+                el.innerHTML = newHtml;
+            }
+        };
+
         // Sidebar Brand (kept sleek & well-proportioned inside the 56px sidebar header)
         const sidebarBrand = document.querySelector('.sidebar-brand');
         if (sidebarBrand) {
             const sbLogoH = Math.min(Math.max(Math.round(logoH * 0.72), 24), 28);
-            const newSbHtml = buildBrandHtml(`${sbLogoH}px`, '150px', false, false);
-            if (sidebarBrand.innerHTML.trim() !== newSbHtml.trim()) {
-                sidebarBrand.innerHTML = newSbHtml;
-            }
+            syncDashBrandEl(sidebarBrand, `${sbLogoH}px`, '150px', false, false);
         }
 
         // Navbar Brand
         const navBrands = document.querySelectorAll('.nav-brand');
         navBrands.forEach(navBrand => {
-            const newNavHtml = buildBrandHtml(`${navLogoH}px`, '220px', true, false);
-            if (navBrand.innerHTML.trim() !== newNavHtml.trim()) {
-                navBrand.innerHTML = newNavHtml;
-            }
+            syncDashBrandEl(navBrand, `${navLogoH}px`, '220px', true, false);
         });
 
         // Footer Brand
         const footerBrands = document.querySelectorAll('.footer-brand h3, .footer-brand-title');
         footerBrands.forEach(footerBrand => {
-            const newFooterHtml = buildBrandHtml(`${Math.round(logoH * 1.25)}px`, '240px', true, true);
-            if (footerBrand.innerHTML.trim() !== newFooterHtml.trim()) {
-                footerBrand.innerHTML = newFooterHtml;
-            }
+            syncDashBrandEl(footerBrand, `${Math.round(logoH * 1.25)}px`, '240px', true, true);
         });
 
         // Live Preview Box

@@ -30,8 +30,9 @@
     <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
 
-    <!-- Preload Showcase Visual on Desktop -->
+    <!-- Preload Showcase Visual & Brand Logo -->
     <link rel="preload" as="image" href="assets/images/hero.jpg?v=34" media="(min-width: 960px)">
+    <link rel="preload" as="image" href="assets/branding/company_logo.png" fetchpriority="high">
 
     <!-- Self-contained login styles below (decoupled from 393 KB public styles.css for instant load) -->
 
@@ -78,11 +79,15 @@
                 if (favTag) favTag.href = b.faviconUrl;
             }
 
-            var logoUrl = (b && b.logoUrl) ? String(b.logoUrl) : '';
-            var explicitName = (b && b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : '';
+            var defaultLogoUrl = 'assets/branding/company_logo.png';
+            var hasSavedBranding = !!(b && typeof b === 'object');
+            var explicitName = (hasSavedBranding && b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : '';
+            var explicitLogoUrl = (hasSavedBranding && b.logoUrl && String(b.logoUrl).trim() !== '') ? String(b.logoUrl).trim() : '';
+            var logoUrl = explicitLogoUrl || ((hasSavedBranding && explicitName) ? '' : defaultLogoUrl);
 
             window.__loginBranding = {
                 logoUrl: logoUrl,
+                defaultLogoUrl: defaultLogoUrl,
                 displayName: explicitName || (logoUrl ? '' : 'MyFactorySpace'),
                 brandTitle: explicitName || 'MyFactorySpace',
                 hasCustomLogo: !!logoUrl
@@ -1472,10 +1477,7 @@
             <div class="showcase-inner">
                 <div class="showcase-top">
                     <div class="showcase-brand" id="showcase-brand">
-                        <span class="showcase-brand-icon" aria-hidden="true">
-                            <i class="fa-solid fa-industry"></i>
-                        </span>
-                        <span class="showcase-brand-text">MyFactorySpace</span>
+                        <img src="assets/branding/company_logo.png" alt="MyFactorySpace" width="1140" height="380" fetchpriority="high" decoding="sync">
                     </div>
                     <span class="portal-pill">
                         <span class="portal-pill-dot" aria-hidden="true"></span>
@@ -1535,10 +1537,7 @@
         <main class="login-main">
             <header class="login-topbar">
                 <div class="mobile-brand" id="mobile-brand">
-                    <span class="mobile-brand-icon" aria-hidden="true">
-                        <i class="fa-solid fa-industry"></i>
-                    </span>
-                    <span class="mobile-brand-text">MyFactorySpace</span>
+                    <img src="assets/branding/company_logo.png" alt="MyFactorySpace" width="1140" height="380" fetchpriority="high" decoding="sync">
                 </div>
                 <a href="index.html" class="back-link">
                     <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
@@ -1722,18 +1721,41 @@
                 var el = document.getElementById(containerId);
                 if (!el) return;
                 if (brand.hasCustomLogo) {
-                    var fallbackMarkup = el.innerHTML;
+                    var existingImg = el.querySelector('img');
+                    if (existingImg) {
+                        existingImg.alt = brand.brandTitle;
+                        if (brand.logoUrl && brand.logoUrl !== brand.defaultLogoUrl) {
+                            existingImg.dataset.pendingLogoSrc = brand.logoUrl;
+                            var probe = new Image();
+                            var commit = function() {
+                                if (!existingImg.isConnected || existingImg.dataset.pendingLogoSrc !== brand.logoUrl) return;
+                                existingImg.removeAttribute('width');
+                                existingImg.removeAttribute('height');
+                                existingImg.src = brand.logoUrl;
+                                delete existingImg.dataset.pendingLogoSrc;
+                            };
+                            probe.onload = commit;
+                            probe.src = brand.logoUrl;
+                            if (probe.complete && probe.naturalWidth > 0) commit();
+                        }
+                        return;
+                    }
                     el.textContent = '';
                     var img = document.createElement('img');
                     img.src = brand.logoUrl;
                     img.alt = brand.brandTitle;
                     img.addEventListener('error', function() {
-                        el.innerHTML = fallbackMarkup;
+                        if (img.getAttribute('src') !== brand.defaultLogoUrl) {
+                            img.src = brand.defaultLogoUrl;
+                            return;
+                        }
+                        el.innerHTML = '<span class="' + iconClass + '" aria-hidden="true"><i class="fa-solid fa-industry"></i></span><span class="' + textClass + '"></span>';
                         var fallbackTxt = el.querySelector('.' + textClass);
                         if (fallbackTxt && brand.brandTitle) fallbackTxt.textContent = brand.brandTitle;
-                    }, { once: true });
+                    });
                     el.appendChild(img);
-                } else if (brand.displayName && brand.displayName !== 'MyFactorySpace') {
+                } else if (brand.displayName) {
+                    el.innerHTML = '<span class="' + iconClass + '" aria-hidden="true"><i class="fa-solid fa-industry"></i></span><span class="' + textClass + '"></span>';
                     var txt = el.querySelector('.' + textClass);
                     if (txt) txt.textContent = brand.displayName;
                 }
@@ -1754,6 +1776,6 @@
     <!-- Supabase JS SDK & Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js?v=51"></script>
-    <script src="js/login.js?v=22"></script>
+    <script src="js/login.js?v=23"></script>
 </body>
 </html>

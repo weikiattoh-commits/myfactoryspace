@@ -1348,17 +1348,35 @@ document.addEventListener('DOMContentLoaded', () => {
     let mfsMaintLastFocus = null;
     let mfsMaintListenersBound = false;
 
+    const DEFAULT_BRAND_LOGO_URL = 'assets/branding/company_logo.png';
+
+    function resolveBrandingLogoInfo(b) {
+        const hasSavedBranding = Boolean(b && typeof b === 'object');
+        const explicitName = (hasSavedBranding && b.companyName && String(b.companyName).trim() !== '')
+            ? String(b.companyName).trim()
+            : '';
+        const explicitLogoUrl = (hasSavedBranding && b.logoUrl && String(b.logoUrl).trim() !== '')
+            ? String(b.logoUrl).trim()
+            : '';
+        const logoUrl = explicitLogoUrl || ((hasSavedBranding && explicitName) ? '' : DEFAULT_BRAND_LOGO_URL);
+        const brandName = explicitName || (logoUrl ? '' : 'MyFactorySpace');
+        const logoH = (hasSavedBranding && b.logoHeight !== undefined && b.logoHeight !== null && !isNaN(b.logoHeight))
+            ? parseInt(b.logoHeight, 10)
+            : 66;
+        return { logoUrl, brandName, logoH, navLogoH: Math.round(logoH * 1.58) };
+    }
+
     function resolveMaintenanceBrandHtml(brandingOverride) {
         let b = (brandingOverride && typeof brandingOverride === 'object') ? brandingOverride : (window.__liveBrandingSettings || safeJsonParse('industria_branding_settings', null));
         if (!b) {
             const s = window.__liveSiteSettings || safeJsonParse('industria_settings', null);
             if (s && s.branding) b = s.branding;
         }
-        const logoUrl = (b && b.logoUrl) ? String(b.logoUrl).trim() : '';
-        const brandName = (b && b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : (logoUrl ? '' : 'MyFactorySpace');
+        const { logoUrl, brandName } = resolveBrandingLogoInfo(b);
         let html = '';
         if (logoUrl) {
-            html += `<img src="${escapeHtml(logoUrl)}" data-brand-logo="true" alt="${escapeHtml(brandName || 'MyFactorySpace')}">`;
+            const dimAttr = logoUrl === DEFAULT_BRAND_LOGO_URL ? ' width="1140" height="380"' : '';
+            html += `<img src="${escapeHtml(logoUrl)}" data-brand-logo="true" alt="${escapeHtml(brandName || 'MyFactorySpace')}"${dimAttr}>`;
         } else {
             html += '<i class="fa-solid fa-industry" style="color: var(--primary);" aria-hidden="true"></i>';
             if (brandName) {
@@ -1539,14 +1557,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const settings = window.__liveSiteSettings || safeJsonParse('industria_settings', null);
             if (settings && settings.branding) b = settings.branding;
         }
-        if (!b) {
-            b = { primaryColor: '#059669', primaryDarkColor: '#064e3b', accentColor: '#dcfce7', companyName: 'MyFactorySpace' };
-        }
 
         const root = document.documentElement;
-        const primary = b.primaryColor || '#059669';
-        const primaryDark = b.primaryDarkColor || '#064e3b';
-        const accent = b.accentColor || '#dcfce7';
+        const primary = (b && b.primaryColor) ? b.primaryColor : '#059669';
+        const primaryDark = (b && b.primaryDarkColor) ? b.primaryDarkColor : '#064e3b';
+        const accent = (b && b.accentColor) ? b.accentColor : '#dcfce7';
 
         function hexToRgbaStr(hex, alpha) {
             if (!hex) return `rgba(37, 99, 235, ${alpha})`;
@@ -1568,58 +1583,136 @@ document.addEventListener('DOMContentLoaded', () => {
         root.style.setProperty('--hero-gradient-start', hexToRgbaStr(primaryDark, 0.88));
         root.style.setProperty('--hero-gradient-end', hexToRgbaStr(primary, 0.65));
 
-        const logoUrl = (b && b.logoUrl) ? String(b.logoUrl).trim() : '';
-        let brandName = (b && b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : (logoUrl ? '' : 'MyFactorySpace');
-        const logoH = (b && b.logoHeight !== undefined && b.logoHeight !== null && !isNaN(b.logoHeight)) ? parseInt(b.logoHeight, 10) : 32;
-        const navLogoH = Math.round(logoH * 1.58);
+        const { logoUrl, brandName, logoH, navLogoH } = resolveBrandingLogoInfo(b);
 
-        // Graceful fallback if remote logo URL fails to load (e.g. unreachable bucket or stale host)
-        if (typeof window.__mfsBrandLogoFallback !== 'function') {
-            window.__mfsBrandLogoFallback = function(imgEl, fallbackName, isFooter) {
-                if (!imgEl || !imgEl.parentNode) return;
-                const parent = imgEl.parentNode;
-                const label = (fallbackName && String(fallbackName).trim()) ? String(fallbackName).trim() : 'MyFactorySpace';
+        // Graceful fallback if remote logo URL fails: try bundled local brand logo first before icon+text
+        window.__mfsBrandLogoFallback = function(imgEl, fallbackName, isFooter) {
+            if (!imgEl || !imgEl.parentNode) return;
+            const currentSrc = imgEl.getAttribute('src') || '';
+            if (currentSrc !== DEFAULT_BRAND_LOGO_URL && imgEl.dataset.localFallbackTried !== '1') {
+                imgEl.dataset.localFallbackTried = '1';
+                imgEl.setAttribute('width', '1140');
+                imgEl.setAttribute('height', '380');
+                imgEl.src = DEFAULT_BRAND_LOGO_URL;
+                return;
+            }
+            const parent = imgEl.parentNode;
+            const label = (fallbackName && String(fallbackName).trim()) ? String(fallbackName).trim() : 'MyFactorySpace';
+            const iconColor = isFooter ? '#ffffff' : 'var(--primary)';
+            const spanStyle = isFooter ? ' style="color: var(--white);"' : '';
+            parent.innerHTML = `<i class="fa-solid fa-industry" style="color: ${iconColor}; margin-right: 6px;"></i> <span${spanStyle}>${escapeHtml(label)}</span>`;
+        };
+        const safeFallbackNameAttr = escapeHtml((brandName || 'MyFactorySpace').replace(/'/g, ''));
+
+        const buildLogoImgHtml = (src, heightPx, maxWidthPx, isFooter) => {
+            const dimAttr = src === DEFAULT_BRAND_LOGO_URL ? ' width="1140" height="380"' : '';
+            const priorityAttr = isFooter ? ' loading="lazy"' : ' fetchpriority="high" decoding="sync"';
+            const filterCss = isFooter ? ' filter: brightness(0) invert(1);' : '';
+            return `<img src="${escapeHtml(src)}" data-brand-logo="true" alt="${escapeHtml(brandName || 'MyFactorySpace')}"${dimAttr}${priorityAttr} style="height: ${heightPx}px; width: auto; max-width: ${maxWidthPx}px; object-fit: contain; vertical-align: middle;${filterCss}" onerror="window.__mfsBrandLogoFallback && window.__mfsBrandLogoFallback(this, '${safeFallbackNameAttr}', ${isFooter ? 'true' : 'false'})">`;
+        };
+
+        const syncBrandLogoContainer = (container, heightPx, maxWidthPx, isFooter) => {
+            if (!container) return;
+            if (!logoUrl) {
+                const marginStyle = brandName ? ' margin-right: 6px;' : '';
                 const iconColor = isFooter ? '#ffffff' : 'var(--primary)';
                 const spanStyle = isFooter ? ' style="color: var(--white);"' : '';
-                parent.innerHTML = `<i class="fa-solid fa-industry" style="color: ${iconColor}; margin-right: 6px;"></i> <span${spanStyle}>${escapeHtml(label)}</span>`;
+                let textHtml = `<i class="fa-solid fa-industry" style="color: ${iconColor};${marginStyle}"></i>`;
+                if (brandName) {
+                    textHtml += ` <span${spanStyle}>${escapeHtml(brandName)}</span>`;
+                }
+                if (container.innerHTML.trim() !== textHtml.trim()) {
+                    container.innerHTML = textHtml;
+                }
+                return;
+            }
+
+            const existingImg = container.querySelector('img[data-brand-logo="true"]');
+            if (existingImg) {
+                existingImg.alt = brandName || 'MyFactorySpace';
+                existingImg.style.height = `${heightPx}px`;
+                existingImg.style.maxWidth = `${maxWidthPx}px`;
+                existingImg.style.width = 'auto';
+                existingImg.style.objectFit = 'contain';
+                existingImg.style.verticalAlign = 'middle';
+                if (isFooter) {
+                    existingImg.style.filter = 'brightness(0) invert(1)';
+                }
+                const currentSrc = existingImg.getAttribute('src') || '';
+                if (currentSrc === logoUrl) {
+                    delete existingImg.dataset.pendingLogoSrc;
+                    return;
+                }
+                // Seamless off-screen preload before swapping so the navbar never flashes blank or reloads visibly
+                existingImg.dataset.pendingLogoSrc = logoUrl;
+                const preloader = new Image();
+                const commitSwap = () => {
+                    if (!existingImg.isConnected || existingImg.dataset.pendingLogoSrc !== logoUrl) return;
+                    if (logoUrl === DEFAULT_BRAND_LOGO_URL) {
+                        existingImg.setAttribute('width', '1140');
+                        existingImg.setAttribute('height', '380');
+                    } else {
+                        existingImg.removeAttribute('width');
+                        existingImg.removeAttribute('height');
+                    }
+                    existingImg.dataset.localFallbackTried = '';
+                    existingImg.src = logoUrl;
+                    delete existingImg.dataset.pendingLogoSrc;
+                };
+                preloader.onload = () => {
+                    if (typeof preloader.decode === 'function') {
+                        preloader.decode().then(commitSwap, commitSwap);
+                    } else {
+                        commitSwap();
+                    }
+                };
+                preloader.src = logoUrl;
+                if (preloader.complete && preloader.naturalWidth > 0) {
+                    commitSwap();
+                }
+                return;
+            }
+
+            // Container has no <img> yet: preload remote image off-screen (local bundled logo renders immediately)
+            if (logoUrl === DEFAULT_BRAND_LOGO_URL) {
+                container.innerHTML = buildLogoImgHtml(logoUrl, heightPx, maxWidthPx, isFooter);
+                return;
+            }
+            container.dataset.pendingLogoSrc = logoUrl;
+            const preloader = new Image();
+            const mountImg = () => {
+                if (!container.isConnected || container.dataset.pendingLogoSrc !== logoUrl) return;
+                container.innerHTML = buildLogoImgHtml(logoUrl, heightPx, maxWidthPx, isFooter);
+                delete container.dataset.pendingLogoSrc;
             };
-        }
-        const safeFallbackNameAttr = escapeHtml((brandName || 'MyFactorySpace').replace(/'/g, ''));
+            preloader.onload = () => {
+                if (typeof preloader.decode === 'function') {
+                    preloader.decode().then(mountImg, mountImg);
+                } else {
+                    mountImg();
+                }
+            };
+            preloader.onerror = () => {
+                if (!container.isConnected || container.dataset.pendingLogoSrc !== logoUrl) return;
+                container.innerHTML = buildLogoImgHtml(DEFAULT_BRAND_LOGO_URL, heightPx, maxWidthPx, isFooter);
+                delete container.dataset.pendingLogoSrc;
+            };
+            preloader.src = logoUrl;
+            if (preloader.complete && preloader.naturalWidth > 0) {
+                mountImg();
+            }
+        };
 
         // Top Header Navbar Logos
         const navBrands = document.querySelectorAll('.nav-brand');
         navBrands.forEach(navBrand => {
-            let brandHtml = '';
-            if (logoUrl) {
-                brandHtml += `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(brandName || 'MyFactorySpace')}" data-brand-logo="true" style="height: ${navLogoH}px; width: auto; max-width: 310px; object-fit: contain; vertical-align: middle;" onerror="window.__mfsBrandLogoFallback && window.__mfsBrandLogoFallback(this, '${safeFallbackNameAttr}', false)">`;
-            } else {
-                const marginStyle = brandName ? ' margin-right: 6px;' : '';
-                brandHtml += `<i class="fa-solid fa-industry" style="color: var(--primary);${marginStyle}"></i>`;
-                if (brandName) {
-                    brandHtml += ` <span>${escapeHtml(brandName)}</span>`;
-                }
-            }
-            if (navBrand.innerHTML.trim() !== brandHtml.trim()) {
-                navBrand.innerHTML = brandHtml;
-            }
+            syncBrandLogoContainer(navBrand, navLogoH, 310, false);
         });
 
         // Bottom Footer Brand Logos (Synchronized with Header Logo & Auto-Converted to White for Dark Backgrounds)
         const footerBrandTitles = document.querySelectorAll('.footer-brand h3, .footer-brand-title');
         footerBrandTitles.forEach(footerBrand => {
-            let brandHtml = '';
-            if (logoUrl) {
-                brandHtml += `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(brandName || 'MyFactorySpace')}" data-brand-logo="true" style="height: ${Math.round(logoH * 1.25)}px; width: auto; max-width: 240px; object-fit: contain; vertical-align: middle; filter: brightness(0) invert(1);" onerror="window.__mfsBrandLogoFallback && window.__mfsBrandLogoFallback(this, '${safeFallbackNameAttr}', true)">`;
-            } else {
-                const marginStyle = brandName ? ' margin-right: 6px;' : '';
-                brandHtml += `<i class="fa-solid fa-industry" style="color: #ffffff;${marginStyle}"></i>`;
-                if (brandName) {
-                    brandHtml += ` <span style="color: var(--white);">${escapeHtml(brandName)}</span>`;
-                }
-            }
-            if (footerBrand.innerHTML.trim() !== brandHtml.trim()) {
-                footerBrand.innerHTML = brandHtml;
-            }
+            syncBrandLogoContainer(footerBrand, Math.round(logoH * 1.25), 240, true);
         });
 
         // Synchronize Browser Tab & Homepage Title on mainpage
@@ -6776,6 +6869,15 @@ Could you please share more information and arrange a viewing appointment? Thank
             img.dataset.fallbackTried = 'true';
 
             if (img.dataset.brandLogo === 'true' || (img.closest && (img.closest('.nav-brand') || img.closest('.footer-brand') || img.closest('.sidebar-brand')))) {
+                const currentSrc = img.getAttribute('src') || '';
+                if (currentSrc !== DEFAULT_BRAND_LOGO_URL && img.dataset.localFallbackTried !== '1') {
+                    img.dataset.localFallbackTried = '1';
+                    delete img.dataset.fallbackTried;
+                    img.setAttribute('width', '1140');
+                    img.setAttribute('height', '380');
+                    img.src = DEFAULT_BRAND_LOGO_URL;
+                    return;
+                }
                 const parent = img.parentElement;
                 const isFooter = !!(img.closest && img.closest('.footer-brand'));
                 const iconColor = isFooter ? '#ffffff' : 'var(--primary)';

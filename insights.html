@@ -37,7 +37,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
 
     <!-- Styles -->
-    <link rel="stylesheet" href="css/styles.css?v=120">
+    <link rel="preload" as="image" href="assets/branding/company_logo.png" fetchpriority="high">
+    <link rel="stylesheet" href="css/styles.css?v=121">
 
     <!-- Corporate Branding Initializer (Zero-Flicker Synchronous Engine) -->
     <script>
@@ -89,14 +90,21 @@
             root.style.setProperty('--hero-gradient-start', toRgba(primaryDark, 0.88));
             root.style.setProperty('--hero-gradient-end', toRgba(primary, 0.65));
 
-            var logoUrl = (b && b.logoUrl) ? b.logoUrl : '';
-            var brandName = (b && b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : (logoUrl ? '' : 'MyFactorySpace');
-            var logoH = (b && b.logoHeight !== undefined && b.logoHeight !== null && !isNaN(b.logoHeight)) ? parseInt(b.logoHeight, 10) : 32;
+            var defaultLogoUrl = 'assets/branding/company_logo.png';
+            var hasSavedBranding = !!(b && typeof b === 'object');
+            var explicitName = (hasSavedBranding && b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : '';
+            var explicitLogoUrl = (hasSavedBranding && b.logoUrl && String(b.logoUrl).trim() !== '') ? String(b.logoUrl).trim() : '';
+            var logoUrl = explicitLogoUrl || ((hasSavedBranding && explicitName) ? '' : defaultLogoUrl);
+            var brandName = explicitName || (logoUrl ? '' : 'MyFactorySpace');
+            var logoH = (hasSavedBranding && b.logoHeight !== undefined && b.logoHeight !== null && !isNaN(b.logoHeight)) ? parseInt(b.logoHeight, 10) : 66;
             var navLogoH = Math.round(logoH * 1.58);
+            var footerLogoH = Math.round(logoH * 1.25);
+            var isDefaultLogo = (logoUrl === defaultLogoUrl);
+            var dimAttr = isDefaultLogo ? ' width="1140" height="380"' : '';
 
             var navHtml = '';
             if (logoUrl) {
-                navHtml += '<img src="' + esc(logoUrl) + '" data-brand-logo="true" alt="' + esc(brandName || 'MyFactorySpace') + '" style="height: ' + navLogoH + 'px; width: auto; max-width: 310px; object-fit: contain; vertical-align: middle;">';
+                navHtml += '<img src="' + esc(logoUrl) + '" data-brand-logo="true" alt="' + esc(brandName || 'MyFactorySpace') + '"' + dimAttr + ' fetchpriority="high" decoding="sync" style="height: ' + navLogoH + 'px; width: auto; max-width: 310px; object-fit: contain; vertical-align: middle;">';
             } else {
                 var m = brandName ? ' margin-right: 6px;' : '';
                 navHtml += '<i class="fa-solid fa-industry" style="color: var(--primary);' + m + '"></i>';
@@ -106,13 +114,49 @@
 
             var footerHtml = '';
             if (logoUrl) {
-                footerHtml += '<img src="' + esc(logoUrl) + '" data-brand-logo="true" alt="' + esc(brandName || 'MyFactorySpace') + '" style="height: ' + Math.round(logoH * 1.25) + 'px; width: auto; max-width: 240px; object-fit: contain; vertical-align: middle; filter: brightness(0) invert(1);">';
+                footerHtml += '<img src="' + esc(logoUrl) + '" data-brand-logo="true" alt="' + esc(brandName || 'MyFactorySpace') + '"' + dimAttr + ' loading="lazy" style="height: ' + footerLogoH + 'px; width: auto; max-width: 240px; object-fit: contain; vertical-align: middle; filter: brightness(0) invert(1);">';
             } else {
                 var fm = brandName ? ' margin-right: 6px;' : '';
                 footerHtml += '<i class="fa-solid fa-industry" style="color: #ffffff;' + fm + '"></i>';
                 if (brandName) footerHtml += ' <span style="color: var(--white);">' + esc(brandName) + '</span>';
             }
             window.__initialFooterBrandHtml = footerHtml;
+            window.__initialBrandMeta = {
+                logoUrl: logoUrl,
+                defaultLogoUrl: defaultLogoUrl,
+                brandName: brandName,
+                navLogoH: navLogoH,
+                footerLogoH: footerLogoH
+            };
+            window.__hydrateInitialBrand = function(el, isFooter) {
+                var meta = window.__initialBrandMeta;
+                if (!el || !meta) return;
+                if (!meta.logoUrl) {
+                    el.innerHTML = isFooter ? window.__initialFooterBrandHtml : window.__initialNavBrandHtml;
+                    return;
+                }
+                var img = el.querySelector('img[data-brand-logo="true"]');
+                if (!img) {
+                    el.innerHTML = isFooter ? window.__initialFooterBrandHtml : window.__initialNavBrandHtml;
+                    return;
+                }
+                img.alt = meta.brandName || 'MyFactorySpace';
+                img.style.height = (isFooter ? meta.footerLogoH : meta.navLogoH) + 'px';
+                if (meta.logoUrl !== meta.defaultLogoUrl) {
+                    img.dataset.pendingLogoSrc = meta.logoUrl;
+                    var probe = new Image();
+                    var commit = function() {
+                        if (!img.isConnected || img.dataset.pendingLogoSrc !== meta.logoUrl) return;
+                        img.removeAttribute('width');
+                        img.removeAttribute('height');
+                        img.src = meta.logoUrl;
+                        delete img.dataset.pendingLogoSrc;
+                    };
+                    probe.onload = commit;
+                    probe.src = meta.logoUrl;
+                    if (probe.complete && probe.naturalWidth > 0) commit();
+                }
+            };
         } catch (e) {}
     })();
     </script>
@@ -125,11 +169,11 @@
     <!-- Navigation -->
     <nav class="navbar" id="navbar">
         <div class="container">
-            <a href="index.html" class="nav-brand" id="main-nav-brand"></a>
+            <a href="index.html" class="nav-brand" id="main-nav-brand"><img src="assets/branding/company_logo.png" data-brand-logo="true" alt="MyFactorySpace" width="1140" height="380" fetchpriority="high" decoding="sync" style="height: 104px; width: auto; max-width: 310px; object-fit: contain; vertical-align: middle;"></a>
             <script>
             (function() {
                 var nb = document.getElementById('main-nav-brand');
-                if (nb && window.__initialNavBrandHtml) nb.innerHTML = window.__initialNavBrandHtml;
+                if (nb && window.__hydrateInitialBrand) window.__hydrateInitialBrand(nb, false);
             })();
             </script>
             <ul class="nav-links" id="nav-links">
@@ -420,11 +464,11 @@
         <div class="container">
             <div class="footer-grid">
                 <div class="footer-brand">
-                    <h3 id="main-footer-brand" class="footer-brand-title" style="margin-bottom: 1rem;"></h3>
+                    <h3 id="main-footer-brand" class="footer-brand-title" style="margin-bottom: 1rem;"><img src="assets/branding/company_logo.png" data-brand-logo="true" alt="MyFactorySpace" width="1140" height="380" loading="lazy" style="height: 83px; width: auto; max-width: 240px; object-fit: contain; vertical-align: middle; filter: brightness(0) invert(1);"></h3>
                     <script>
                     (function() {
                         var fb = document.getElementById('main-footer-brand');
-                        if (fb && window.__initialFooterBrandHtml) fb.innerHTML = window.__initialFooterBrandHtml;
+                        if (fb && window.__hydrateInitialBrand) window.__hydrateInitialBrand(fb, true);
                     })();
                     </script>
                     <p>Your trusted partner for industrial real estate solutions in the Klang Valley.</p>
@@ -592,7 +636,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js?v=51"></script>
-    <script src="js/scripts.js?v=100"></script>
+    <script src="js/scripts.js?v=101"></script>
     <script src="js/insights-visuals.js?v=3"></script>
     <script src="js/insights.js?v=6"></script>
     <script src="js/visit-tracker.js?v=3"></script>

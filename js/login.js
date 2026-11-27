@@ -69,35 +69,73 @@ document.addEventListener('DOMContentLoaded', () => {
             if (b.primaryDarkColor) root.style.setProperty('--primary-dark', b.primaryDarkColor);
             if (b.accentColor) root.style.setProperty('--accent', b.accentColor);
 
-            const logoUrl = b.logoUrl ? String(b.logoUrl).trim() : '';
+            const DEFAULT_LOGO_URL = 'assets/branding/company_logo.png';
             const explicitName = (b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : '';
+            const explicitLogoUrl = b.logoUrl ? String(b.logoUrl).trim() : '';
+            const logoUrl = explicitLogoUrl || (explicitName ? '' : DEFAULT_LOGO_URL);
             const brandTitle = explicitName || 'MyFactorySpace';
 
-            const applyBrandToContainer = (containerId, textClass) => {
+            const applyBrandToContainer = (containerId, iconClass, textClass) => {
                 const el = document.getElementById(containerId);
                 if (!el) return;
                 if (logoUrl) {
                     const existingImg = el.querySelector('img');
-                    if (existingImg && existingImg.getAttribute('src') === logoUrl) return;
+                    if (existingImg) {
+                        existingImg.alt = brandTitle;
+                        if (existingImg.getAttribute('src') === logoUrl) return;
+                        existingImg.dataset.pendingLogoSrc = logoUrl;
+                        const preloader = new Image();
+                        const commit = () => {
+                            if (!existingImg.isConnected || existingImg.dataset.pendingLogoSrc !== logoUrl) return;
+                            if (logoUrl === DEFAULT_LOGO_URL) {
+                                existingImg.setAttribute('width', '1140');
+                                existingImg.setAttribute('height', '380');
+                            } else {
+                                existingImg.removeAttribute('width');
+                                existingImg.removeAttribute('height');
+                            }
+                            existingImg.src = logoUrl;
+                            delete existingImg.dataset.pendingLogoSrc;
+                        };
+                        preloader.onload = () => {
+                            if (typeof preloader.decode === 'function') {
+                                preloader.decode().then(commit, commit);
+                            } else {
+                                commit();
+                            }
+                        };
+                        preloader.src = logoUrl;
+                        if (preloader.complete && preloader.naturalWidth > 0) commit();
+                        return;
+                    }
                     const fallbackMarkup = el.innerHTML;
-                    el.textContent = '';
-                    const img = document.createElement('img');
-                    img.src = logoUrl;
-                    img.alt = brandTitle;
-                    img.addEventListener('error', () => {
-                        el.innerHTML = fallbackMarkup;
-                        const txt = el.querySelector('.' + textClass);
-                        if (txt) txt.textContent = brandTitle;
-                    }, { once: true });
-                    el.appendChild(img);
+                    const preloader = new Image();
+                    preloader.onload = () => {
+                        el.textContent = '';
+                        const img = document.createElement('img');
+                        img.src = logoUrl;
+                        img.alt = brandTitle;
+                        img.addEventListener('error', () => {
+                            if (img.getAttribute('src') !== DEFAULT_LOGO_URL) {
+                                img.src = DEFAULT_LOGO_URL;
+                                return;
+                            }
+                            el.innerHTML = fallbackMarkup;
+                            const txt = el.querySelector('.' + textClass);
+                            if (txt) txt.textContent = brandTitle;
+                        });
+                        el.appendChild(img);
+                    };
+                    preloader.src = logoUrl;
                 } else if (explicitName) {
+                    el.innerHTML = `<span class="${iconClass}" aria-hidden="true"><i class="fa-solid fa-industry"></i></span><span class="${textClass}"></span>`;
                     const txt = el.querySelector('.' + textClass);
                     if (txt) txt.textContent = explicitName;
                 }
             };
 
-            applyBrandToContainer('showcase-brand', 'showcase-brand-text');
-            applyBrandToContainer('mobile-brand', 'mobile-brand-text');
+            applyBrandToContainer('showcase-brand', 'showcase-brand-icon', 'showcase-brand-text');
+            applyBrandToContainer('mobile-brand', 'mobile-brand-icon', 'mobile-brand-text');
 
             if (brandTitle && brandTitle !== 'MyFactorySpace') {
                 document.title = 'Admin Login | ' + brandTitle;

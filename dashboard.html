@@ -51,7 +51,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous">
     
     <!-- Styles -->
-    <link rel="stylesheet" href="css/styles.css?v=120">
+    <link rel="preload" as="image" href="assets/branding/company_logo.png" fetchpriority="high">
+    <link rel="stylesheet" href="css/styles.css?v=121">
     <link rel="stylesheet" href="css/dashboard.css?v=107">
 
     <!-- Corporate Branding Initializer (Zero-Flicker Synchronous Engine) -->
@@ -100,15 +101,19 @@
             root.style.setProperty('--hero-gradient-start', toRgba(primaryDark, 0.88));
             root.style.setProperty('--hero-gradient-end', toRgba(primary, 0.65));
 
-            var logoUrl = (b && b.logoUrl) ? b.logoUrl : '';
-            var brandName = (b && b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : (logoUrl ? '' : 'MyFactorySpace');
-            var logoH = (b && b.logoHeight !== undefined && b.logoHeight !== null && !isNaN(b.logoHeight)) ? parseInt(b.logoHeight, 10) : 32;
+            var defaultLogoUrl = 'assets/branding/company_logo.png';
+            var hasSavedBranding = !!(b && typeof b === 'object');
+            var explicitName = (hasSavedBranding && b.companyName && String(b.companyName).trim() !== '') ? String(b.companyName).trim() : '';
+            var explicitLogoUrl = (hasSavedBranding && b.logoUrl && String(b.logoUrl).trim() !== '') ? String(b.logoUrl).trim() : '';
+            var logoUrl = explicitLogoUrl || ((hasSavedBranding && explicitName) ? '' : defaultLogoUrl);
+            var brandName = explicitName || (logoUrl ? '' : 'MyFactorySpace');
+            var logoH = (hasSavedBranding && b.logoHeight !== undefined && b.logoHeight !== null && !isNaN(b.logoHeight)) ? parseInt(b.logoHeight, 10) : 66;
             var sbLogoH = Math.min(Math.max(Math.round(logoH * 0.72), 24), 28);
 
             var sbHtml = '';
             var fallbackTitle = brandName || 'MyFactorySpace';
             if (logoUrl) {
-                sbHtml += '<img src="' + esc(logoUrl) + '" alt="' + esc(fallbackTitle) + '" style="max-height: ' + sbLogoH + 'px; max-width: 150px; width: auto; height: auto; object-fit: contain; vertical-align: middle;" onerror="var p=this.parentElement;if(p){p.innerHTML=\'<span class=&quot;sidebar-brand-fallback-badge&quot; aria-hidden=&quot;true&quot;><i class=&quot;fa-solid fa-industry&quot;></i></span> <span>' + esc(fallbackTitle).replace(/'/g, '') + '</span>\';}">';
+                sbHtml += '<img src="' + esc(logoUrl) + '" data-brand-logo="true" alt="' + esc(fallbackTitle) + '" style="max-height: ' + sbLogoH + 'px; max-width: 150px; width: auto; height: auto; object-fit: contain; vertical-align: middle;" onerror="if(this.getAttribute(\'src\')!==\'assets/branding/company_logo.png\'){this.src=\'assets/branding/company_logo.png\';return;}var p=this.parentElement;if(p){p.innerHTML=\'<span class=&quot;sidebar-brand-fallback-badge&quot; aria-hidden=&quot;true&quot;><i class=&quot;fa-solid fa-industry&quot;></i></span> <span>' + esc(fallbackTitle).replace(/'/g, '') + '</span>\';}">';
             } else {
                 sbHtml += '<span class="sidebar-brand-fallback-badge" aria-hidden="true"><i class="fa-solid fa-industry"></i></span>';
                 if (brandName) {
@@ -116,6 +121,12 @@
                 }
             }
             window.__initialSidebarBrandHtml = sbHtml;
+            window.__initialSidebarBrandMeta = {
+                logoUrl: logoUrl,
+                defaultLogoUrl: defaultLogoUrl,
+                fallbackTitle: fallbackTitle,
+                sbLogoH: sbLogoH
+            };
             if (b && b.faviconUrl && b.faviconUrl.indexOf('favicon-48x48.png') === -1) {
                 document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"], link[rel="apple-touch-icon"]').forEach(function(el) { el.remove(); });
                 ['icon', 'shortcut icon', 'apple-touch-icon'].forEach(function(relVal) {
@@ -165,11 +176,34 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header" style="display: flex; align-items: center; justify-content: space-between;">
-            <a href="index.html" class="sidebar-brand" id="main-sidebar-brand"></a>
+            <a href="index.html" class="sidebar-brand" id="main-sidebar-brand"><img src="assets/branding/company_logo.png" data-brand-logo="true" alt="MyFactorySpace" width="1140" height="380" fetchpriority="high" decoding="sync" style="max-height: 28px; max-width: 150px; width: auto; height: auto; object-fit: contain; vertical-align: middle;"></a>
             <script>
             (function() {
                 var sb = document.getElementById('main-sidebar-brand');
-                if (sb && window.__initialSidebarBrandHtml) sb.innerHTML = window.__initialSidebarBrandHtml;
+                var meta = window.__initialSidebarBrandMeta;
+                if (!sb || !meta) return;
+                if (!meta.logoUrl) {
+                    if (window.__initialSidebarBrandHtml) sb.innerHTML = window.__initialSidebarBrandHtml;
+                    return;
+                }
+                var img = sb.querySelector('img[data-brand-logo="true"]');
+                if (!img) return;
+                img.alt = meta.fallbackTitle || 'MyFactorySpace';
+                img.style.maxHeight = meta.sbLogoH + 'px';
+                if (meta.logoUrl !== meta.defaultLogoUrl) {
+                    img.dataset.pendingLogoSrc = meta.logoUrl;
+                    var probe = new Image();
+                    var commit = function() {
+                        if (!img.isConnected || img.dataset.pendingLogoSrc !== meta.logoUrl) return;
+                        img.removeAttribute('width');
+                        img.removeAttribute('height');
+                        img.src = meta.logoUrl;
+                        delete img.dataset.pendingLogoSrc;
+                    };
+                    probe.onload = commit;
+                    probe.src = meta.logoUrl;
+                    if (probe.complete && probe.naturalWidth > 0) commit();
+                }
             })();
             </script>
             <button class="sidebar-pin-btn" id="sidebar-pin-btn" title="Toggle Auto-Minimize Navigation Rail" aria-label="Toggle Auto-Minimize">
@@ -7157,7 +7191,7 @@ NOTIFY pgrst, 'reload schema';</pre>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/supabase-client.js?v=52"></script>
     <script src="js/property-map.js?v=14"></script>
-    <script src="js/dashboard.js?v=144"></script>
+    <script src="js/dashboard.js?v=145"></script>
     <script src="js/dashboard-agents.js?v=12"></script>
     <script src="js/dashboard-ux.js?v=1"></script>
 </body>
